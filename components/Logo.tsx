@@ -23,7 +23,8 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
         viewBox="0 0 512 512" 
         className="w-48 h-48 overflow-visible" 
         xmlns="http://www.w3.org/2000/svg"
-        xml:space="preserve"
+        // Fix: React uses camelCase for SVG attributes like xmlSpace
+        xmlSpace="preserve"
       >
         <defs>
           <clipPath id="aca-icon-clip">

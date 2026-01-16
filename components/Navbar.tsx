@@ -5,17 +5,14 @@ import Logo from './Logo';
 
 interface NavbarProps {
   onReportBug: () => void;
-  isAuthenticated: boolean;
-  onLogout: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onReportBug, isAuthenticated, onLogout }) => {
+const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
   return (
     <nav className="fixed w-full z-50 bg-[#050505]/60 backdrop-blur-2xl border-b border-white/[0.03]">
-      {/* Subtle top glow line */}
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/20 to-transparent"></div>
       
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
@@ -30,18 +27,8 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug, isAuthenticated, onLogout 
             <div className="ml-10 flex items-center space-x-10">
               <Link to="/published-books" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">Books</Link>
               <Link to="/narratives" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">Narratives</Link>
-              
-              {isAuthenticated ? (
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-3">
-                    <Link to="/author-builder" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">My Sheets</Link>
-                    <Link to="/wrap-it-up" className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-6 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-orange-500 hover:text-white rounded-sm">Mastering Suite</Link>
-                  </div>
-                  <button onClick={onLogout} className="text-gray-600 hover:text-white text-[10px] font-black tracking-[0.3em] uppercase transition-colors">Logout</button>
-                </div>
-              ) : (
-                <Link to="/login" className="bg-white/5 border border-white/10 text-white px-8 py-3 text-[10px] font-black tracking-[0.4em] uppercase transition-all rounded-sm hover:bg-white/10 hover:border-white/30">Enter Vault</Link>
-              )}
+              <Link to="/author-builder" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">My Sheets</Link>
+              <Link to="/wrap-it-up" className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-6 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-orange-500 hover:text-white rounded-sm">Mastering Suite</Link>
 
               <div className="h-4 w-[1px] bg-white/10"></div>
 
@@ -68,7 +55,6 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug, isAuthenticated, onLogout 
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <div className={`${isOpen ? 'block' : 'hidden'} md:hidden bg-[#050505] h-screen border-t border-white/5`}>
         <div className="px-12 pt-12 pb-3 space-y-8 flex flex-col items-center">
           <Link to="/published-books" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
