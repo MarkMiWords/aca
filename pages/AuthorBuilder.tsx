@@ -62,6 +62,7 @@ function pcmToWavBlob(base64: string, sampleRate: number = 24000): Blob {
 }
 
 const AuthorBuilder: React.FC = () => {
+  const navigate = useNavigate();
   const [chapters, setChapters] = useState<Chapter[]>(() => {
     const saved = localStorage.getItem('wrap_sheets_v4');
     return saved ? JSON.parse(saved) : [{ id: '1', title: DEFAULT_TITLE, content: '', order: 0, media: [], subChapters: [] }];
@@ -77,13 +78,22 @@ const AuthorBuilder: React.FC = () => {
   const [showSoapMenu, setShowSoapMenu] = useState(false);
   const [showSpeakMenu, setShowSpeakMenu] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [isSoaping, setIsSoaping] = useState(false);
+  const [isDogging, setIsDogging] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [wrapperWidth, setWrapperWidth] = useState(384); // w-96 equivalent
+  const [isSpeakingLoading, setIsSpeakingLoading] = useState(false);
+  const [wrapperWidth, setWrapperWidth] = useState(384); 
   
-  // WRAPPER Settings
+  // WRAP Settings
   const [style, setStyle] = useState(STYLES[2]); 
   const [region, setRegion] = useState(REGIONS[1]);
+
+  // Studio Intelligence Preferences
+  const [showTooltips, setShowTooltips] = useState(() => {
+    const profile = localStorage.getItem('aca_author_profile');
+    return profile ? JSON.parse(profile).showTooltips !== false : true;
+  });
 
   // Custom Dialect / Virty Engine States
   const [uiStrings, setUiStrings] = useState<Record<string, string>>({
@@ -96,7 +106,9 @@ const AuthorBuilder: React.FC = () => {
     mastering: "Mastering Suite",
     newSheet: "New Sheet"
   });
-  const [customPersona, setCustomPersona] = useState<string>("");
+  const [customPersona, setCustomPersona] = useState<string>(() => {
+    return localStorage.getItem('wrap_custom_persona') || "";
+  });
   const [detectedLocale, setDetectedLocale] = useState<string>("Standard");
   const [isVoiceLabOpen, setIsVoiceLabOpen] = useState(false);
   const [isRecordingLab, setIsRecordingLab] = useState(false);
@@ -104,7 +116,7 @@ const AuthorBuilder: React.FC = () => {
   
   // Speak Settings
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id);
-  const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
+  const [selectedPersona, setSelectedPersona] = useState(customPersona ? 'MyVoice' : PERSONAS[0]);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -157,6 +169,7 @@ const AuthorBuilder: React.FC = () => {
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
+      // Main Content Recognition
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
@@ -176,20 +189,30 @@ const AuthorBuilder: React.FC = () => {
           setChapters(prev => updateChapterInList(prev));
         }
       };
+      recognitionRef.current.onend = () => {
+        if (isListening) {
+           try { recognitionRef.current.start(); } catch(e) {}
+        }
+      };
 
+      // Partner (WRAP) Recognition
       partnerRecognitionRef.current = new SpeechRecognition();
-      partnerRecognitionRef.current.continuous = false;
+      partnerRecognitionRef.current.continuous = true;
       partnerRecognitionRef.current.interimResults = true;
       partnerRecognitionRef.current.onresult = (event: any) => {
         let transcript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) transcript += event.results[i][0].transcript;
         }
-        if (transcript) setPartnerInput(prev => prev + transcript);
+        if (transcript) setPartnerInput(prev => prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + transcript);
       };
-      partnerRecognitionRef.current.onend = () => setIsPartnerListening(false);
+      partnerRecognitionRef.current.onend = () => {
+        if (isPartnerListening) {
+           try { partnerRecognitionRef.current.start(); } catch(e) {}
+        }
+      };
     }
-  }, [activeChapterId]);
+  }, [activeChapterId, isListening, isPartnerListening]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -198,13 +221,23 @@ const AuthorBuilder: React.FC = () => {
   }, [messages, isPartnerLoading]);
 
   const toggleListening = () => {
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); }
-    else { setIsListening(true); recognitionRef.current?.start(); }
+    if (isListening) { 
+      setIsListening(false); 
+      recognitionRef.current?.stop(); 
+    } else { 
+      setIsListening(true); 
+      recognitionRef.current?.start(); 
+    }
   };
 
   const togglePartnerListening = () => {
-    if (isPartnerListening) { partnerRecognitionRef.current?.stop(); setIsPartnerListening(false); }
-    else { setIsPartnerListening(true); partnerRecognitionRef.current?.start(); }
+    if (isPartnerListening) { 
+      setIsPartnerListening(false); 
+      partnerRecognitionRef.current?.stop(); 
+    } else { 
+      setIsPartnerListening(true); 
+      partnerRecognitionRef.current?.start(); 
+    }
   };
 
   const startVoiceLabRecording = async () => {
@@ -225,6 +258,7 @@ const AuthorBuilder: React.FC = () => {
           if (results) {
             setUiStrings(prev => ({ ...prev, ...results.uiTranslations }));
             setCustomPersona(results.personaInstruction);
+            localStorage.setItem('wrap_custom_persona', results.personaInstruction);
             setDetectedLocale(results.detectedLocale);
             setSelectedPersona('MyVoice');
           }
@@ -275,6 +309,24 @@ const AuthorBuilder: React.FC = () => {
     }
   };
 
+  const handleDoggerel = async () => {
+    if (!activeChapter.content.trim()) return;
+    setIsDogging(true);
+    try {
+      const result = await jiveContent(activeChapter.content, region);
+      const updateChapterInList = (list: Chapter[]): Chapter[] => {
+        return list.map(c => {
+          if (c.id === activeChapterId) return { ...c, content: result };
+          if (c.subChapters) return { ...c, subChapters: updateChapterInList(c.subChapters) };
+          return c;
+        });
+      };
+      setChapters(prev => updateChapterInList(prev));
+    } finally {
+      setIsDogging(false);
+    }
+  };
+
   const handleSpeak = async () => {
     if (isSpeaking) {
       audioRef.current?.pause();
@@ -282,7 +334,7 @@ const AuthorBuilder: React.FC = () => {
       return;
     }
     if (!activeChapter.content.trim()) return;
-    setIsSpeaking(true);
+    setIsSpeakingLoading(true);
     setShowSpeakMenu(false);
     try {
       const finalPersonaInstruction = (selectedPersona === 'MyVoice' && customPersona) ? customPersona : "";
@@ -295,16 +347,22 @@ const AuthorBuilder: React.FC = () => {
         audio.playbackRate = selectedSpeed;
         audio.onended = () => setIsSpeaking(false);
         audioRef.current = audio;
+        setIsSpeaking(true);
         audio.play();
-      } else { setIsSpeaking(false); }
-    } catch (err) { setIsSpeaking(false); }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSpeakingLoading(false);
+    }
   };
 
-  const handlePartnerChat = async (e?: React.FormEvent) => {
+  const handlePartnerChat = async (e?: React.FormEvent, customMsg?: string) => {
     if (e) e.preventDefault();
-    if (!partnerInput.trim()) return;
+    const finalMsg = customMsg || partnerInput;
+    if (!finalMsg.trim()) return;
 
-    const userMsg = partnerInput;
+    const userMsg = finalMsg;
     setPartnerInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsPartnerLoading(true);
@@ -320,14 +378,18 @@ const AuthorBuilder: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      alert("File is too large. Please keep images and documents under 4MB to ensure they fit in the Sovereign Vault.");
+      return;
+    }
+
     const reader = new FileReader();
-    
     if (file.name.endsWith('.docx')) {
       reader.onload = async (event) => {
         const arrayBuffer = event.target?.result as ArrayBuffer;
         const result = await mammoth.convertToHtml({ arrayBuffer });
         const html = result.value;
-        
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const nodes = Array.from(doc.body.childNodes);
@@ -346,7 +408,6 @@ const AuthorBuilder: React.FC = () => {
              const target = currentChapter?.subChapters && currentChapter.subChapters.length > 0 
                ? currentChapter.subChapters[currentChapter.subChapters.length - 1] 
                : currentChapter;
-             
              if (target) target.content += text + '\n\n';
              else {
                currentChapter = { id: `h1-init-${idx}-${Date.now()}`, title: 'Imported Fragment', content: text + '\n\n', order: 0, media: [], subChapters: [] };
@@ -354,7 +415,6 @@ const AuthorBuilder: React.FC = () => {
              }
           }
         });
-
         if (newChapters.length > 0) {
           setChapters(newChapters);
           setActiveChapterId(newChapters[0].id);
@@ -375,6 +435,10 @@ const AuthorBuilder: React.FC = () => {
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert("Visual asset too large. Please keep covers and images under 4MB for optimal performance.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const newMedia: MediaAsset = {
@@ -405,7 +469,6 @@ const AuthorBuilder: React.FC = () => {
       });
     };
     compile(chapters);
-    
     const mimeType = type === 'txt' ? 'text/plain' : type === 'md' ? 'text/markdown' : 'application/msword';
     const blob = new Blob([fullText], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -418,7 +481,6 @@ const AuthorBuilder: React.FC = () => {
 
   const currentFont = FONT_PAIRINGS[fontIndex];
 
-  // Sidebar Recursive Component
   const SidebarItem: React.FC<{ chapter: Chapter, depth?: number }> = ({ chapter, depth = 0 }) => (
     <div className="flex flex-col">
       <div 
@@ -437,10 +499,25 @@ const AuthorBuilder: React.FC = () => {
     </div>
   );
 
+  const handleHelpAction = (action: string) => {
+    setShowHelpMenu(false);
+    switch(action) {
+      case 'care': navigate('/support'); break;
+      case 'write': 
+        (document.querySelector('textarea[placeholder="The narrative begins here..."]') as HTMLTextAreaElement)?.focus();
+        break;
+      case 'heading':
+        (document.querySelector('textarea[placeholder="' + DEFAULT_TITLE + '"]') as HTMLTextAreaElement)?.focus();
+        break;
+      case 'edit': handleSoap('scrub'); break;
+      case 'research': handlePartnerChat(undefined, "I want to research a topic related to my current sheet..."); break;
+      case 'brainstorm': handlePartnerChat(undefined, "I need to brainstorm some ideas for my narrative..."); break;
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-6rem)] bg-[#020202] text-white overflow-hidden selection:bg-orange-500/30">
       
-      {/* Voice Lab Modal */}
       {isVoiceLabOpen && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6 animate-fade-in">
           <div className="max-w-xl w-full bg-[#0d0d0d] border border-white/10 p-12 text-center shadow-2xl relative">
@@ -464,12 +541,11 @@ const AuthorBuilder: React.FC = () => {
         </div>
       )}
 
-      {/* Sidebar: Registry (Now with Hierarchy) */}
       <aside className="w-80 border-r border-white/5 bg-[#080808] flex flex-col shrink-0">
         <div className="flex-grow overflow-y-auto pt-32 pb-4 custom-scrollbar">
           {chapters.map(c => <SidebarItem key={c.id} chapter={c} />)}
         </div>
-        <div className="px-6 py-4 border-t border-white/5 bg-black/40">
+        <div className="px-6 py-4 border-t border-white/5 bg-black/40 relative group/tooltip">
             <button onClick={() => {
               const newId = Date.now().toString();
               setChapters([...chapters, { id: newId, title: DEFAULT_TITLE, content: '', order: 0, media: [], subChapters: [] }]);
@@ -477,10 +553,15 @@ const AuthorBuilder: React.FC = () => {
             }} className="w-full p-4 border border-dashed border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-700 hover:text-orange-500 transition-all rounded-sm">
               + {uiStrings.newSheet}
             </button>
+            {showTooltips && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">New Entry</p>
+                <p className="text-[10px] text-gray-500 italic leading-tight">Create a fresh digital sheet for a new narrative.</p>
+              </div>
+            )}
         </div>
       </aside>
 
-      {/* Main Workspace */}
       <main className="flex-grow flex flex-col relative bg-[#020202]">
         <div className="absolute top-4 right-12 z-[40]">
            <div className="flex items-center gap-3 bg-black/40 border border-white/5 px-4 py-2 rounded-full">
@@ -489,22 +570,48 @@ const AuthorBuilder: React.FC = () => {
            </div>
         </div>
 
-        {/* Toolbar */}
         <div className="px-12 py-8 border-b border-white/[0.03] bg-[#050505] flex items-center justify-between sticky top-0 z-[60] backdrop-blur-xl">
            <div className="flex items-center gap-10">
-              <button onClick={() => setFontIndex((fontIndex + 1) % FONT_PAIRINGS.length)} className="text-[9px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors">Font: {currentFont.name}</button>
-              <button onClick={() => setIsVoiceLabOpen(true)} className="text-[9px] font-black text-orange-500/60 hover:text-orange-500 uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
-                 <div className="w-1 h-1 rounded-full bg-orange-500"></div>Voice Lab
-              </button>
+              <div className="relative group/tooltip">
+                <button onClick={() => setFontIndex((fontIndex + 1) % FONT_PAIRINGS.length)} className="text-[9px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors">Font: {currentFont.name}</button>
+                {showTooltips && (
+                  <div className="absolute top-full left-0 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-40 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Typography</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Click and change font types for your sheet.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative group/tooltip">
+                <button onClick={() => setIsVoiceLabOpen(true)} className="text-[9px] font-black text-orange-500/60 hover:text-orange-500 uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
+                   <div className="w-1 h-1 rounded-full bg-orange-500"></div>Voice Lab
+                </button>
+                {showTooltips && (
+                  <div className="absolute top-full left-0 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Voice Cloning</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Create your virtual voice. Access it as "My Voice" in the SPEAK dropdown.</p>
+                  </div>
+                )}
+              </div>
            </div>
 
            <div className="flex items-center gap-6">
-              {(isSoaping || isPartnerLoading) && <span className="text-[8px] font-black text-orange-500 animate-pulse uppercase tracking-widest">Processing...</span>}
+              {(isSoaping || isDogging || isPartnerLoading || isSpeakingLoading) && (
+                <span className="text-[8px] font-black text-orange-500 animate-pulse uppercase tracking-widest">
+                  {isSpeakingLoading ? 'Analyzing Voice Patterns...' : 'Processing...'}
+                </span>
+              )}
               
-              <div className="relative">
+              <div className="relative group/tooltip">
                 <button onClick={() => setShowSoapMenu(!showSoapMenu)} className={`flex items-center gap-3 px-6 py-2 rounded-full border border-white/10 transition-all bg-white/5 font-black uppercase tracking-widest text-[9px] ${isSoaping ? 'text-orange-500 animate-pulse' : 'text-gray-500 hover:text-white'}`}>
                   {uiStrings.soap}
                 </button>
+                {showTooltips && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Cleanup Engine</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Rinse (punctuation), Scrub (flow), or Sanitize (legal safety).</p>
+                  </div>
+                )}
                 {showSoapMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl rounded-sm z-[100] overflow-hidden">
                     <button onClick={() => handleSoap('rinse')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 border-b border-white/5">Rinse (Punctuation)</button>
@@ -514,10 +621,28 @@ const AuthorBuilder: React.FC = () => {
                 )}
               </div>
 
-              <div className="relative">
+              <div className="relative group/tooltip">
+                <button onClick={handleDoggerel} className={`flex items-center gap-3 px-6 py-2 rounded-full border border-white/10 transition-all bg-white/5 font-black uppercase tracking-widest text-[9px] ${isDogging ? 'text-orange-500 animate-pulse border-orange-500 shadow-[0_0_20px_rgba(230,126,34,0.3)]' : 'text-gray-500 hover:text-white'}`}>
+                  Dogg Me
+                </button>
+                {showTooltips && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Doggerel Remix</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Turning prose into rhythmic, street-flavored poetry.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative group/tooltip">
                 <button onClick={() => isSpeaking ? handleSpeak() : setShowSpeakMenu(!showSpeakMenu)} className={`flex items-center gap-3 px-6 py-2 rounded-full border border-white/10 transition-all font-black uppercase tracking-widest text-[9px] ${isSpeaking ? 'text-orange-500 border-orange-500 animate-pulse bg-orange-500/5 shadow-[0_0_20px_rgba(230,126,34,0.3)]' : 'text-gray-500 hover:text-white bg-white/5'}`}>
                   {isSpeaking ? 'Stop' : uiStrings.speak}
                 </button>
+                {showTooltips && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Audio Playback</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Listen to your sheet using specialized voice personas.</p>
+                  </div>
+                )}
                 {showSpeakMenu && (
                   <div className="absolute right-0 mt-2 w-72 bg-[#0d0d0d] border border-white/10 shadow-2xl rounded-sm z-[100] p-6 space-y-6">
                     <div className="space-y-2">
@@ -527,8 +652,21 @@ const AuthorBuilder: React.FC = () => {
                        </select>
                     </div>
                     <div className="space-y-2">
+                       <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Speed (Pitch Protected)</label>
+                       <div className="grid grid-cols-4 gap-2">
+                          {SPEEDS.map(s => (
+                            <button key={s.value} onClick={() => setSelectedSpeed(s.value)} className={`text-[8px] p-2 border transition-all ${selectedSpeed === s.value ? 'bg-orange-500 border-orange-500 text-white' : 'bg-black border-white/10 text-gray-500 hover:text-white'}`}>{s.label}</button>
+                          ))}
+                       </div>
+                    </div>
+                    <div className="space-y-2">
                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Persona</label>
                        <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto custom-scrollbar p-1">
+                          {customPersona && (
+                            <button onClick={() => setSelectedPersona('MyVoice')} className={`text-[8px] p-2 text-left uppercase tracking-widest border transition-all col-span-2 mb-2 ${selectedPersona === 'MyVoice' ? 'bg-orange-500 border-orange-500 text-white animate-living-amber-border' : 'bg-black border-orange-500/40 text-orange-500 hover:text-white'}`}>
+                              ★ My Voice (Calibrated)
+                            </button>
+                          )}
                           {PERSONAS.map(p => (
                             <button key={p} onClick={() => setSelectedPersona(p)} className={`text-[8px] p-2 text-left uppercase tracking-widest border transition-all ${selectedPersona === p ? 'bg-orange-500 border-orange-500 text-white' : 'bg-black border-white/10 text-gray-500 hover:text-white'}`}>{p}</button>
                           ))}
@@ -539,13 +677,27 @@ const AuthorBuilder: React.FC = () => {
                 )}
               </div>
 
-              <button onClick={toggleListening} className={`flex items-center gap-3 px-6 py-2 rounded-full border transition-all ${isListening ? 'bg-red-500/20 border-red-500 text-red-500 animate-pulse' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'}`}>
-                <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]' : 'bg-gray-700'}`}></div>
-                <span className="text-[9px] font-black uppercase tracking-widest">{uiStrings.dictate}</span>
-              </button>
+              <div className="relative group/tooltip">
+                <button onClick={toggleListening} className={`flex items-center gap-3 px-6 py-2 rounded-full border transition-all ${isListening ? 'bg-red-500/20 border-red-500 text-red-500 animate-pulse' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'}`}>
+                  <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]' : 'bg-gray-700'}`}></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest">{uiStrings.dictate}</span>
+                </button>
+                {showTooltips && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Hands-Free Writing</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Stream your voice directly onto the digital sheet.</p>
+                  </div>
+                )}
+              </div>
               
-              <div className="relative">
+              <div className="relative group/tooltip">
                 <button onClick={() => setShowActionMenu(!showActionMenu)} className="bg-orange-500 text-white px-10 py-3 text-[10px] font-black uppercase tracking-[0.4em] rounded-sm hover:bg-orange-600 transition-all">{uiStrings.actions}</button>
+                {showTooltips && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Vault Utility</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Import, export, or add visual assets to this sheet.</p>
+                  </div>
+                )}
                 {showActionMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-[#0d0d0d] border border-white/10 shadow-2xl rounded-sm z-[100] overflow-hidden">
                     <button onClick={() => fileInputRef.current?.click()} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 border-b border-white/5">Import (Word/MD)</button>
@@ -562,7 +714,6 @@ const AuthorBuilder: React.FC = () => {
            </div>
         </div>
 
-        {/* Workspace Content */}
         <div className="flex-grow flex flex-col px-4 sm:px-6 lg:px-12 py-12 overflow-y-auto custom-scrollbar">
            <div className="w-full max-w-none space-y-12 h-full flex flex-col">
               {activeChapter.media && activeChapter.media.length > 0 && (
@@ -590,7 +741,7 @@ const AuthorBuilder: React.FC = () => {
                   const updateList = (list: Chapter[]): Chapter[] => list.map(c => ({
                     ...c,
                     title: c.id === activeChapterId ? val : c.title,
-                    media: c.media || [], // Ensure media persists
+                    media: c.media || [], 
                     subChapters: c.subChapters ? updateList(c.subChapters) : []
                   }));
                   setChapters(prev => updateList(prev));
@@ -605,79 +756,87 @@ const AuthorBuilder: React.FC = () => {
                   const updateList = (list: Chapter[]): Chapter[] => list.map(c => ({
                     ...c,
                     content: c.id === activeChapterId ? val : c.content,
-                    media: c.media || [], // Ensure media persists
+                    media: c.media || [], 
                     subChapters: c.subChapters ? updateList(c.subChapters) : []
                   }));
                   setChapters(prev => updateList(prev));
                 }}
-                className={`w-full flex-grow bg-transparent border-none outline-none focus:ring-0 resize-none text-gray-400 leading-[1.8] placeholder:text-gray-800 transition-all ${currentFont.body}`}
+                className={`w-full flex-grow bg-transparent border-none outline-none focus:ring-0 resize-none text-gray-400 leading-[1.8] placeholder:text-gray-900 transition-all ${currentFont.body}`}
                 placeholder="The narrative begins here..."
               />
            </div>
         </div>
       </main>
 
-      {/* Resize Handle */}
       <div 
         onMouseDown={() => { isResizing.current = true; document.body.style.cursor = 'ew-resize'; }}
         className="w-1.5 hover:bg-orange-500/40 cursor-ew-resize transition-colors z-[80] bg-white/5 no-print"
       ></div>
 
-      {/* WRAPPER Sidebar */}
-      <aside 
-        className="border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative no-print h-full"
-        style={{ width: `${wrapperWidth}px` }}
-      >
+      <aside className="border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative no-print h-full" style={{ width: `${wrapperWidth}px` }}>
         <div className="shrink-0 p-10 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a]">
-           <Link to="/wrapper-info" className="group"><h3 className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em] glow-orange">WRAPPER</h3></Link>
+           <Link to="/wrapper-info" className="group"><h3 className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em] glow-orange">WRAP</h3></Link>
            <div className={`w-2 h-2 rounded-full ${isPartnerLoading ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></div>
         </div>
 
-        {/* RESTORED HELP BOX BELOW HEADING */}
-        <div className="shrink-0 px-10 py-6 bg-orange-500/5 border-b border-white/5 group hover:bg-orange-500/10 transition-all">
-           <Link to="/support" className="flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-200 group-hover:text-orange-500 transition-colors">Help Me Too...</span>
-                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Connect with care organizations</p>
-              </div>
-              <div className="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center bg-black group-hover:border-orange-500/50 transition-all">
-                <svg className="w-4 h-4 text-orange-500/60 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              </div>
-           </Link>
+        <div className="shrink-0 px-10 py-6 bg-orange-500/5 border-b border-white/5 group transition-all">
+           <div className="relative">
+              <button onClick={() => setShowHelpMenu(!showHelpMenu)} className="w-full flex items-center justify-between group">
+                <div className="text-left space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-200 group-hover:text-orange-500 transition-colors">Help Me To...</span>
+                  <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest italic">Write Right AI Partner</p>
+                </div>
+                <div className="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center bg-black group-hover:border-orange-500/50 transition-all">
+                  <svg className={`w-4 h-4 text-orange-500/60 group-hover:text-orange-500 transition-transform duration-300 ${showHelpMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+              </button>
+              
+              {showHelpMenu && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
+                  {[
+                    { label: 'Connecting with care organizations', id: 'care' },
+                    { label: 'write on a sheet of pixels', id: 'write' },
+                    { label: 'choose and make a heading', id: 'heading' },
+                    { label: 'edit my sheet for mistakes', id: 'edit' },
+                    { label: 'research a topic', id: 'research' },
+                    { label: 'brainstorm an idea', id: 'brainstorm' }
+                  ].map((opt) => (
+                    <button key={opt.id} onClick={() => handleHelpAction(opt.id)} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-orange-500 hover:bg-orange-500/10 border-b border-white/5 transition-all">{opt.label}</button>
+                  ))}
+                </div>
+              )}
+           </div>
         </div>
 
-        {/* RESTORED WRAPPER DROPDOWNS */}
         <div className="shrink-0 p-6 border-b border-white/5 bg-black/40">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest block">Dialect Tone</label>
+              <div className="space-y-2 relative group/tooltip">
+                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest block">Story Type</label>
                 <div className="relative">
-                  <select 
-                    value={style} 
-                    onChange={(e) => setStyle(e.target.value)}
-                    className="w-full bg-black border border-white/20 text-[9px] text-gray-300 p-2.5 focus:border-orange-500 outline-none appearance-none font-bold tracking-widest uppercase cursor-pointer rounded-sm"
-                  >
+                  <select value={style} onChange={(e) => setStyle(e.target.value)} className="w-full bg-black border border-white/20 text-[9px] text-gray-300 p-2.5 focus:border-orange-500 outline-none appearance-none font-bold tracking-widest uppercase cursor-pointer rounded-sm">
                     {STYLES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                  </div>
                 </div>
+                {showTooltips && (
+                  <div className="absolute bottom-full left-0 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Tone Selection</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">This helps us to know where the story is aimed at and what audience to write to.</p>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 relative group/tooltip">
                 <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest block">Region</label>
                 <div className="relative">
-                  <select 
-                    value={region} 
-                    onChange={(e) => setRegion(e.target.value)}
-                    className="w-full bg-black border border-white/20 text-[9px] text-gray-300 p-2.5 focus:border-orange-500 outline-none appearance-none font-bold tracking-widest uppercase cursor-pointer rounded-sm"
-                  >
+                  <select value={region} onChange={(e) => setRegion(e.target.value)} className="w-full bg-black border border-white/20 text-[9px] text-gray-300 p-2.5 focus:border-orange-500 outline-none appearance-none font-bold tracking-widest uppercase cursor-pointer rounded-sm">
                     {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                  </div>
                 </div>
+                {showTooltips && (
+                  <div className="absolute bottom-full right-0 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Local Context</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">This helps us to differentiate local slang and terms.</p>
+                  </div>
+                )}
               </div>
             </div>
         </div>
@@ -685,7 +844,7 @@ const AuthorBuilder: React.FC = () => {
         <div className="flex-grow overflow-y-auto p-10 space-y-8 custom-scrollbar bg-black/10">
            {messages.length === 0 && (
              <div className="h-full flex flex-col items-center justify-center opacity-30 text-center px-4">
-                <p className="text-xs italic font-serif leading-relaxed">"I am tuned into the {region} archive. Ready to refine your truth."</p>
+                <p className="text-xs italic font-serif leading-relaxed">"I am tuned into the {region} archive. Your Write Right Partner is ready."</p>
              </div>
            )}
            {messages.map((m, i) => (
@@ -695,18 +854,33 @@ const AuthorBuilder: React.FC = () => {
                 </div>
              </div>
            ))}
+           {isPartnerLoading && <div className="text-[9px] text-orange-500 animate-pulse uppercase tracking-widest ml-6">Consulting Archives...</div>}
            <div ref={chatEndRef} />
         </div>
 
         <div className="shrink-0 p-10 bg-[#0a0a0a] border-t border-white/5 flex flex-col gap-4">
            <div className="relative group">
-             <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handlePartnerChat())} className="w-full bg-[#030303] border border-white/10 p-6 text-base font-serif italic text-white focus:border-orange-500/50 outline-none resize-none h-32 rounded-sm pr-16" placeholder="Whisper to WRAPPER..." />
-             <button onClick={togglePartnerListening} className={`absolute bottom-6 right-6 p-3 rounded-full border z-[50] transition-all duration-500 ${isPartnerListening ? 'border-red-500 text-red-500 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/20 text-gray-500 hover:text-white hover:border-white/40 bg-black'}`}>
-                <svg className={`w-5 h-5 ${isPartnerListening ? 'animate-pulse' : ''}`} fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-             </button>
+             <div className="relative group/tooltip">
+               <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handlePartnerChat())} className="w-full bg-[#030303] border border-white/10 p-6 text-base font-serif italic text-white focus:border-orange-500/50 outline-none resize-none h-32 rounded-sm pr-16" placeholder="Talk or Type to WRAP..." />
+               <button onClick={togglePartnerListening} className={`absolute bottom-6 right-6 p-3 rounded-full border z-[50] transition-all duration-500 ${isPartnerListening ? 'border-red-500 text-red-500 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/20 text-gray-500 hover:text-white hover:border-white/40 bg-black'}`}>
+                  <svg className={`w-5 h-5 ${isPartnerListening ? 'animate-pulse' : ''}`} fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+               </button>
+               {showTooltips && (
+                  <div className="absolute bottom-full right-0 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Partner Dialogue</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Chat or use the mic to brainstorm with WRAP.</p>
+                  </div>
+               )}
+             </div>
            </div>
-           <div className="flex gap-2">
-             <button onClick={() => handlePartnerChat()} className="flex-grow bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white py-3 text-[10px] font-black uppercase tracking-[0.4em] transition-all border border-white/10 rounded-sm">Send Inquiry</button>
+           <div className="relative group/tooltip">
+             <button onClick={() => handlePartnerChat()} className="w-full bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white py-3 text-[10px] font-black uppercase tracking-[0.4em] transition-all border border-white/10 rounded-sm">Send It</button>
+             {showTooltips && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
+                  <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Transmit</p>
+                  <p className="text-[10px] text-gray-500 italic leading-tight">Execute your input and consult the archive.</p>
+                </div>
+             )}
            </div>
         </div>
       </aside>

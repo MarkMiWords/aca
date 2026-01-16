@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
@@ -18,10 +19,9 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         
         {/* 
             Left Section: Centering the logo over the sidebar.
-            Sidebar width is w-80 (320px).
             Increased to h-48 to match the footer exactly.
-            Using pointer-events-none on the container ensures the logo hit-box doesn't
-            block the top navigation items in the sidebar registry.
+            CRITICAL: pointer-events-none on the div ensures the invisible box of the logo 
+            doesn't block clicks on the sidebar chapters below it.
         */}
         <div className="flex items-center h-full">
           <div className="w-80 flex justify-center items-center h-full pt-32 overflow-visible pointer-events-none">
