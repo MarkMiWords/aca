@@ -79,6 +79,7 @@ const AuthorBuilder: React.FC = () => {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [isSoaping, setIsSoaping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [wrapperWidth, setWrapperWidth] = useState(384); // w-96 equivalent
   
   // WRAPPER Settings
   const [style, setStyle] = useState(STYLES[2]); 
@@ -114,6 +115,7 @@ const AuthorBuilder: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const isResizing = useRef(false);
 
   // Helper to find nested chapters
   const findChapterById = (list: Chapter[], id: string): Chapter | undefined => {
@@ -132,6 +134,25 @@ const AuthorBuilder: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('wrap_sheets_v4', JSON.stringify(chapters));
   }, [chapters]);
+
+  // Resize Logic
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 300 && newWidth < 800) setWrapperWidth(newWidth);
+    };
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = 'default';
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -569,6 +590,7 @@ const AuthorBuilder: React.FC = () => {
                   const updateList = (list: Chapter[]): Chapter[] => list.map(c => ({
                     ...c,
                     title: c.id === activeChapterId ? val : c.title,
+                    media: c.media || [], // Ensure media persists
                     subChapters: c.subChapters ? updateList(c.subChapters) : []
                   }));
                   setChapters(prev => updateList(prev));
@@ -583,6 +605,7 @@ const AuthorBuilder: React.FC = () => {
                   const updateList = (list: Chapter[]): Chapter[] => list.map(c => ({
                     ...c,
                     content: c.id === activeChapterId ? val : c.content,
+                    media: c.media || [], // Ensure media persists
                     subChapters: c.subChapters ? updateList(c.subChapters) : []
                   }));
                   setChapters(prev => updateList(prev));
@@ -594,18 +617,32 @@ const AuthorBuilder: React.FC = () => {
         </div>
       </main>
 
+      {/* Resize Handle */}
+      <div 
+        onMouseDown={() => { isResizing.current = true; document.body.style.cursor = 'ew-resize'; }}
+        className="w-1.5 hover:bg-orange-500/40 cursor-ew-resize transition-colors z-[80] bg-white/5 no-print"
+      ></div>
+
       {/* WRAPPER Sidebar */}
-      <aside className="border-l border-white/5 bg-[#080808] flex flex-col shrink-0 w-96 relative no-print h-full">
+      <aside 
+        className="border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative no-print h-full"
+        style={{ width: `${wrapperWidth}px` }}
+      >
         <div className="shrink-0 p-10 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a]">
            <Link to="/wrapper-info" className="group"><h3 className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em] glow-orange">WRAPPER</h3></Link>
            <div className={`w-2 h-2 rounded-full ${isPartnerLoading ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></div>
         </div>
 
         {/* RESTORED HELP BOX BELOW HEADING */}
-        <div className="shrink-0 px-10 py-4 bg-orange-500/5 border-b border-white/5">
-           <Link to="/support" className="group flex items-center justify-between">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-accent transition-colors">Help Me Too...</span>
-              <svg className="w-4 h-4 text-accent/40 group-hover:text-accent transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div className="shrink-0 px-10 py-6 bg-orange-500/5 border-b border-white/5 group hover:bg-orange-500/10 transition-all">
+           <Link to="/support" className="flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-200 group-hover:text-orange-500 transition-colors">Help Me Too...</span>
+                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Connect with care organizations</p>
+              </div>
+              <div className="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center bg-black group-hover:border-orange-500/50 transition-all">
+                <svg className="w-4 h-4 text-orange-500/60 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
            </Link>
         </div>
 
@@ -623,7 +660,7 @@ const AuthorBuilder: React.FC = () => {
                     {STYLES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
                   </div>
                 </div>
               </div>
@@ -638,7 +675,7 @@ const AuthorBuilder: React.FC = () => {
                     {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
                   </div>
                 </div>
               </div>
@@ -670,11 +707,6 @@ const AuthorBuilder: React.FC = () => {
            </div>
            <div className="flex gap-2">
              <button onClick={() => handlePartnerChat()} className="flex-grow bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white py-3 text-[10px] font-black uppercase tracking-[0.4em] transition-all border border-white/10 rounded-sm">Send Inquiry</button>
-             
-             {/* FOOTER HELP BUTTON */}
-             <Link to="/support" className="px-4 py-3 border border-white/10 rounded-sm hover:border-orange-500/50 text-gray-600 hover:text-orange-500 transition-all flex items-center justify-center bg-black" title="Support Hub">
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-             </Link>
            </div>
         </div>
       </aside>

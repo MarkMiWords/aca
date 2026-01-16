@@ -18,12 +18,13 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         
         {/* 
             Left Section: Centering the logo over the sidebar.
-            Increased to h-48 to match the footer's visual weight.
-            Adjusted pt-36 to center it vertically relative to the 24px navbar while 
-            allowing the lower half to hang gracefully over the sidebar area.
+            Sidebar width is w-80 (320px).
+            Increased to h-48 to match the footer exactly.
+            Using pointer-events-none on the container ensures the logo hit-box doesn't
+            block the top navigation items in the sidebar registry.
         */}
         <div className="flex items-center h-full">
-          <div className="w-80 flex justify-center items-center h-full pt-36 overflow-visible pointer-events-none">
+          <div className="w-80 flex justify-center items-center h-full pt-32 overflow-visible pointer-events-none">
             <Link to="/" className="group block overflow-visible pointer-events-auto">
               <Logo 
                 variant="light" 
