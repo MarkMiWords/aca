@@ -1,13 +1,14 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Book } from '../types';
 
 const SAMPLE_BOOKS: Book[] = [
   {
-    id: '1',
+    id: 'legacy-1',
     title: 'The IVO Trap',
     author: 'Mark Mi Words',
-    description: 'A brutal, honest, and necessary documentation of the Australian prison experience.',
+    description: 'The definitive documentation of the Australian carceral experience. This volume serves as the industrial blueprint for A Captive Audience—turning raw steel-born narratives into professional global literature. Featured here as the standard-bearer for all incoming authors.',
     coverUrl: 'https://images.unsplash.com/photo-1541829081725-6f1c93bb3c24?q=80&w=1200&auto=format&fit=crop',
     slug: 'the-ivo-trap',
     releaseYear: '2024'
@@ -90,7 +91,7 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 border-b border-white/5">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div>
-            <span className="text-accent tracking-[0.6em] uppercase text-[10px] font-bold mb-6 block">The Storefront</span>
+            <span className="text-[var(--accent)] tracking-[0.6em] uppercase text-[10px] font-bold mb-6 block">The Storefront</span>
             <h1 className="text-6xl md:text-9xl font-serif font-black mb-12 italic leading-none tracking-tighter">
               Published <span className="animate-living-amber">Books.</span>
             </h1>
@@ -98,11 +99,10 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
               "From the shadow of the cell to the light of the retail shelf. These are the narratives that broke through."
             </p>
           </div>
-          {/* Enabled button for user adding book covers */}
           <div className="pb-12">
             <button 
               onClick={() => setIsAddingBook(true)}
-              className="bg-accent text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl shadow-accent/20 hover:bg-orange-600 transition-all rounded-sm"
+              className="bg-[var(--accent)] text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl shadow-[var(--accent)]/20 hover:bg-orange-600 transition-all rounded-sm"
             >
               Register New Edition
             </button>
@@ -122,10 +122,10 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-transparent opacity-60"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500 bg-gradient-to-t from-black to-transparent">
-                  <span className="text-[10px] font-bold text-accent uppercase tracking-[0.4em]">View Details</span>
+                  <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-[0.4em]">View Details</span>
                 </div>
               </Link>
-              <h3 className="text-3xl font-serif font-bold italic mb-2 text-white group-hover:text-accent transition-colors">{book.title}</h3>
+              <h3 className="text-3xl font-serif font-bold italic mb-2 text-white group-hover:text-[var(--accent)] transition-colors">{book.title}</h3>
               <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6">By {book.author} • {book.releaseYear}</p>
               
               <div className="flex items-center justify-between mt-auto">
@@ -147,10 +147,10 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
           
           <div 
             onClick={() => setIsAddingBook(true)}
-            className="border border-white/5 border-dashed p-12 flex flex-col items-center justify-center text-center bg-white/[0.02] hover:border-accent/40 transition-all group aspect-[2/3] cursor-pointer rounded-sm"
+            className="border border-white/5 border-dashed p-12 flex flex-col items-center justify-center text-center bg-white/[0.02] hover:border-[var(--accent)]/40 transition-all group aspect-[2/3] cursor-pointer rounded-sm"
           >
-             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mb-6 group-hover:border-accent/40">
-                <span className="text-accent text-2xl font-serif italic">+</span>
+             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mb-6 group-hover:border-[var(--accent)]/40">
+                <span className="text-[var(--accent)] text-2xl font-serif italic">+</span>
              </div>
              <h4 className="text-white font-serif italic text-xl mb-4">Register Edition</h4>
              <p className="text-[9px] text-gray-600 uppercase tracking-widest leading-loose">
@@ -169,26 +169,26 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
                <div className="space-y-8">
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Book Title</label>
-                    <input value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-accent text-white" placeholder="e.g. The Sovereign Word" />
+                    <input value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white" placeholder="e.g. The Sovereign Word" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Author Name</label>
-                    <input value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-accent text-white" placeholder="e.g. Mark Mi Words" />
+                    <input value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white" placeholder="e.g. Mark Mi Words" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Description / Blurb</label>
-                    <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-accent text-white min-h-[180px] leading-relaxed" placeholder="The raw truth of the journey..." />
+                    <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white min-h-[180px] leading-relaxed" placeholder="The raw truth of the journey..." />
                   </div>
                </div>
                <div className="space-y-8">
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Cover Art</label>
-                    <div onClick={triggerFileUpload} className="w-full aspect-[2/3] bg-black border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer group hover:border-accent/40 transition-all relative overflow-hidden rounded-sm">
+                    <div onClick={triggerFileUpload} className="w-full aspect-[2/3] bg-black border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer group hover:border-[var(--accent)]/40 transition-all relative overflow-hidden rounded-sm">
                       {newBook.coverUrl ? (
                         <img src={newBook.coverUrl} className="w-full h-full object-cover" alt="Preview" />
                       ) : (
                         <div className="text-center">
-                          <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-accent transition-colors block mb-2">Select Visual Asset</span>
+                          <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-[var(--accent)] transition-colors block mb-2">Select Visual Asset</span>
                           <span className="text-[8px] text-gray-800 uppercase tracking-widest italic">2:3 Aspect Ratio</span>
                         </div>
                       )}
@@ -202,7 +202,7 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
         </div>
       )}
 
-      <style>{`.custom-scrollbar::-webkit-scrollbar { width: 3px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; } @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }`}</style>
+      <style>{`.custom-scrollbar::-webkit-scrollbar { width: 3px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; } @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }`}</style>
     </div>
   );
 };

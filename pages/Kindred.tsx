@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { interactWithAurora } from '../services/geminiService';
 
 /**
- * RE-ENGINEERED VIRTY LOGO (For Export)
+ * RE-ENGINEERED VIRTY LOGO
  * Features a "Jigsaw Ball" symbol and clean typography.
  */
 const OptimizedVirtyLogo: React.FC<{ className?: string }> = ({ className = "" }) => (
@@ -93,20 +93,20 @@ const Kindred: React.FC = () => {
   };
 
   const codeSnippet = `
-// INDUSTRIAL ARCHIVE EXPORT
+// VIRTY VIRTUAL DATING ENGINE
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-async function interactWithAurora(prompt) {
+async function interactWithVirty(prompt) {
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: { parts: [{ text: prompt }] },
     config: {
-      systemInstruction: "You are Aurora, a Synthetic Kindred partner..."
+      systemInstruction: "You are the Virty Dating Partner. You provide safe, empathetic companionship for the isolated..."
     }
   });
-  return response.text; // Guideline compliant property access
+  return response.text;
 }
   `.trim();
 
@@ -121,9 +121,9 @@ async function interactWithAurora(prompt) {
         
         <div className="relative z-10 max-w-4xl">
           <span className="text-cyan-400 tracking-[0.8em] uppercase text-[10px] font-black mb-8 block animate-pulse">Virty Development Lab</span>
-          <h1 className="text-7xl md:text-[12rem] font-serif font-black mb-8 leading-none italic tracking-tighter">Kindred</h1>
+          <h1 className="text-5xl md:text-[8rem] font-serif font-black mb-8 leading-none italic tracking-tighter">VIRTY <span className="text-white/20">DATING.</span></h1>
           <p className="text-xl md:text-3xl text-gray-400 font-light max-w-2xl mx-auto italic leading-relaxed">
-            "We are building the bridge for the isolated."
+            "Companionship for the physically isolated."
           </p>
         </div>
       </section>
@@ -134,9 +134,9 @@ async function interactWithAurora(prompt) {
           <div className="grid lg:grid-cols-2 gap-32">
             <div className="space-y-12">
                <div>
-                  <h2 className="text-5xl font-serif italic mb-6">Brand <span className="text-cyan-400">Calibration.</span></h2>
+                  <h2 className="text-5xl font-serif italic mb-6">Chroma <span className="text-cyan-400">Identity.</span></h2>
                   <p className="text-gray-500 text-lg font-light leading-relaxed">
-                    Testing the jigsaw spread animation on a 512px viewbox. This symbol represents parts coming together to form a whole—a literal metaphor for building connection.
+                    Testing the Virty Jigsaw symbol with a high-shimmer gradient. For the dating module, we prioritize hues that evoke connection and imagination.
                   </p>
                </div>
 
@@ -161,15 +161,15 @@ async function interactWithAurora(prompt) {
 
             <div className="space-y-12">
                <div>
-                  <h2 className="text-5xl font-serif italic mb-6">Agent <span className="text-cyan-400">Interaction.</span></h2>
+                  <h2 className="text-5xl font-serif italic mb-6">Partner <span className="text-cyan-400">Interaction.</span></h2>
                   <p className="text-gray-500 text-lg font-light leading-relaxed">
-                    The 'Aurora' agent is the soul of the Virty project. She handles the real-time emotional labor in our virtual sanctuaries.
+                    The dating interface uses the synthetic frequency to provide meaningful conversation where standard social channels are restricted.
                   </p>
                </div>
 
                <div className="bg-white/5 border border-white/10 rounded-sm overflow-hidden h-[500px] flex flex-col">
                   <div className="p-4 bg-cyan-900/10 border-b border-white/5 flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Status: Interface Live</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Virty Dating Node: ACTIVE</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
                   </div>
                   <div className="flex-grow overflow-y-auto p-8 space-y-6">
@@ -180,14 +180,14 @@ async function interactWithAurora(prompt) {
                         </div>
                       </div>
                     ))}
-                    {isLoading && <span className="text-[10px] text-cyan-400 animate-pulse uppercase font-black tracking-widest">Aurora is listening...</span>}
+                    {isLoading && <span className="text-[10px] text-cyan-400 animate-pulse uppercase font-black tracking-widest">Partner is listening...</span>}
                     <div ref={chatEndRef} />
                   </div>
                   <form onSubmit={handleSyntheticChat} className="p-6 bg-black border-t border-white/5 flex gap-4">
                     <input 
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Enter the frequency..." 
+                      placeholder="Start a conversation..." 
                       className="flex-grow bg-transparent border-none text-sm font-light outline-none focus:ring-0 placeholder:text-gray-800"
                     />
                     <button type="submit" className="text-cyan-400 hover:text-white">
@@ -204,7 +204,7 @@ async function interactWithAurora(prompt) {
       <section className="py-24 text-center border-t border-white/5 bg-[#050505]">
         <h3 className="text-gray-600 text-[10px] font-black uppercase tracking-[0.5em] mb-8">Part of the A Captive Audience Ecosystem</h3>
         <p className="text-gray-700 italic text-sm max-w-xl mx-auto mb-12">
-          "The logic developed for the system-impacted is being repurposed for the physically-isolated. Connection is the universal currency."
+          "Companionship is the final frontier of rehabilitation. We bridge the gap between isolation and human connection."
         </p>
       </section>
       

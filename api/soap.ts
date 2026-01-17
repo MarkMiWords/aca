@@ -22,6 +22,9 @@ export default async function handler(req: any, res: any) {
   const { text, level } = req.body || {};
   if (!text) return res.status(400).json({ error: "Text is required" });
 
+  // Abuse Guard: Slice input to a reasonable manuscript length (approx 10k chars)
+  const safeText = text.slice(0, 10000);
+
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     let system = HUMANITARIAN_MISSION;
@@ -31,14 +34,14 @@ export default async function handler(req: any, res: any) {
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { parts: [{ text }] },
+      contents: { parts: [{ text: safeText }] },
       config: { systemInstruction: system },
     });
 
-    const resultText = response.text || text;
+    const resultText = response.text || safeText;
     res.status(200).json({ text: resultText });
   } catch (error: any) {
-    console.error("API_SOAP_ERROR:", error);
+    console.error("API_SOAP_ERROR:", error?.message || error);
     res.status(500).json({ error: "Sovereign Link Interrupted" });
   }
 }

@@ -33,6 +33,14 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
 
+  useEffect(() => {
+    // Initial theme sync
+    const profile = JSON.parse(localStorage.getItem('aca_author_profile') || '{}');
+    if (profile.theme && profile.theme !== 'amber') {
+      document.body.className = `theme-${profile.theme}`;
+    }
+  }, []);
+
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-[#050505]">
@@ -50,7 +58,7 @@ const App: React.FC = () => {
             <Route path="/substack-bridge" element={<SubstackBridge />} />
             <Route path="/support" element={<Support />} />
             <Route path="/security" element={<Security />} />
-            <Route path="/kindred-vr" element={<Kindred />} />
+            <Route path="/virty-dating" element={<Kindred />} />
             <Route path="/wrapper-info" element={<WrapperInfo />} />
             <Route path="/origin-story" element={<Origin />} />
             <Route path="/author-builder" element={<AuthorBuilder />} />

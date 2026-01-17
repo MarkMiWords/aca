@@ -22,7 +22,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         to={to} 
         className={`px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all whitespace-nowrap
           ${variant === "orange" 
-            ? 'text-orange-500 hover:glow-amber animate-living-amber' 
+            ? 'text-[var(--accent)] hover:glow-orange animate-living-amber' 
             : 'text-gray-400 hover:text-white hover:glow-white'
           }`}
       >
@@ -32,8 +32,8 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-[100] w-64 translate-y-2 group-hover/tooltip:translate-y-0">
           <div className="bg-black border border-white/10 p-5 shadow-2xl rounded-sm backdrop-blur-3xl relative overflow-hidden">
              {/* Industrial accent line */}
-             <div className={`absolute top-0 left-0 w-full h-[1px] ${variant === "orange" ? 'bg-orange-500' : 'bg-white/20'}`}></div>
-             <p className={`text-[8px] font-black uppercase tracking-widest mb-1 leading-none ${variant === "orange" ? 'text-orange-500' : 'text-white'}`}>{title}</p>
+             <div className={`absolute top-0 left-0 w-full h-[1px] ${variant === "orange" ? 'bg-[var(--accent)]' : 'bg-white/20'}`}></div>
+             <p className={`text-[8px] font-black uppercase tracking-widest mb-1 leading-none ${variant === "orange" ? 'text-[var(--accent)]' : 'text-white'}`}>{title}</p>
              <p className="text-[10px] text-gray-500 italic leading-tight font-serif">{subtitle}</p>
           </div>
           {/* Tooltip arrow */}
@@ -45,7 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
 
   return (
     <nav className="fixed w-full z-50 bg-[#050505]/95 backdrop-blur-3xl border-b border-white/[0.03]">
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/30 to-transparent"></div>
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)]/30 to-transparent"></div>
       
       <div className="w-full h-24 flex items-center justify-between">
         <div className="flex items-center h-full">
@@ -59,8 +59,8 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           </div>
           
           <div className="hidden xl:flex items-center self-end pb-8 ml-8">
-             <span className="text-[8px] font-black text-orange-500/60 uppercase tracking-[0.4em] flex items-center gap-2">
-               <span className="w-1 h-1 rounded-full bg-orange-500 animate-pulse animate-living-amber-bg"></span>
+             <span className="text-[8px] font-black text-[var(--accent)]/60 uppercase tracking-[0.4em] flex items-center gap-2">
+               <span className="w-1 h-1 rounded-full bg-[var(--accent)] animate-pulse animate-living-amber-bg"></span>
                Protocol Beta 4.0
              </span>
           </div>
@@ -94,11 +94,11 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           />
 
           <div className="relative group/tooltip">
-            <Link to="/wrap-it-up" className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-orange-500 hover:text-white rounded-sm animate-living-amber-border animate-living-amber">Mastering Suite</Link>
+            <Link to="/wrap-it-up" className="bg-[var(--accent)]/10 border border-[var(--accent)]/30 text-[var(--accent)] px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-[var(--accent)] hover:text-white rounded-sm animate-living-amber">Mastering Suite</Link>
             {showTooltips && (
               <div className="absolute top-full right-0 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-[100] w-64 translate-y-2 group-hover/tooltip:translate-y-0">
-                <div className="bg-black border border-orange-500/20 p-5 shadow-2xl rounded-sm backdrop-blur-3xl">
-                   <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">The Audit Desk</p>
+                <div className="bg-black border border-[var(--accent)]/20 p-5 shadow-2xl rounded-sm backdrop-blur-3xl">
+                   <p className="text-[8px] font-black text-[var(--accent)] uppercase tracking-widest mb-1 leading-none">The Audit Desk</p>
                    <p className="text-[10px] text-gray-500 italic leading-tight font-serif">Perform legal safety audits and format for Substack or print distribution.</p>
                 </div>
               </div>
@@ -132,9 +132,9 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         <div className="px-12 pt-12 pb-3 space-y-8 flex flex-col items-center">
           <Link to="/published-books" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
           <Link to="/narratives" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Narratives</Link>
-          <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-orange-500 text-3xl font-serif italic py-2 animate-living-amber">My Sheets</Link>
-          <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-orange-500 text-3xl font-serif italic py-2">The Big House</Link>
-          <Link to="/wrap-it-up" onClick={() => setIsOpen(false)} className="text-orange-500/60 text-xl font-serif italic py-2 animate-living-amber">Mastering Suite</Link>
+          <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-amber">My Sheets</Link>
+          <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2">The Big House</Link>
+          <Link to="/wrap-it-up" onClick={() => setIsOpen(false)} className="text-[var(--accent)]/60 text-xl font-serif italic py-2 animate-living-amber">Mastering Suite</Link>
           <Link to="/mission" onClick={() => setIsOpen(false)} className="text-gray-500 text-xl font-sans uppercase tracking-[0.3em] py-2">Mission</Link>
         </div>
       </div>

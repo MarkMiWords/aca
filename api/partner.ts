@@ -7,16 +7,24 @@ export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { message, style, region, history, activeSheetContent } = req.body || {};
+  if (!message) return res.status(400).json({ error: "Message is required" });
+
+  // Abuse Controls: Slice inputs to prevent oversized payloads
+  const safeMessage = message.slice(0, 6000);
+  const safeContext = (activeSheetContent || "").slice(0, 2000);
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const contents = history.map((h: any) => ({ 
+    
+    // Process history: Ensure it's an array and formatted correctly
+    const contents = (Array.isArray(history) ? history : []).map((h: any) => ({ 
       role: h.role === 'user' ? 'user' : 'model', 
-      parts: [{ text: h.content }] 
+      parts: [{ text: String(h.content || "").slice(0, 2000) }] 
     }));
+
     contents.push({ 
       role: 'user', 
-      parts: [{ text: `[CONTEXT] ${activeSheetContent?.substring(0, 1500) || ""} [/CONTEXT] ${message}` }] 
+      parts: [{ text: `[CONTEXT] ${safeContext} [/CONTEXT] ${safeMessage}` }] 
     });
 
     const systemInstruction = `You are WRAPPER. Regional Context: ${region}. Style: ${style}. ${HUMANITARIAN_MISSION}`;
@@ -34,8 +42,8 @@ export default async function handler(req: any, res: any) {
     })).filter((s: any) => s.web.uri);
 
     res.status(200).json({ role: 'assistant', content, sources });
-  } catch (error) {
-    console.error("API_PARTNER_ERROR:", error);
+  } catch (error: any) {
+    console.error("API_PARTNER_ERROR:", error?.message || error);
     res.status(500).json({ error: "Partner link failed" });
   }
 }
