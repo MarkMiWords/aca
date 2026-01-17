@@ -10,16 +10,13 @@ const SAMPLE_BOOKS: Book[] = [
     author: 'Mark Mi Words',
     description: 'The definitive documentation of the Australian carceral experience. This volume serves as the industrial blueprint for A Captive Audience—turning raw steel-born narratives into professional global literature. Featured here as the standard-bearer for all incoming authors.',
     coverUrl: 'https://images.unsplash.com/photo-1541829081725-6f1c93bb3c24?q=80&w=1200&auto=format&fit=crop',
+    backCoverUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop',
     slug: 'the-ivo-trap',
     releaseYear: '2024'
   }
 ];
 
-interface PublishedBooksProps {
-  isAuthenticated?: boolean;
-}
-
-const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true }) => {
+const PublishedBooks: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [isAddingBook, setIsAddingBook] = useState(false);
   const [newBook, setNewBook] = useState<Partial<Book>>({
@@ -27,15 +24,16 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
     author: '',
     description: '',
     releaseYear: new Date().getFullYear().toString(),
-    coverUrl: ''
+    coverUrl: '',
+    backCoverUrl: ''
   });
-  const coverInputRef = useRef<HTMLInputElement>(null);
+  const frontInputRef = useRef<HTMLInputElement>(null);
+  const backInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('aca_published_books');
     const userBooks: Book[] = saved ? JSON.parse(saved) : [];
     
-    // Merge and filter duplicates by slug
     const combined = [...userBooks];
     SAMPLE_BOOKS.forEach(sample => {
       if (!combined.find(b => b.slug === sample.slug)) {
@@ -46,12 +44,16 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
     setBooks(combined);
   }, []);
 
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      setNewBook(prev => ({ ...prev, coverUrl: event.target?.result as string }));
+      const dataUrl = event.target?.result as string;
+      setNewBook(prev => ({ 
+        ...prev, 
+        [side === 'front' ? 'coverUrl' : 'backCoverUrl']: dataUrl 
+      }));
     };
     reader.readAsDataURL(file);
   };
@@ -64,6 +66,7 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
       author: newBook.author || 'Anonymous',
       description: newBook.description || '',
       coverUrl: newBook.coverUrl || '',
+      backCoverUrl: newBook.backCoverUrl || '',
       releaseYear: newBook.releaseYear || '',
       slug: (newBook.title || '').toLowerCase().replace(/\s+/g, '-')
     };
@@ -71,19 +74,13 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
     setBooks(updatedBooks);
     localStorage.setItem('aca_published_books', JSON.stringify(updatedBooks.filter(b => !SAMPLE_BOOKS.find(s => s.id === b.id))));
     setIsAddingBook(false);
-    setNewBook({ title: '', author: '', description: '', releaseYear: '2024', coverUrl: '' });
+    setNewBook({ title: '', author: '', description: '', releaseYear: '2024', coverUrl: '', backCoverUrl: '' });
   };
 
   const deleteBook = (id: string) => {
     const updated = books.filter(b => b.id !== id);
     setBooks(updated);
     localStorage.setItem('aca_published_books', JSON.stringify(updated.filter(b => !SAMPLE_BOOKS.find(s => s.id === b.id))));
-  };
-
-  const triggerFileUpload = () => {
-    if (coverInputRef.current) {
-      coverInputRef.current.click();
-    }
   };
 
   return (
@@ -162,11 +159,11 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
 
       {isAddingBook && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
-          <div className="max-w-4xl w-full bg-[#0a0a0a] border border-white/10 p-12 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="max-w-6xl w-full bg-[#0a0a0a] border border-white/10 p-12 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button onClick={() => setIsAddingBook(false)} className="absolute top-8 right-8 text-gray-700 hover:text-white text-3xl leading-none">×</button>
-            <h2 className="text-4xl font-serif italic text-white mb-10">New Edition Registration</h2>
-            <div className="grid md:grid-cols-2 gap-12">
-               <div className="space-y-8">
+            <h2 className="text-4xl font-serif italic text-white mb-10 border-b border-white/5 pb-6">New Edition Registration</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
+               <div className="space-y-8 lg:col-span-1">
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Book Title</label>
                     <input value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white" placeholder="e.g. The Sovereign Word" />
@@ -180,22 +177,46 @@ const PublishedBooks: React.FC<PublishedBooksProps> = ({ isAuthenticated = true 
                     <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white min-h-[180px] leading-relaxed" placeholder="The raw truth of the journey..." />
                   </div>
                </div>
-               <div className="space-y-8">
+               
+               <div className="space-y-8 lg:col-span-1">
                   <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Cover Art</label>
-                    <div onClick={triggerFileUpload} className="w-full aspect-[2/3] bg-black border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer group hover:border-[var(--accent)]/40 transition-all relative overflow-hidden rounded-sm">
+                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Front Cover Art</label>
+                    <div onClick={() => frontInputRef.current?.click()} className="w-full aspect-[2/3] bg-black border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer group hover:border-[var(--accent)]/40 transition-all relative overflow-hidden rounded-sm">
                       {newBook.coverUrl ? (
-                        <img src={newBook.coverUrl} className="w-full h-full object-cover" alt="Preview" />
+                        <img src={newBook.coverUrl} className="w-full h-full object-cover" alt="Front Preview" />
                       ) : (
                         <div className="text-center">
-                          <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-[var(--accent)] transition-colors block mb-2">Select Visual Asset</span>
-                          <span className="text-[8px] text-gray-800 uppercase tracking-widest italic">2:3 Aspect Ratio</span>
+                          <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-[var(--accent)] transition-colors block mb-2">Select Front Cover</span>
+                          <span className="text-[8px] text-gray-800 uppercase tracking-widest italic">2:3 Aspect</span>
                         </div>
                       )}
-                      <input type="file" ref={coverInputRef} onChange={handleCoverUpload} className="hidden" accept="image/*" />
+                      <input type="file" ref={frontInputRef} onChange={(e) => handleFileUpload(e, 'front')} className="hidden" accept="image/*" />
                     </div>
                   </div>
-                  <button onClick={saveNewBook} disabled={!newBook.title || !newBook.coverUrl} className="w-full bg-orange-500 text-white py-6 text-[10px] font-bold uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all hover:bg-orange-600 shadow-orange-500/10">Register Edition</button>
+               </div>
+
+               <div className="space-y-8 lg:col-span-1">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Rear Cover Art (Optional)</label>
+                    <div onClick={() => backInputRef.current?.click()} className="w-full aspect-[2/3] bg-black border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer group hover:border-[var(--accent)]/40 transition-all relative overflow-hidden rounded-sm">
+                      {newBook.backCoverUrl ? (
+                        <img src={newBook.backCoverUrl} className="w-full h-full object-cover" alt="Rear Preview" />
+                      ) : (
+                        <div className="text-center">
+                          <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-[var(--accent)] transition-colors block mb-2">Select Rear Cover</span>
+                          <span className="text-[8px] text-gray-800 uppercase tracking-widest italic">2:3 Aspect</span>
+                        </div>
+                      )}
+                      <input type="file" ref={backInputRef} onChange={(e) => handleFileUpload(e, 'back')} className="hidden" accept="image/*" />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={saveNewBook} 
+                    disabled={!newBook.title || !newBook.coverUrl} 
+                    className="w-full bg-orange-500 text-white py-6 text-[10px] font-bold uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all hover:bg-orange-600 shadow-orange-500/10"
+                  >
+                    Complete Registration
+                  </button>
                </div>
             </div>
           </div>

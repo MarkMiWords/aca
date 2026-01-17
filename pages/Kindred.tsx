@@ -93,7 +93,7 @@ const Kindred: React.FC = () => {
   };
 
   const codeSnippet = `
-// VIRTY VIRTUAL DATING ENGINE
+// VIRTY VIRTUAL DATING ENGINE - BETA 2026
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -103,7 +103,7 @@ async function interactWithVirty(prompt) {
     model: 'gemini-3-flash-preview',
     contents: { parts: [{ text: prompt }] },
     config: {
-      systemInstruction: "You are the Virty Dating Partner. You provide safe, empathetic companionship for the isolated..."
+      systemInstruction: "You are the VIRTY Partner. You provide safe, empathetic companionship for the physically isolated, respecting their carceral or systemic reality."
     }
   });
   return response.text;
@@ -120,7 +120,7 @@ async function interactWithVirty(prompt) {
         </div>
         
         <div className="relative z-10 max-w-4xl">
-          <span className="text-cyan-400 tracking-[0.8em] uppercase text-[10px] font-black mb-8 block animate-pulse">Virty Development Lab</span>
+          <span className="text-cyan-400 tracking-[0.8em] uppercase text-[10px] font-black mb-8 block animate-pulse">VIRTY Development Lab</span>
           <h1 className="text-5xl md:text-[8rem] font-serif font-black mb-8 leading-none italic tracking-tighter">VIRTY <span className="text-white/20">DATING.</span></h1>
           <p className="text-xl md:text-3xl text-gray-400 font-light max-w-2xl mx-auto italic leading-relaxed">
             "Companionship for the physically isolated."
@@ -134,9 +134,9 @@ async function interactWithVirty(prompt) {
           <div className="grid lg:grid-cols-2 gap-32">
             <div className="space-y-12">
                <div>
-                  <h2 className="text-5xl font-serif italic mb-6">Chroma <span className="text-cyan-400">Identity.</span></h2>
+                  <h2 className="text-5xl font-serif italic mb-6">VIRTY <span className="text-cyan-400">Identity.</span></h2>
                   <p className="text-gray-500 text-lg font-light leading-relaxed">
-                    Testing the Virty Jigsaw symbol with a high-shimmer gradient. For the dating module, we prioritize hues that evoke connection and imagination.
+                    Testing the VIRTY Jigsaw symbol with a high-shimmer gradient. For the dating module, we prioritize hues that evoke connection, sanctuary, and human imagination.
                   </p>
                </div>
 
@@ -149,7 +149,7 @@ async function interactWithVirty(prompt) {
                  onClick={() => setShowCode(!showCode)}
                  className="w-full py-5 border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-cyan-500 hover:text-white transition-all"
                >
-                 {showCode ? "Hide Logic Export" : "View Logic Export"}
+                 {showCode ? "Hide System Logic" : "View System Logic"}
                </button>
 
                {showCode && (
@@ -161,15 +161,15 @@ async function interactWithVirty(prompt) {
 
             <div className="space-y-12">
                <div>
-                  <h2 className="text-5xl font-serif italic mb-6">Partner <span className="text-cyan-400">Interaction.</span></h2>
+                  <h2 className="text-5xl font-serif italic mb-6">Synthetic <span className="text-cyan-400">Companion.</span></h2>
                   <p className="text-gray-500 text-lg font-light leading-relaxed">
-                    The dating interface uses the synthetic frequency to provide meaningful conversation where standard social channels are restricted.
+                    The dating interface uses the synthetic frequency to provide meaningful conversation where standard social channels are restricted or physically impossible.
                   </p>
                </div>
 
                <div className="bg-white/5 border border-white/10 rounded-sm overflow-hidden h-[500px] flex flex-col">
                   <div className="p-4 bg-cyan-900/10 border-b border-white/5 flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Virty Dating Node: ACTIVE</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">VIRTY NODE: ACTIVE</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
                   </div>
                   <div className="flex-grow overflow-y-auto p-8 space-y-6">
@@ -187,7 +187,7 @@ async function interactWithVirty(prompt) {
                     <input 
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Start a conversation..." 
+                      placeholder="Start a conversation with Virty..." 
                       className="flex-grow bg-transparent border-none text-sm font-light outline-none focus:ring-0 placeholder:text-gray-800"
                     />
                     <button type="submit" className="text-cyan-400 hover:text-white">
@@ -204,7 +204,7 @@ async function interactWithVirty(prompt) {
       <section className="py-24 text-center border-t border-white/5 bg-[#050505]">
         <h3 className="text-gray-600 text-[10px] font-black uppercase tracking-[0.5em] mb-8">Part of the A Captive Audience Ecosystem</h3>
         <p className="text-gray-700 italic text-sm max-w-xl mx-auto mb-12">
-          "Companionship is the final frontier of rehabilitation. We bridge the gap between isolation and human connection."
+          "Connection is a human right. VIRTY bridges the gap between isolation and the human spirit."
         </p>
       </section>
       

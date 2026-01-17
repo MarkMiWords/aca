@@ -24,7 +24,6 @@ export interface Narrative {
   tags: string[];
   region: 'AU' | 'US' | 'UK' | 'GLOBAL';
   publishDate: string;
-  // stats property added to Narrative interface
   stats?: {
     reads: number;
     kindredConnections: number;
@@ -46,6 +45,7 @@ export interface Book {
   author: string;
   description: string;
   coverUrl: string;
+  backCoverUrl?: string;
   slug: string;
   releaseYear: string;
 }

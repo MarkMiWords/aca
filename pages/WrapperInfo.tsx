@@ -29,7 +29,7 @@ const WrapperInfo: React.FC = () => {
   const saveProfile = () => {
     localStorage.setItem('aca_author_profile', JSON.stringify(profile));
     
-    // Apply theme globally
+    // Apply theme globally to document and body
     document.documentElement.className = profile.theme !== 'amber' ? `theme-${profile.theme}` : '';
     document.body.className = profile.theme !== 'amber' ? `theme-${profile.theme}` : '';
     
@@ -81,7 +81,6 @@ URL: ACAPTIVEAUDIENCE.COM
       </section>
 
       <section className="relative z-10 max-w-4xl mx-auto px-6 py-24 space-y-32">
-        {/* Intelligence Training */}
         <div className="bg-[#0a0a0a] border border-white/10 p-12 lg:p-24 rounded-sm shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative overflow-hidden group/train">
           <div className="absolute -top-10 -right-10 p-8 opacity-[0.03] text-[15rem] font-serif italic select-none group-hover/train:opacity-[0.07] transition-opacity duration-1000">WRAP</div>
           
@@ -100,7 +99,7 @@ URL: ACAPTIVEAUDIENCE.COM
                 />
               </div>
 
-              {/* Chroma Slider / Selector */}
+              {/* Chroma Calibration selector */}
               <div className="space-y-6">
                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Chroma Calibration (Theme)</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

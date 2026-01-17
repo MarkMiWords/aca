@@ -20,7 +20,7 @@
             --white-glow: rgba(255, 255, 255, 0.15);
         }
         
-        /* Chroma Profile Initialization */
+        /* Chroma Profile Definitions */
         body.theme-blue { --accent: #3498db; --accent-gold: #5dade2; --accent-beige: #d6eaf8; --accent-glow: rgba(52, 152, 219, 0.4); }
         body.theme-red { --accent: #e74c3c; --accent-gold: #f1948a; --accent-beige: #fadbd8; --accent-glow: rgba(231, 76, 60, 0.4); }
         body.theme-emerald { --accent: #2ecc71; --accent-gold: #82e0aa; --accent-beige: #d4efdf; --accent-glow: rgba(46, 204, 113, 0.4); }
@@ -36,32 +36,23 @@
             font-family: 'Playfair Display', serif;
         }
         
-        /* Living Amber Text Animation (Now tracks --accent) */
         @keyframes living-accent-text {
             0%, 100% { color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
             40% { color: var(--accent-gold); text-shadow: 0 0 20px var(--accent-glow); }
             70% { color: var(--accent-beige); text-shadow: 0 0 10px var(--accent-glow); }
         }
 
-        /* Living Amber Background Animation (Now tracks --accent) */
         @keyframes living-accent-bg {
             0%, 100% { background-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
             40% { background-color: var(--accent-gold); box-shadow: 0 0 40px var(--accent-glow); }
             70% { background-color: var(--accent-beige); box-shadow: 0 0 20px var(--accent-glow); }
         }
 
-        .animate-living-amber {
-            animation: living-accent-text 10s infinite ease-in-out;
-        }
-
-        .animate-living-amber-bg {
-            animation: living-accent-bg 10s infinite ease-in-out;
-        }
-
+        .animate-living-amber { animation: living-accent-text 10s infinite ease-in-out; }
+        .animate-living-amber-bg { animation: living-accent-bg 10s infinite ease-in-out; }
         .glow-white { text-shadow: 0 0 25px rgba(255, 255, 255, 0.2); }
         .glow-orange { text-shadow: 0 0 20px var(--accent-glow); }
 
-        /* Stealth Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #050505; }
         ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
@@ -74,7 +65,7 @@
         .animate-subtle-drift { animation: subtle-drift 120s infinite alternate ease-in-out; }
     </style>
     <script>
-        // Apply theme immediately to body
+        // Apply theme immediately to prevent flashing
         const profile = JSON.parse(localStorage.getItem('aca_author_profile') || '{}');
         if (profile.theme && profile.theme !== 'amber') {
             document.documentElement.className = 'theme-' + profile.theme;

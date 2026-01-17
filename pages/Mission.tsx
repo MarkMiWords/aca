@@ -18,6 +18,28 @@ const Mission: React.FC = () => {
       </section>
       
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-32">
+        {/* Philanthropy Section */}
+        <section className="bg-[#0d0d0d] border border-[var(--accent)]/20 p-12 lg:p-20 relative overflow-hidden rounded-sm shadow-2xl">
+          <div className="absolute top-0 right-0 p-10 opacity-5 text-7xl font-serif italic text-[var(--accent)] select-none">Impact</div>
+          <div className="relative z-10 max-w-3xl">
+            <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[10px] font-black mb-6 block">Commitment 2026</span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-8 italic text-white tracking-tight">Direct <span className="text-[var(--accent)]">Nominated Support.</span></h2>
+            <p className="text-gray-400 text-lg leading-relaxed font-light mb-10">
+              A Captive Audience is a mission-driven engine. We believe in supporting the infrastructure that rebuilds lives outside the wire. A percentage of all platform profit is explicitly nominated to the following partners:
+            </p>
+            <div className="grid md:grid-cols-2 gap-8">
+              <a href="https://www.parentsbeyondbreakup.com/" target="_blank" rel="noopener noreferrer" className="p-8 bg-black border border-white/5 hover:border-[var(--accent)]/30 transition-all group">
+                <h4 className="text-white font-serif italic text-xl mb-3 group-hover:text-[var(--accent)] transition-colors">Parents Beyond Breakup</h4>
+                <p className="text-xs text-gray-500 italic leading-relaxed">Providing suicide prevention and support for families navigating the impact of separation and family court.</p>
+              </a>
+              <a href="https://www.abouttime.org.au/" target="_blank" rel="noopener noreferrer" className="p-8 bg-black border border-white/5 hover:border-[var(--accent)]/30 transition-all group">
+                <h4 className="text-white font-serif italic text-xl mb-3 group-hover:text-[var(--accent)] transition-colors">About Time</h4>
+                <p className="text-xs text-gray-500 italic leading-relaxed">Systemic advocacy and community support for the Australian carceral and justice-affected population.</p>
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* The Philosophy */}
         <section className="grid lg:grid-cols-2 gap-20 items-start">
            <div>
@@ -38,32 +60,9 @@ const Mission: React.FC = () => {
            </div>
         </section>
 
-        {/* Commitment 2026 Section */}
-        <section className="py-24 border-y border-white/5 bg-black/40 px-12 rounded-sm">
-           <div className="max-w-3xl mx-auto text-center space-y-8">
-              <h3 className="text-[var(--accent)] text-[10px] font-black uppercase tracking-[0.8em]">Commitment 2026</h3>
-              <h2 className="text-5xl font-serif italic text-white tracking-tighter">A Legacy of <span className="text-[var(--accent)]">Philanthropy.</span></h2>
-              <p className="text-gray-400 font-light italic leading-relaxed text-lg">
-                "We aren't just building tools; we are supporting the frontline. A percentage of all platform proceeds is nominated to the organizations that help authors reclaim their lives."
-              </p>
-              <div className="grid md:grid-cols-2 gap-8 pt-8">
-                 <a href="https://www.parentsbeyondbreakup.com/" target="_blank" rel="noopener noreferrer" className="p-8 bg-black border border-white/5 hover:border-[var(--accent)]/30 transition-all text-left group">
-                    <p className="text-[var(--accent)] text-[9px] font-black uppercase tracking-widest mb-2">Partner Organization</p>
-                    <h4 className="text-white font-serif italic text-xl mb-4">Parents Beyond Breakup</h4>
-                    <p className="text-xs text-gray-500 italic">Support for families navigating the impact of separation and systemic pressure.</p>
-                 </a>
-                 <a href="https://www.abouttime.org.au/" target="_blank" rel="noopener noreferrer" className="p-8 bg-black border border-white/5 hover:border-[var(--accent)]/30 transition-all text-left group">
-                    <p className="text-[var(--accent)] text-[9px] font-black uppercase tracking-widest mb-2">Partner Organization</p>
-                    <h4 className="text-white font-serif italic text-xl mb-4">About Time</h4>
-                    <p className="text-xs text-gray-500 italic">Australian justice reform and systemic advocacy for the silenced.</p>
-                 </a>
-              </div>
-           </div>
-        </section>
-
         {/* The Core Aims */}
         <section className="bg-[#0a0a0a] p-12 md:p-20 border border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl font-serif italic select-none">Impact</div>
+          <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl font-serif italic select-none">Pillars</div>
           <h3 className="text-2xl font-bold text-white mb-16 italic font-serif">The Three Pillars of Sovereignty</h3>
           <ul className="space-y-16">
             <li className="flex gap-8 group">
