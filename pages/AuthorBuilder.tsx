@@ -220,11 +220,17 @@ const AuthorBuilder: React.FC = () => {
       <div onMouseDown={() => { isResizing.current = true; document.body.style.cursor = 'ew-resize'; }} className="w-1.5 hover:bg-orange-500/40 cursor-ew-resize transition-colors z-[80] bg-white/5 no-print"></div>
 
       <aside className="border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative no-print h-full" style={{ width: `${wrapperWidth}px` }}>
-        <div className="shrink-0 p-10 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a] pt-48">
-           <Link to="/wrapper-info" className="flex flex-col">
-              <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange mb-1">WRAP PARTNER</h3>
-              <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Training Profile: {authorProfile ? authorProfile.name : 'Uncalibrated'}</span>
-           </Link>
+        <div className="shrink-0 p-10 border-b border-white/5 flex flex-col gap-4 bg-[#0a0a0a] pt-48">
+           <div className="flex items-center justify-between">
+              <Link to="/wrapper-info" className="flex flex-col">
+                <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange mb-1">WRAP PARTNER</h3>
+                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Profile: {authorProfile ? authorProfile.name : 'Uncalibrated'}</span>
+              </Link>
+              <div className="flex items-center gap-2 bg-black/40 px-3 py-1 border border-white/5 rounded-full">
+                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                 <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Shield Active</span>
+              </div>
+           </div>
            {!authorProfile && <Link to="/wrapper-info" className="text-[8px] font-black text-orange-500 animate-pulse underline">Set Profile</Link>}
         </div>
         <div className="flex-grow overflow-y-auto p-10 space-y-8 custom-scrollbar bg-black/10">
