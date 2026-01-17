@@ -5,7 +5,7 @@ import { Book } from '../types';
 
 const SAMPLE_BOOKS: Book[] = [
   {
-    id: 'legacy-1',
+    id: 'ivo-master-1',
     title: 'The IVO Trap',
     subtitle: 'Intervention Orders: From the Inside Out',
     author: 'Mark Mi Words',
@@ -32,7 +32,7 @@ const BookDetails: React.FC = () => {
 
   const currentAsset = book.coverUrl;
   const assetSizeMB = (currentAsset.length * 0.75) / (1024 * 1024);
-  const isSovereignMaster = assetSizeMB > 2.0;
+  const isSovereignMaster = assetSizeMB > 1.0;
 
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-32">
@@ -54,7 +54,7 @@ const BookDetails: React.FC = () => {
                <button onClick={() => setDiagnosticMode(!diagnosticMode)} className={`w-full py-3 text-[8px] font-black uppercase tracking-[0.4em] border transition-all rounded-sm flex items-center justify-center gap-3 ${diagnosticMode ? 'bg-cyan-500 text-white' : 'border-white/10 text-gray-600 hover:text-cyan-400'}`}>
                  {diagnosticMode ? 'Exit X-Ray View' : 'Mastering Diagnostic (X-Ray)'}
                </button>
-               <p className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.3em] text-center">Full Frontal Strategy: Back covers disabled for maximum resolution</p>
+               <p className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.3em] text-center">Stability: 1.5MB Cap Protocol Active</p>
             </div>
           </div>
         </div>
@@ -67,22 +67,22 @@ const BookDetails: React.FC = () => {
           {diagnosticMode && (
             <div className="mt-16 space-y-8 animate-fade-in">
               <div className="p-10 bg-orange-500/5 border border-orange-500/20 rounded-sm">
-                <h4 className="text-orange-500 font-black uppercase tracking-widest text-xs mb-6 underline">The Frontal Sovereign Standard</h4>
+                <h4 className="text-orange-500 font-black uppercase tracking-widest text-xs mb-6 underline">The Book Registry Standard</h4>
                 <div className="space-y-6">
                    <p className="text-gray-400 text-sm italic leading-relaxed">
-                     "This master is committed at <span className="text-white">{(currentAsset.length * 0.75 / 1024).toFixed(0)} KB</span>. By focusing on a single high-fidelity front asset, we achieve maximum legibility for carceral and systemic typography."
+                     "This master is committed at <span className="text-white">{(currentAsset.length * 0.75 / 1024).toFixed(0)} KB</span>. Capped at 1.5MB for browser vault stability."
                    </p>
                    <div className="space-y-4">
                       <div className="flex gap-4 items-start">
                         <span className="text-orange-500 font-bold text-xs shrink-0">MASTERING</span>
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest leading-loose">
-                          Current density: {isSovereignMaster ? 'CRITICAL (3MB+)' : 'OPTIMAL (1.5MB)'}. Ensure you use the <span className="text-white">Backup Registry</span> tool frequently to protect this asset.
+                          Current density: {assetSizeMB.toFixed(1)}MB. Use the <span className="text-white">Backup Registry</span> tool in the Book Registry to protect this asset.
                         </p>
                       </div>
                       <div className="flex gap-4 items-start">
                         <span className="text-orange-500 font-bold text-xs shrink-0">ANONYMITY</span>
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest leading-loose">
-                          Privacy Shield status: <span className="text-white">Active</span>. All EXIF metadata and device signatures have been stripped from this high-res binary.
+                          Privacy Shield status: <span className="text-white">Active</span>. All EXIF metadata stripped.
                         </p>
                       </div>
                    </div>
@@ -91,7 +91,7 @@ const BookDetails: React.FC = () => {
 
               <div className="p-10 bg-cyan-500/5 border border-cyan-500/20 rounded-sm">
                  <h4 className="text-cyan-400 font-black uppercase tracking-widest text-xs mb-4">Industrial Integrity</h4>
-                 <p className="text-gray-500 text-xs italic leading-relaxed">Checking for artifacting. If the whites are bright and the text is crisp, the Sovereign benchmark has been hit.</p>
+                 <p className="text-gray-500 text-xs italic leading-relaxed">Checking artifacting at 92% JPEG quality. Whites are bright, text is sharp, system is stable.</p>
               </div>
             </div>
           )}

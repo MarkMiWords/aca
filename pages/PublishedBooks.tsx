@@ -5,7 +5,7 @@ import { Book } from '../types';
 
 const SAMPLE_BOOKS: Book[] = [
   {
-    id: 'legacy-1',
+    id: 'ivo-master-1',
     title: 'The IVO Trap',
     subtitle: 'Intervention Orders: From the Inside Out',
     author: 'Mark Mi Words',
@@ -16,8 +16,8 @@ const SAMPLE_BOOKS: Book[] = [
   }
 ];
 
-// Absolute Ceiling: 3.5MB (Support for a 3MB JPEG Master + registry overhead)
-const MAX_FILE_SIZE = 3.5 * 1024 * 1024;
+// Recalibrated Ceiling: 1.5MB (Safety standard for browser localStorage)
+const MAX_FILE_SIZE = 1.5 * 1024 * 1024;
 const INDUSTRIAL_ASPECT = 1600 / 2700; 
 
 const PublishedBooks: React.FC = () => {
@@ -40,13 +40,16 @@ const PublishedBooks: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const startPos = useRef({ x: 0, y: 0 });
 
-  const [newBook, setNewBook] = useState<Partial<Book>>({
-    title: '',
-    subtitle: '',
-    author: '',
-    description: '',
-    releaseYear: new Date().getFullYear().toString(),
-    coverUrl: ''
+  const [newBook, setNewBook] = useState<Partial<Book>>(() => {
+    const draft = localStorage.getItem('aca_book_registry_draft');
+    return draft ? JSON.parse(draft) : {
+      title: '',
+      subtitle: '',
+      author: '',
+      description: '',
+      releaseYear: new Date().getFullYear().toString(),
+      coverUrl: ''
+    };
   });
 
   const frontInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +58,10 @@ const PublishedBooks: React.FC = () => {
   useEffect(() => {
     loadRegistry();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('aca_book_registry_draft', JSON.stringify(newBook));
+  }, [newBook]);
 
   const loadRegistry = () => {
     const saved = localStorage.getItem('aca_published_books');
@@ -65,13 +72,23 @@ const PublishedBooks: React.FC = () => {
     });
     setBooks(combined);
     
-    // Storage check (2 bytes per character)
     let totalChars = 0;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key) totalChars += localStorage.getItem(key)?.length || 0;
+      if (key && (key === 'aca_published_books' || key.startsWith('aca_'))) {
+        totalChars += localStorage.getItem(key)?.length || 0;
+      }
     }
     setStorageUsed((totalChars * 2) / (1024 * 1024)); 
+  };
+
+  const clearRegistry = () => {
+    if (window.confirm("PERMANENT ACTION: This will erase all custom books from the local registry to free up 5MB of storage. Proceed?")) {
+      localStorage.removeItem('aca_published_books');
+      localStorage.removeItem('aca_book_registry_draft');
+      loadRegistry();
+      window.location.reload();
+    }
   };
 
   const exportRegistry = () => {
@@ -108,7 +125,7 @@ const PublishedBooks: React.FC = () => {
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setError(`OVERSIZE DETECTED: ${(file.size / 1024 / 1024).toFixed(1)}MB is too large. Target 3.0MB for best stability.`);
+      setError(`CRITICAL OVERSIZE: ${(file.size / 1024 / 1024).toFixed(1)}MB. Limit is 1.5MB to prevent system lock.`);
       return;
     }
 
@@ -138,7 +155,6 @@ const PublishedBooks: React.FC = () => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      
       if (useIndustrialCrop) {
         canvas.width = 1600;
         canvas.height = 2700;
@@ -146,10 +162,8 @@ const PublishedBooks: React.FC = () => {
         canvas.width = img.width;
         canvas.height = img.height;
       }
-
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.imageSmoothingEnabled = true;
@@ -172,15 +186,15 @@ const PublishedBooks: React.FC = () => {
         ctx.drawImage(img, 0, 0);
       }
 
-      // Mastering Fidelity Logic
-      // 1.0 = Absolute Fidelity (Targets ~3MB)
-      // 0.85 = Optimized (Targets ~1.5MB)
-      const quality = masteringGrade === 'sovereign' ? 1.0 : 0.85;
+      // Recalibrated Quality for 1.5MB safety:
+      // 0.92 provides perfect visual fidelity but significantly reduces string bloat.
+      const quality = masteringGrade === 'sovereign' ? 0.92 : 0.80;
       const finalDataUrl = canvas.toDataURL('image/jpeg', quality);
       
       setNewBook(prev => ({ ...prev, coverUrl: finalDataUrl }));
       setMasteringAsset(null);
       setIsProcessing(false);
+      setError(null);
     };
     img.src = masteringAsset.url;
   };
@@ -202,11 +216,13 @@ const PublishedBooks: React.FC = () => {
       const current = localStorage.getItem('aca_published_books');
       const existing = current ? JSON.parse(current) : [];
       localStorage.setItem('aca_published_books', JSON.stringify([bookToSave, ...existing]));
+      localStorage.removeItem('aca_book_registry_draft');
       loadRegistry();
       setIsAddingBook(false);
       setNewBook({ title: '', subtitle: '', author: '', description: '', releaseYear: '2024', coverUrl: '' });
+      setError(null);
     } catch (e) {
-      setError("REGISTRY SATURATED: Browser cannot hold more high-res assets. Please 'Backup Registry' and clear the vault.");
+      setError("VAULT SATURATED: Storage full. Please use 'Clear Vault' or 'Backup' to free space.");
     }
   };
 
@@ -216,22 +232,25 @@ const PublishedBooks: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 animate-fade-in">
           <div>
             <span className="text-[var(--accent)] tracking-[0.6em] uppercase text-[10px] font-bold mb-6 block">The Storefront</span>
-            <h1 className="text-6xl md:text-9xl font-serif font-black mb-12 italic leading-none tracking-tighter uppercase">Frontal <span className="animate-living-amber">Masters.</span></h1>
-            <p className="text-xl md:text-2xl text-gray-400 font-light max-w-3xl leading-relaxed italic opacity-80">"Optimized for 3MB JPEG clarity. Colors and Whites locked at 100% fidelity."</p>
+            <h1 className="text-6xl md:text-9xl font-serif font-black mb-12 italic leading-none tracking-tighter uppercase text-white">Book <span className="animate-living-amber">Registry.</span></h1>
+            <p className="text-xl md:text-2xl text-gray-400 font-light max-w-3xl leading-relaxed italic opacity-80">"Permanent archival of 1.5MB sovereign masters. Balanced for clarity and vault stability."</p>
           </div>
           <div className="pb-12 flex flex-col md:flex-row gap-6">
             <div className="flex flex-col gap-2">
               <button onClick={() => setIsAddingBook(true)} className="bg-[var(--accent)] text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Register Master</button>
               <div className="flex items-center gap-2 px-1">
                 <div className="flex-grow h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className={`h-full transition-all duration-1000 ${storageUsed > 4 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-orange-500 shadow-[0_0_10px_rgba(230,126,34,0.5)]'}`} style={{ width: `${(storageUsed / 5) * 100}%` }}></div>
+                  <div className={`h-full transition-all duration-1000 ${storageUsed > 4 ? 'bg-red-500' : 'bg-orange-500'}`} style={{ width: `${(storageUsed / 5) * 100}%` }}></div>
                 </div>
                 <span className={`text-[8px] font-black uppercase tracking-widest ${storageUsed > 4 ? 'text-red-500 animate-pulse' : 'text-gray-600'}`}>{storageUsed.toFixed(1)}MB / 5.0MB</span>
               </div>
             </div>
             <div className="flex flex-col gap-2">
               <button onClick={exportRegistry} className="border border-white/10 text-white px-8 py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all rounded-sm">Backup Registry</button>
-              <button onClick={() => importInputRef.current?.click()} className="text-[7px] text-gray-700 font-bold uppercase tracking-widest hover:text-orange-500 transition-colors text-center underline underline-offset-4">Restore Registry</button>
+              <div className="flex justify-between gap-2">
+                <button onClick={() => importInputRef.current?.click()} className="text-[7px] text-gray-700 font-bold uppercase tracking-widest hover:text-orange-500 transition-colors underline underline-offset-4">Restore</button>
+                <button onClick={clearRegistry} className="text-[7px] text-red-900 font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Clear Vault</button>
+              </div>
               <input type="file" ref={importInputRef} onChange={importRegistry} className="hidden" accept=".json" />
             </div>
           </div>
@@ -262,7 +281,7 @@ const PublishedBooks: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
           <div className="max-w-7xl w-full bg-[#0a0a0a] border border-white/10 p-12 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button onClick={() => setIsAddingBook(false)} className="absolute top-8 right-8 text-gray-700 hover:text-white text-3xl leading-none">×</button>
-            <h2 className="text-4xl font-serif italic text-white mb-6 border-b border-white/5 pb-6">Frontal Mastery Registry</h2>
+            <h2 className="text-4xl font-serif italic text-white mb-6 border-b border-white/5 pb-6 uppercase tracking-tighter">Book Registry</h2>
             
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 p-6 mb-10 rounded-sm">
@@ -286,18 +305,18 @@ const PublishedBooks: React.FC = () => {
                <div className="lg:col-span-1 space-y-8">
                   <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest text-orange-500 underline">High-Res Front Master</label>
                   <div onClick={() => frontInputRef.current?.click()} className="w-full aspect-[16/27] bg-black border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer group hover:border-[var(--accent)]/40 relative overflow-hidden rounded-sm p-4 transition-all">
-                    {newBook.coverUrl ? <img src={newBook.coverUrl} className="w-full h-full object-contain" /> : <span className="text-[10px] text-gray-700 uppercase tracking-widest">Upload High-Fidelity Asset</span>}
+                    {newBook.coverUrl ? <img src={newBook.coverUrl} className="w-full h-full object-contain" /> : <div className="text-center"><span className="text-[10px] text-gray-700 uppercase tracking-widest block mb-2">Upload Asset</span><span className="text-[8px] text-gray-800 uppercase italic">Max 1.5MB</span></div>}
                     <input type="file" ref={frontInputRef} onChange={handleFileUpload} className="hidden" accept="image/png,image/jpeg" />
                   </div>
                   <button onClick={saveNewBook} disabled={!newBook.title || !newBook.coverUrl || !!error || isProcessing} className="w-full bg-orange-500 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all rounded-sm">Sync Registry</button>
                </div>
 
                <div className="lg:col-span-1 bg-white/[0.02] border border-white/5 p-8 rounded-sm self-start">
-                  <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest mb-6 underline">Industrial Standards</h4>
+                  <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest mb-6 underline">The 1.5MB Standard</h4>
                   <div className="space-y-6 text-[9px] text-gray-500 uppercase tracking-widest leading-loose">
-                    <p>Focus: <span className="text-white">Full Frontal Resolution</span>. All eggs are in this basket for maximum fidelity.</p>
-                    <p>Resolution: Target <span className="text-white">3.0MB JPEG</span>. Use the Sovereign Grade (100% Quality) to ensure bright whites and crisp typography.</p>
-                    <p>Registry Health: UI Backgrounds are external and do not take up vault space. Only your books eat into the 5MB limit.</p>
+                    <p>Focus: <span className="text-white">Vault Equilibrium</span>. We've capped masters at 1.5MB to ensure the browser never crashes.</p>
+                    <p>Resolution: Our <span className="text-white">Sovereign Grade</span> uses 92% JPEG compression for the highest visual clarity at half the file size.</p>
+                    <p>Health: If you see a <span className="text-red-500">Black Screen</span>, your vault is over-saturated. Use the 'Clear Vault' tool to reset.</p>
                   </div>
                </div>
             </div>
@@ -310,12 +329,12 @@ const PublishedBooks: React.FC = () => {
           <div className="max-w-4xl w-full flex flex-col h-full max-h-[90vh]">
             <div className="mb-8 flex justify-between items-end">
                <div>
-                  <h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Precision Frontal Mastery</h3>
+                  <h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Precision Mastery Tool</h3>
                   <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest">
-                    {useIndustrialCrop ? `Recalibrating to 1600 x 2700` : `Preserving Original: ${masteringAsset.width} x ${masteringAsset.height} px`}
+                    Limit: 1.5MB for stability | Current Asset: {(masteringAsset.originalSize / 1024 / 1024).toFixed(1)}MB
                   </p>
                </div>
-               <button onClick={() => setMasteringAsset(null)} className="text-gray-600 hover:text-white text-3xl">&times;</button>
+               <button onClick={() => setMasteringAsset(null)} className="text-gray-500 hover:text-white text-5xl leading-none">&times;</button>
             </div>
 
             <div className={`flex-grow bg-[#050505] border border-white/10 relative overflow-hidden flex items-center justify-center ${useIndustrialCrop ? 'cursor-move' : ''}`}
@@ -350,11 +369,14 @@ const PublishedBooks: React.FC = () => {
                   </div>
                   
                   <div className="flex bg-white/5 p-1 border border-white/10 rounded-sm">
-                    <button onClick={() => setMasteringGrade('legacy')} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${masteringGrade === 'legacy' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Legacy (1.5MB)</button>
-                    <button onClick={() => setMasteringGrade('sovereign')} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${masteringGrade === 'sovereign' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Sovereign (3MB+)</button>
+                    <button onClick={() => setMasteringGrade('legacy')} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${masteringGrade === 'legacy' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Legacy (80% Quality)</button>
+                    <button onClick={() => setMasteringGrade('sovereign')} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${masteringGrade === 'sovereign' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Sovereign (92% Quality)</button>
                   </div>
                </div>
-               <button onClick={commitMastering} className="bg-orange-500 text-white px-12 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Commit Frontal Master</button>
+               <div className="flex gap-4">
+                 <button onClick={() => setMasteringAsset(null)} className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all">Cancel</button>
+                 <button onClick={commitMastering} className="bg-orange-500 text-white px-12 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Commit Master</button>
+               </div>
             </div>
           </div>
         </div>
