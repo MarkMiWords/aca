@@ -84,7 +84,15 @@ const AuthorBuilder: React.FC = () => {
   const logEfficiency = (action: string, metrics: any) => {
     const vault = JSON.parse(localStorage.getItem('aca_sovereign_vault') || '{"sheets":[],"books":[],"ai":[],"audits":[],"efficiencyLogs":[]}');
     if (!vault.efficiencyLogs) vault.efficiencyLogs = [];
-    const newLog = { id: Date.now().toString(), timestamp: new Date().toISOString(), action, metrics };
+    const newLog = { 
+      id: Date.now().toString(), 
+      timestamp: new Date().toISOString(), 
+      action, 
+      metrics: {
+        ...metrics,
+        wholesaleCostEstimate: metrics.simulatedResourceLoad || 0
+      } 
+    };
     vault.efficiencyLogs.unshift(newLog);
     localStorage.setItem('aca_sovereign_vault', JSON.stringify(vault));
   };
@@ -131,6 +139,13 @@ const AuthorBuilder: React.FC = () => {
   const handleOCRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Industrial Validation: Size Check
+    if (file.size > 4 * 1024 * 1024) {
+      alert("FILE EXCEEDS 4MB LIMIT. PLEASE COMPRESS FOR SOVEREIGN PROCESSING.");
+      return;
+    }
+
     setIsOCRLoading(true); setShowActionMenu(false);
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -229,9 +244,9 @@ const AuthorBuilder: React.FC = () => {
                 <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Profile: {authorProfile ? authorProfile.name : 'Uncalibrated'}</span>
               </Link>
               <div className="flex items-center gap-2 bg-black/40 px-3 py-1 border border-white/5 rounded-full">
-                 <div className={`w-1.5 h-1.5 rounded-full ${isAnythingLoading ? 'bg-orange-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
-                 <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest">
-                   {isAnythingLoading ? 'Shield Syncing' : 'Shield Secured'}
+                 <div className={`w-1.5 h-1.5 rounded-full ${isAnythingLoading ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(230,126,34,0.6)]' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]'}`}></div>
+                 <span className={`text-[7px] font-black uppercase tracking-widest transition-colors ${isAnythingLoading ? 'text-orange-500' : 'text-gray-500'}`}>
+                   {isAnythingLoading ? 'Shield Tunneling' : 'Shield Secured'}
                  </span>
               </div>
            </div>
@@ -247,7 +262,7 @@ const AuthorBuilder: React.FC = () => {
            <div ref={chatEndRef} />
         </div>
         <form onSubmit={handlePartnerChat} className="shrink-0 p-10 bg-[#0a0a0a] border-t border-white/5 flex flex-col gap-4">
-           <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handlePartnerChat())} className="w-full bg-[#030303] border border-white/10 p-4 text-base font-serif italic text-white focus:border-orange-500/50 outline-none resize-none h-32 rounded-sm shadow-inner" placeholder="Talk to WRAP..." />
+           <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handlePartnerChat())} className="w-full bg-[#030303] border border-white/10 p-4 text-base font-serif italic text-white focus:border-orange-500/50 outline-none resize-none h-24 rounded-sm shadow-inner" placeholder="Talk to WRAP..." />
            <button type="submit" className="w-full bg-white text-black py-4 text-[10px] font-black uppercase tracking-[0.4em] rounded-sm transition-all hover:bg-orange-500 hover:text-white shadow-xl">Transcribe To Partner</button>
         </form>
       </aside>

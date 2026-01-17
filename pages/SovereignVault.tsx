@@ -21,12 +21,12 @@ const SovereignVault: React.FC = () => {
   const efficiencyLogs = vault.efficiencyLogs || [];
   const totalTokens = efficiencyLogs.reduce((acc, log) => acc + log.metrics.estimatedTokens, 0);
   const totalHoursSaved = efficiencyLogs.reduce((acc, log) => acc + log.metrics.humanHoursSaved, 0);
-  const totalWholesaleCost = efficiencyLogs.reduce((acc, log) => acc + log.metrics.wholesaleCostEstimate, 0);
+  const totalResourceLoad = efficiencyLogs.reduce((acc, log) => acc + log.metrics.wholesaleCostEstimate, 0);
 
-  // Billing Intelligence: Tracking the $300 Google Credit
-  const GOOGLE_CREDIT_TOTAL = 300.00;
-  const remainingCredit = GOOGLE_CREDIT_TOTAL - totalWholesaleCost;
-  const creditUsagePercent = (totalWholesaleCost / GOOGLE_CREDIT_TOTAL) * 100;
+  // Simulation Logic
+  const RESOURCE_CAPACITY = 100.00;
+  const remainingResource = RESOURCE_CAPACITY - totalResourceLoad;
+  const loadUsagePercent = (totalResourceLoad / RESOURCE_CAPACITY) * 100;
 
   useEffect(() => {
     const registryBooks = localStorage.getItem('aca_published_books');
@@ -38,7 +38,6 @@ const SovereignVault: React.FC = () => {
 
   const handleMetricsAccess = (e: React.FormEvent) => {
     e.preventDefault();
-    // Passcode: WHITLAM-75 (Reference to the 1973 Unidroit Pivot)
     if (passcodeInput.toUpperCase() === 'WHITLAM-75') {
       setIsMetricsAuthorized(true);
       setAuthError(false);
@@ -114,7 +113,7 @@ const SovereignVault: React.FC = () => {
           >
             <div className="text-left">
               <p className="text-[8px] font-black uppercase tracking-widest opacity-50 mb-1">Economic Audit</p>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em]">Scale Viability</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">Efficiency Audit</span>
             </div>
             <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
           </button>
@@ -190,8 +189,8 @@ const SovereignVault: React.FC = () => {
                     <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]"></div>
                     <div className="mb-8">
                        <svg className="w-12 h-12 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                       <h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Wholesale Authorization</h3>
-                       <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-2 italic">Institutional economic data secured.</p>
+                       <h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Efficiency Authorization</h3>
+                       <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-2 italic">Institutional resource data secured.</p>
                     </div>
                     <form onSubmit={handleMetricsAccess} className="space-y-6">
                        <div className="relative">
@@ -205,72 +204,40 @@ const SovereignVault: React.FC = () => {
                        </div>
                        <button type="submit" className="w-full bg-white text-black py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-green-500 hover:text-white transition-all rounded-sm shadow-xl">Validate Sovereignty</button>
                     </form>
-                    
-                    <button 
-                       onClick={() => setShowHistoryNote(!showHistoryNote)}
-                       className="mt-10 text-[8px] text-gray-700 uppercase tracking-widest hover:text-orange-500 transition-colors"
-                    >
-                       {showHistoryNote ? "Hide Secret History" : "Secret History: Why 'Whitlam-75'?"}
-                    </button>
-                    
-                    {showHistoryNote && (
-                      <div className="mt-6 p-8 bg-black/60 border border-white/5 text-left animate-fade-in">
-                        <p className="text-[10px] text-gray-500 font-serif leading-relaxed italic">
-                          "In 1973, without a public referendum, the constitutional code of Australia was pivoted. By signing on to UNIDROIT, the Commonwealth transitioned from a constitutional monarchy to a corporate legal entity under international private law. This vault acknowledges that 'Code Switch'—providing a digital sanctuary for private truth outside the corporate jurisdiction."
-                        </p>
-                      </div>
-                    )}
                  </div>
               </div>
             ) : (
               <div className="animate-fade-in space-y-12">
                  <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-8">
                     <div>
-                      <h2 className="text-4xl font-serif italic text-green-500 uppercase tracking-tighter leading-none mb-2">Economic Audit: <span className="text-white">Authorized</span></h2>
+                      <h2 className="text-4xl font-serif italic text-green-500 uppercase tracking-tighter leading-none mb-2">Efficiency Audit: <span className="text-white">Authorized</span></h2>
                       <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Registry Data Flow: ACTIVE</p>
                     </div>
                     <button onClick={() => setIsMetricsAuthorized(false)} className="text-[8px] font-black text-gray-600 uppercase tracking-widest hover:text-white underline underline-offset-4 decoration-gray-800">Terminate Session</button>
                  </div>
 
-                 {/* Google Credit Intelligence Module */}
                  <div className="bg-[#0d0d0d] border border-green-500/20 p-12 rounded-sm relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 right-0 p-10 opacity-5 text-8xl font-serif italic text-green-500 select-none">Google Cloud</div>
+                    <div className="absolute top-0 right-0 p-10 opacity-5 text-8xl font-serif italic text-green-500 select-none">Resource Load</div>
                     <div className="grid md:grid-cols-2 gap-16 items-center">
                        <div className="space-y-8">
                           <div>
-                             <p className="text-green-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">Sovereign Credit Runway</p>
-                             <h3 className="text-6xl font-serif italic text-white tracking-tighter">${remainingCredit.toFixed(2)} <span className="text-xl text-gray-600 italic">REMAINS</span></h3>
+                             <p className="text-green-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">Sovereign Resource Runway</p>
+                             <h3 className="text-6xl font-serif italic text-white tracking-tighter">{remainingResource.toFixed(2)} <span className="text-xl text-gray-600 italic">LOAD UNITS</span></h3>
                           </div>
                           <div className="space-y-3">
                              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                                 <span className="text-gray-500">Resource Burn Rate</span>
-                                <span className="text-green-500">{creditUsagePercent.toFixed(6)}%</span>
+                                <span className="text-green-500">{loadUsagePercent.toFixed(6)}%</span>
                              </div>
                              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.5)] transition-all duration-1000" style={{ width: `${Math.max(0.5, creditUsagePercent)}%` }}></div>
+                                <div className="h-full bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.5)] transition-all duration-1000" style={{ width: `${Math.max(0.5, loadUsagePercent)}%` }}></div>
                              </div>
                           </div>
-                          <p className="text-[11px] text-gray-600 italic leading-relaxed">
-                            "The system is currently optimized for **Gemini 3 Flash**, resulting in extremely low overhead. Your $300 credit represents an institutional-scale runway for thousands of authors."
-                          </p>
                        </div>
-                       
-                       <div className="grid grid-cols-2 gap-6">
-                          <a 
-                             href="https://console.cloud.google.com/billing" 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="bg-white/5 border border-white/10 p-10 text-center rounded-sm hover:border-green-500 transition-all group flex flex-col items-center justify-center"
-                          >
-                             <div className="text-green-500 text-3xl mb-3 group-hover:scale-110 transition-transform">📊</div>
-                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Billing Console</p>
-                             <p className="text-[7px] text-gray-600 mt-2 uppercase">External Link</p>
-                          </a>
-                          <div className="bg-white/5 border border-white/10 p-10 text-center rounded-sm flex flex-col items-center justify-center">
-                             <div className="text-white text-3xl mb-3">💎</div>
-                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Efficiency Tier</p>
-                             <p className="text-[7px] text-green-500 mt-2 uppercase">FLASH-3-OPTIMIZED</p>
-                          </div>
+                       <div className="bg-white/5 border border-white/10 p-10 text-center rounded-sm flex flex-col items-center justify-center">
+                          <div className="text-white text-3xl mb-3">💎</div>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Efficiency Tier</p>
+                          <p className="text-[7px] text-green-500 mt-2 uppercase">FLASH-3-OPTIMIZED</p>
                        </div>
                     </div>
                  </div>
@@ -282,49 +249,14 @@ const SovereignVault: React.FC = () => {
                        <p className="text-[9px] text-gray-600 italic">"Time saved versus manual carceral transcription."</p>
                     </div>
                     <div className="bg-[#0d0d0d] border border-white/5 p-12 rounded-sm group hover:border-orange-500/20 transition-all">
-                       <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-4">Wholesale Token Flow</p>
+                       <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-4">Aggregate Token Flow</p>
                        <h4 className="text-5xl font-serif italic text-white mb-2">{(totalTokens / 1000).toFixed(2)}k</h4>
                        <p className="text-[9px] text-gray-600 italic">"Simulated aggregate token volume weight."</p>
                     </div>
                     <div className="bg-[#0d0d0d] border border-white/5 p-12 rounded-sm group hover:border-cyan-500/20 transition-all">
-                       <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-4">Total Accrued Cost</p>
-                       <h4 className="text-5xl font-serif italic text-white mb-2">${totalWholesaleCost.toFixed(3)}</h4>
-                       <p className="text-[9px] text-gray-600 italic">"Total wholesale technical overhead to date."</p>
-                    </div>
-                 </div>
-
-                 <div className="bg-white/[0.01] border border-white/5 p-12 rounded-sm">
-                    <div className="flex justify-between items-center mb-10">
-                      <h3 className="text-2xl font-serif italic">Wholesale Viability Registry</h3>
-                      <span className="text-[9px] font-black text-gray-700 uppercase tracking-widest">Log: Institutional-ROI-V4</span>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-[10px] font-bold uppercase tracking-widest">
-                         <thead className="text-gray-600 border-b border-white/5">
-                            <tr>
-                               <th className="pb-6">Action Timestamp</th>
-                               <th className="pb-6">Operation</th>
-                               <th className="pb-6">Efficiency Gain</th>
-                               <th className="pb-6">Token Weight</th>
-                               <th className="pb-6">Wholesale Cost</th>
-                            </tr>
-                         </thead>
-                         <tbody className="text-gray-400">
-                            {efficiencyLogs.length === 0 ? (
-                              <tr><td colSpan={5} className="py-16 text-center italic opacity-20 text-xl font-serif font-light">"No viability data logged in registry."</td></tr>
-                            ) : (
-                              efficiencyLogs.map(log => (
-                                <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors">
-                                   <td className="py-6">{new Date(log.timestamp).toLocaleTimeString()}</td>
-                                   <td className="py-6 text-white italic">{log.action}</td>
-                                   <td className="py-6 text-green-500">+{log.metrics.humanHoursSaved.toFixed(3)}h</td>
-                                   <td className="py-6">{log.metrics.estimatedTokens.toLocaleString()}</td>
-                                   <td className="py-6 text-cyan-500">${log.metrics.wholesaleCostEstimate.toFixed(4)}</td>
-                                </tr>
-                              ))
-                            )}
-                         </tbody>
-                      </table>
+                       <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-4">Simulated Load Units</p>
+                       <h4 className="text-5xl font-serif italic text-white mb-2">{totalResourceLoad.toFixed(3)}</h4>
+                       <p className="text-[9px] text-gray-600 italic">"Total technical resource load units."</p>
                     </div>
                  </div>
               </div>
@@ -354,27 +286,12 @@ const SovereignVault: React.FC = () => {
                       <h3 className="text-4xl font-serif italic text-white group-hover:text-orange-500 transition-colors tracking-tighter">{a.report.suggestedTitle || "Untitled Audit"}</h3>
                       <p className="text-sm text-gray-500 font-light italic leading-relaxed max-w-2xl">{a.report.summary}</p>
                     </div>
-                    <div className="mt-8 pt-8 border-t border-white/5 flex gap-8">
-                       <div className="space-y-1">
-                          <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">Marketability</p>
-                          <p className="text-lg font-serif italic text-orange-500">{a.report.marketabilityScore}%</p>
-                       </div>
-                       <div className="space-y-1">
-                          <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">Resource Load</p>
-                          <p className="text-lg font-serif italic text-cyan-500">{a.report.resourceIntensity}/100</p>
-                       </div>
-                    </div>
                     <button onClick={() => deleteFromVault('audits', a.id)} className="absolute top-12 right-12 text-gray-800 hover:text-red-500 transition-colors">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                   </div>
                 ))}
              </div>
-          )}
-
-          {/* Fallback for other folders like inbound, AI... */}
-          {['inbound', 'ai'].includes(activeFolder) && (
-            <div className="p-32 text-center opacity-30 italic font-serif text-2xl">Module Secured. Access Restricted to System Administrators.</div>
           )}
         </main>
       </div>

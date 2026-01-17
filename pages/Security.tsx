@@ -21,15 +21,15 @@ const Security: React.FC = () => {
             <h3 className="text-3xl font-serif italic text-white mb-10">Technical <span className="text-orange-500">Sovereignty.</span></h3>
             <div className="space-y-8">
                <div className="p-8 bg-black/60 border border-white/10 rounded-sm">
-                  <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4">Current Phase: Secure Pilot</h4>
+                  <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4">Current Phase: Secure Pilot Injection</h4>
                   <p className="text-sm text-gray-400 leading-relaxed font-light">
-                    The beta pilot uses <span className="text-white italic">Secure Environment Injection</span>. Your API keys are managed by the platform's edge, ensuring they are never hard-coded in the project repository.
+                    This beta uses <span className="text-white italic">Secure Environment Injection</span>. API keys are managed by the platform's execution environment and injected into requests at the network edge. The keys never reside in the application's source repository or long-term browser storage.
                   </p>
                </div>
                <div className="p-8 bg-orange-500/5 border border-orange-500/20 rounded-sm">
-                  <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Production: Edge Proxying</h4>
+                  <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Production: Sovereign Proxy Node</h4>
                   <p className="text-sm text-gray-400 leading-relaxed font-light italic">
-                    For the "Industrial" release, we are moving to a **Server-Side Proxy**. This means the frontend never talks to the AI directly. All calls are routed through a secure, encrypted bridge, ensuring zero exposure of administrative credentials.
+                    For the industrial release, we are transitioning to a **Dedicated Proxy Architecture**. All AI interactions will be brokered by a sovereign Node.js proxy, ensuring the client-side bundle has zero knowledge of upstream administrative credentials.
                   </p>
                </div>
             </div>
@@ -39,7 +39,7 @@ const Security: React.FC = () => {
             <div className="space-y-8">
                <h2 className="text-3xl font-serif italic text-white underline decoration-orange-500/30 underline-offset-8">PII Audit & Pseudonyms</h2>
                <p className="text-gray-500 leading-relaxed font-light">
-                  The primary risk for any carceral narrative is defamation litigation. Our **Sovereign Protocol 4.0** forces an AI-driven PII (Personally Identifiable Information) audit. 
+                  The primary risk for any carceral narrative is defamation litigation. Our **Sovereign Protocol 4.0** enforces an AI-driven PII (Personally Identifiable Information) audit. 
                </p>
                <div className="p-8 border-l-2 border-red-500 bg-red-500/5 text-xs text-red-200/80 italic leading-loose">
                   "Authors MUST change the names of all characters, staff, and facilities unless they have express legal permission. WRAP Profile tools flag real names automatically."
