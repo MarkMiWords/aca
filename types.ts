@@ -1,4 +1,6 @@
 
+export type MasteringGoal = 'newspaper' | 'substack' | 'paperback';
+
 export interface Narrative {
   id: string;
   title: string;
@@ -71,6 +73,7 @@ export interface ManuscriptReport {
   resourceIntensity: number; // Simulated token cost/intensity
   marketabilityScore: number;
   suggestedTitle: string;
+  mediumSpecificAdvice: string;
 }
 
 export interface VaultSheet {

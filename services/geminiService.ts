@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Message, GroundingSource, ManuscriptReport } from "../types";
+import { Message, GroundingSource, ManuscriptReport, MasteringGoal } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -269,13 +269,19 @@ export async function queryPartner(
   }
 }
 
-export async function analyzeFullManuscript(content: string): Promise<ManuscriptReport> {
+export async function analyzeFullManuscript(content: string, goal: MasteringGoal = 'substack'): Promise<ManuscriptReport> {
+  const goalInstructions: Record<MasteringGoal, string> = {
+    newspaper: "Analyze for the 'About Time' Prison Newspaper. Focus on concise columns, high-impact headlines, and factual but gritty reporting.",
+    substack: "Analyze for a Substack post. Focus on hooks, serialized pacing, and digital engagement for email readers.",
+    paperback: "Analyze for a Paperback Manuscript. Focus on structural integrity, literary arc, and flow for a long-form book."
+  };
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: content.substring(0, 32000),
       config: {
-        systemInstruction: "Analyze the full manuscript and return a detailed report in JSON format.",
+        systemInstruction: `Analyze the full manuscript for a system-impacted writer. GOAL: ${goalInstructions[goal]}. Return a detailed report in JSON format.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -287,14 +293,15 @@ export async function analyzeFullManuscript(content: string): Promise<Manuscript
             resourceIntensity: { type: Type.NUMBER },
             marketabilityScore: { type: Type.NUMBER },
             suggestedTitle: { type: Type.STRING },
+            mediumSpecificAdvice: { type: Type.STRING, description: "Advice specific to the chosen output medium (Newspaper, Substack, or Paperback)." },
           },
-          required: ["summary", "toneAssessment", "structuralCheck", "legalSafetyAudit", "resourceIntensity", "marketabilityScore", "suggestedTitle"],
+          required: ["summary", "toneAssessment", "structuralCheck", "legalSafetyAudit", "resourceIntensity", "marketabilityScore", "suggestedTitle", "mediumSpecificAdvice"],
         },
       },
     });
 
     return JSON.parse(response.text?.trim() || "{}");
   } catch (err) {
-    return { summary: "Audit failed.", toneAssessment: "", structuralCheck: "", legalSafetyAudit: "", resourceIntensity: 0, marketabilityScore: 0, suggestedTitle: "Untitled" };
+    return { summary: "Audit failed.", toneAssessment: "", structuralCheck: "", legalSafetyAudit: "", resourceIntensity: 0, marketabilityScore: 0, suggestedTitle: "Untitled", mediumSpecificAdvice: "" };
   }
 }

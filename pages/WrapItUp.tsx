@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { queryPartner, analyzeFullManuscript } from '../services/geminiService';
-import { Message, Chapter, ManuscriptReport } from '../types';
+import { Message, Chapter, ManuscriptReport, MasteringGoal } from '../types';
 
 const SUGGESTED_PROMPTS = [
   "Optimize full archive for Substack engagement.",
@@ -27,6 +27,10 @@ const WrapItUp: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(420);
+  
+  // Mastering Goal States
+  const [masteringGoal, setMasteringGoal] = useState<MasteringGoal | null>(null);
+  const [showGoalSelector, setShowGoalSelector] = useState(true);
 
   // Full Audit States
   const [isAuditing, setIsAuditing] = useState(false);
@@ -81,6 +85,10 @@ const WrapItUp: React.FC = () => {
   const activeChapter = findChapterById(chapters, activeChapterId) || chapters[0];
 
   const handleFullManuscriptAudit = async () => {
+    if (!masteringGoal) {
+      setShowGoalSelector(true);
+      return;
+    }
     setIsAuditing(true);
     let fullContent = "";
     const compile = (list: Chapter[]) => {
@@ -92,7 +100,7 @@ const WrapItUp: React.FC = () => {
     compile(chapters);
 
     try {
-      const report = await analyzeFullManuscript(fullContent);
+      const report = await analyzeFullManuscript(fullContent, masteringGoal);
       setManuscriptReport(report);
     } catch (err) {
       console.error(err);
@@ -117,16 +125,76 @@ const WrapItUp: React.FC = () => {
     </div>
   );
 
+  const GoalCard = ({ id, title, description, icon }: { id: MasteringGoal, title: string, description: string, icon: string }) => (
+    <button 
+      onClick={() => { setMasteringGoal(id); setShowGoalSelector(false); }}
+      className={`p-10 border transition-all text-left group relative overflow-hidden rounded-sm ${masteringGoal === id ? 'bg-orange-500/10 border-orange-500 shadow-[0_0_40px_rgba(230,126,34,0.1)]' : 'bg-black border-white/10 hover:border-white/30'}`}
+    >
+      <div className="text-4xl mb-6">{icon}</div>
+      <h3 className={`text-2xl font-serif italic mb-3 transition-colors ${masteringGoal === id ? 'text-orange-500' : 'text-white'}`}>{title}</h3>
+      <p className="text-sm text-gray-500 font-light leading-relaxed mb-6">{description}</p>
+      <div className={`text-[9px] font-black uppercase tracking-[0.3em] ${masteringGoal === id ? 'text-orange-500' : 'text-gray-700 group-hover:text-gray-500'}`}>
+        Select Path →
+      </div>
+      <div className={`absolute top-0 right-0 p-4 opacity-10 transition-transform duration-700 group-hover:scale-125 ${masteringGoal === id ? 'text-orange-500' : 'text-white'}`}>
+        <div className="text-8xl font-black italic select-none">0{id === 'newspaper' ? 1 : id === 'substack' ? 2 : 3}</div>
+      </div>
+    </button>
+  );
+
   return (
     <div className="flex h-[calc(100vh-112px)] bg-[#050505] overflow-hidden text-white font-sans">
+      
+      {showGoalSelector && (
+        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-fade-in">
+          <div className="max-w-6xl w-full text-center space-y-16">
+            <div>
+              <span className="text-orange-500 tracking-[0.8em] uppercase text-[10px] font-black mb-6 block animate-living-amber">Mastering Calibration</span>
+              <h2 className="text-6xl md:text-8xl font-serif font-black italic text-white tracking-tighter leading-none mb-6">Choose Your <br/><span className="text-orange-500 animate-living-amber">Forging Path.</span></h2>
+              <p className="text-xl text-gray-500 italic font-light max-w-2xl mx-auto">"Before WRAP can audit your sheets, we must define the destination. How will these words reach the world?"</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              <GoalCard 
+                id="newspaper" 
+                title="About Time Newspaper" 
+                description="Refine for physical print columns. Focus on concise, journalistic lead paragraphs and gritty community reporting." 
+                icon="📰"
+              />
+              <GoalCard 
+                id="substack" 
+                title="Substack Newsletter" 
+                description="Refine for digital serialized reading. Focus on hooks, email-friendly structure, and subscriber engagement hooks." 
+                icon="📧"
+              />
+              <GoalCard 
+                id="paperback" 
+                title="Paperback Manuscript" 
+                description="Refine for a long-form physical book. Focus on literary arcs, structural integrity, and industry-standard formatting." 
+                icon="📖"
+              />
+            </div>
+            {masteringGoal && (
+               <button onClick={() => setShowGoalSelector(false)} className="text-gray-600 hover:text-white text-[9px] font-black uppercase tracking-widest transition-colors underline underline-offset-8 decoration-gray-800">Return to active session</button>
+            )}
+          </div>
+        </div>
+      )}
+
       <aside className="w-80 border-r border-white/5 bg-[#080808] flex flex-col shrink-0 no-print">
         <div className="p-4 bg-black/40 border-b border-white/5 text-center">
            <Link to="/author-builder" className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-accent transition-colors">← Exit Mastering Suite</Link>
         </div>
-        <div className="p-6 border-b border-white/5">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-accent">Registry Hierarchy</h2>
+        <div className="p-8 border-b border-white/5 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-accent">Goal Path</h2>
+            <button onClick={() => setShowGoalSelector(true)} className="text-[8px] font-black uppercase tracking-widest text-orange-500/60 hover:text-orange-500 underline underline-offset-4">Change</button>
+          </div>
+          <div className="p-4 bg-orange-500/5 border border-orange-500/20 rounded-sm">
+             <p className="text-[10px] font-serif italic text-orange-500 uppercase tracking-widest leading-none mb-1">{masteringGoal === 'newspaper' ? 'Prison Newspaper' : masteringGoal === 'substack' ? 'Substack Post' : 'Paperback Volume'}</p>
+             <p className="text-[8px] text-gray-600 uppercase font-bold tracking-widest">Active Forge Mode</p>
+          </div>
         </div>
-        <div className="flex-grow overflow-y-auto custom-scrollbar pt-12">
+        <div className="flex-grow overflow-y-auto custom-scrollbar pt-8">
           {chapters.map((chapter) => <NavItem key={chapter.id} chapter={chapter} />)}
         </div>
         
@@ -168,11 +236,64 @@ const WrapItUp: React.FC = () => {
                 <div className="flex justify-between items-start border-b border-white/10 pb-12">
                    <div>
                       <h2 className="text-6xl font-serif font-black italic text-white glow-white">Sovereign Audit.</h2>
+                      <p className="text-orange-500 font-black uppercase tracking-[0.4em] text-xs mt-4">Destination: {masteringGoal?.toUpperCase()}</p>
                    </div>
                    <button onClick={() => setManuscriptReport(null)} className="text-gray-700 hover:text-white transition-colors text-4xl no-print">×</button>
                 </div>
-                <div className="space-y-12">
-                   <p className="text-xl text-gray-300 font-serif italic leading-relaxed">{manuscriptReport.summary}</p>
+                
+                <div className="grid md:grid-cols-2 gap-12">
+                   <div className="space-y-12">
+                      <div className="space-y-6">
+                         <h4 className="text-white font-serif italic text-2xl">Refinement Strategy</h4>
+                         <p className="text-lg text-gray-300 font-serif italic leading-relaxed">{manuscriptReport.summary}</p>
+                      </div>
+                      <div className="p-8 bg-orange-500/10 border border-orange-500/30 rounded-sm">
+                         <h4 className="text-orange-500 text-[10px] font-black uppercase tracking-widest mb-4">Forge-Specific Advice</h4>
+                         <p className="text-sm text-gray-200 leading-relaxed italic">"{manuscriptReport.mediumSpecificAdvice}"</p>
+                      </div>
+                   </div>
+                   
+                   <div className="space-y-12">
+                      <div className="space-y-6">
+                         <h4 className="text-white font-serif italic text-2xl">Registry Metrics</h4>
+                         <div className="space-y-4">
+                            <div className="space-y-2">
+                               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                                  <span>Marketability / Relevance</span>
+                                  <span className="text-orange-500">{manuscriptReport.marketabilityScore}%</span>
+                               </div>
+                               <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                  <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${manuscriptReport.marketabilityScore}%` }}></div>
+                               </div>
+                            </div>
+                            <div className="space-y-2">
+                               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                                  <span>Resource Intensity</span>
+                                  <span className="text-cyan-500">{manuscriptReport.resourceIntensity}/100</span>
+                               </div>
+                               <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                  <div className="h-full bg-cyan-500 transition-all duration-1000" style={{ width: `${manuscriptReport.resourceIntensity}%` }}></div>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                      
+                      <div className="space-y-6">
+                         <h4 className="text-white font-serif italic text-2xl">Legal Safety Audit</h4>
+                         <p className="text-sm text-gray-500 italic leading-relaxed border-l border-white/10 pl-6">"{manuscriptReport.legalSafetyAudit}"</p>
+                      </div>
+
+                      <div className="space-y-4">
+                         <h4 className="text-white font-serif italic text-xl">Suggested Registry Title</h4>
+                         <div className="p-6 bg-white/[0.03] border border-white/10 text-white font-serif italic text-2xl tracking-tight">
+                            {manuscriptReport.suggestedTitle}
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="pt-24 border-t border-white/10 text-center">
+                   <button onClick={() => setManuscriptReport(null)} className="px-20 py-8 bg-white text-black text-[11px] font-black uppercase tracking-[0.6em] hover:bg-orange-500 hover:text-white transition-all rounded-sm shadow-2xl">Return to Forge</button>
                 </div>
              </div>
           </div>
@@ -216,6 +337,8 @@ const WrapItUp: React.FC = () => {
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; } 
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
       `}</style>
     </div>
   );

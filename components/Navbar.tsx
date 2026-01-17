@@ -16,6 +16,33 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
     return profile ? JSON.parse(profile).showTooltips !== false : true;
   })();
 
+  const NavItem = ({ to, label, title, subtitle, variant = "default" }: { to: string, label: string, title: string, subtitle: string, variant?: "default" | "orange" }) => (
+    <div className="relative group/tooltip">
+      <Link 
+        to={to} 
+        className={`px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all whitespace-nowrap
+          ${variant === "orange" 
+            ? 'text-orange-500 hover:glow-amber animate-living-amber' 
+            : 'text-gray-400 hover:text-white hover:glow-white'
+          }`}
+      >
+        {label}
+      </Link>
+      {showTooltips && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-[100] w-64 translate-y-2 group-hover/tooltip:translate-y-0">
+          <div className="bg-black border border-white/10 p-5 shadow-2xl rounded-sm backdrop-blur-3xl relative overflow-hidden">
+             {/* Industrial accent line */}
+             <div className={`absolute top-0 left-0 w-full h-[1px] ${variant === "orange" ? 'bg-orange-500' : 'bg-white/20'}`}></div>
+             <p className={`text-[8px] font-black uppercase tracking-widest mb-1 leading-none ${variant === "orange" ? 'text-orange-500' : 'text-white'}`}>{title}</p>
+             <p className="text-[10px] text-gray-500 italic leading-tight font-serif">{subtitle}</p>
+          </div>
+          {/* Tooltip arrow */}
+          <div className="w-2 h-2 bg-black border-l border-t border-white/10 rotate-45 absolute -top-1 left-1/2 -translate-x-1/2"></div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <nav className="fixed w-full z-50 bg-[#050505]/95 backdrop-blur-3xl border-b border-white/[0.03]">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/30 to-transparent"></div>
@@ -40,21 +67,43 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         </div>
         
         <div className="hidden md:flex items-center space-x-6 pr-12 lg:pr-20">
-          <Link to="/published-books" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">Books</Link>
-          <Link to="/narratives" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">Narratives</Link>
-          <Link to="/author-builder" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">My Sheets</Link>
-          
+          <NavItem 
+            to="/published-books" 
+            label="Books" 
+            title="The Storefront" 
+            subtitle="Explore published volumes of carceral and systemic legacy." 
+          />
+          <NavItem 
+            to="/narratives" 
+            label="Narratives" 
+            title="Public Archives" 
+            subtitle="A registry of unfiltered human experiences from behind the walls." 
+          />
+          <NavItem 
+            to="/author-builder" 
+            label="My Sheets" 
+            title="WRAP Workspace" 
+            subtitle="Draft and refine your narrative using the Write Right AI Partner." 
+          />
+          <NavItem 
+            to="/sovereign-vault" 
+            label="The Big House" 
+            title="Permanent Vault" 
+            subtitle="Immutable digital security for your archives and Courier Codes." 
+            variant="orange"
+          />
+
           <div className="relative group/tooltip">
-            <Link to="/sovereign-vault" className="text-orange-500 px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-amber animate-living-amber">THE BIG HOUSE</Link>
+            <Link to="/wrap-it-up" className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-orange-500 hover:text-white rounded-sm animate-living-amber-border animate-living-amber">Mastering Suite</Link>
             {showTooltips && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-56 text-center bg-black border border-white/10 p-4 shadow-2xl rounded-sm">
-                <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">The Big House</p>
-                <p className="text-[10px] text-gray-500 italic leading-tight">Your Sovereign Vault. Everything stored in The Big House stays with you, even after you cross the gate.</p>
+              <div className="absolute top-full right-0 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-[100] w-64 translate-y-2 group-hover/tooltip:translate-y-0">
+                <div className="bg-black border border-orange-500/20 p-5 shadow-2xl rounded-sm backdrop-blur-3xl">
+                   <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">The Audit Desk</p>
+                   <p className="text-[10px] text-gray-500 italic leading-tight font-serif">Perform legal safety audits and format for Substack or print distribution.</p>
+                </div>
               </div>
             )}
           </div>
-
-          <Link to="/wrap-it-up" className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-orange-500 hover:text-white rounded-sm animate-living-amber-border animate-living-amber">Mastering Suite</Link>
 
           <div className="h-4 w-[1px] bg-white/10 mx-2"></div>
 
