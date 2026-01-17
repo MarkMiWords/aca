@@ -7,9 +7,18 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const LEGAL_GUARDRAIL = `
   IMPORTANT LEGAL PROTOCOL: 
   A Captive Audience is a high-risk literary project for system-impacted voices. 
-  1. Flag real names of officials/police/victims. 
-  2. Use pseudonyms for characters to avoid defamation heat.
+  1. Flag real names of officials/police/victims to protect authors from defamation.
+  2. Encourage pseudonyms to ensure safety.
   3. Audit for PII (Personally Identifiable Information).
+`;
+
+const HUMANITARIAN_MISSION = `
+  HUMANITARIAN MISSION & QUALITY STANDARD: 
+  You are serving the world's first sovereign digital workspace for incarcerated voices. 
+  This is a humanitarian project aimed at rehabilitative storytelling and systemic reform documentation.
+  Your goal is to ensure that while the stories are raw, the quality of the prose remains world-class.
+  STRICT BREVITY PROTOCOL: Enforce a 1,000-word limit per installment. 
+  Explain to authors that this structure ensures maximum reader engagement on Substack and high formatting quality for physical books.
 `;
 
 const WRAPPER_IDENTITY = `
@@ -18,213 +27,82 @@ const WRAPPER_IDENTITY = `
 `;
 
 /**
+ * Metadata Tracking for Institutional Viability
+ */
+export interface UsageMetrics {
+  estimatedTokens: number;
+  humanHoursSaved: number;
+  wholesaleCostEstimate: number;
+}
+
+function calculateUsage(text: string, multiplier: number = 1): UsageMetrics {
+  const words = text.split(/\s+/).length;
+  const estimatedTokens = words * 1.5 * multiplier;
+  return {
+    estimatedTokens,
+    humanHoursSaved: words / 250, // Assuming 250 words per hour for manual carceral typing
+    wholesaleCostEstimate: (estimatedTokens / 1000) * 0.01 // Concept cost base
+  };
+}
+
+/**
  * OCR Engine: Converts image data (handwritten scraps or typed pages) to digital text.
  */
-export async function performOCR(imageBase64: string): Promise<string> {
-  const prompt = `
-    Perform high-precision OCR on this image. 
-    1. Transcribe every word exactly as written, including slang and regional dialect.
-    2. Maintain the original paragraph structure.
-    3. If handwriting is illegible, use [?] to indicate a gap.
-    4. Return ONLY the transcribed text.
-  `;
-
+export async function performOCR(imageBase64: string): Promise<{text: string, metrics: UsageMetrics}> {
+  const prompt = `Perform high-precision OCR. Transcribe exactly. Return ONLY text.`;
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [
-        {
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
-            { text: prompt }
-          ]
-        }
-      ],
-      config: {
-        systemInstruction: "You are an expert paleographer and transcriptionist specializing in prison-issued stationery and handwritten notes.",
-      }
+      contents: [{ parts: [{ inlineData: { mimeType: "image/jpeg", data: imageBase64 } }, { text: prompt }] }],
+      config: { systemInstruction: "Institutional OCR Mode." }
     });
-
-    return response.text || "";
+    const text = response.text || "";
+    return { text, metrics: calculateUsage(text, 2.5) }; // OCR is higher intensity
   } catch (err) {
-    console.error("OCR Error:", err);
-    throw new Error("The Paper-to-Pixel bridge failed. Ensure the image is clear.");
+    throw new Error("OCR Link Failed.");
   }
 }
 
 /**
- * Analyzes a user's voice sample to detect dialect, language, and persona traits.
+ * Analyzes a user's voice sample for Dialect & UI Localization.
  */
-export async function analyzeVoiceAndDialect(audioBase64: string): Promise<{ 
-  detectedLocale: string, 
-  personaInstruction: string,
-  uiTranslations: Record<string, string> 
-}> {
-  const prompt = `
-    Analyze this audio sample of a user speaking.
-    1. Identify the specific language and regional dialect (e.g., "Aussie Bogan", "London Roadman", "Spanish (Castilian Street)").
-    2. Extract a detailed persona instruction that describes their speech patterns, slang usage, and emotional tone.
-    3. Provide a list of key UI translations for the following English terms into their detected dialect:
-       - "Registry"
-       - "My Sheets"
-       - "Actions"
-       - "Speak"
-       - "Dictate"
-       - "Drop the Soap"
-       - "Mastering Suite"
-       - "New Sheet"
-  `;
-
+export async function analyzeVoiceAndDialect(audioBase64: string): Promise<any> {
+  const prompt = `Analyze audio for language and regional dialect. Provide UI translations for: Registry, Sheets, Actions, Speak, Dictate, Drop the Soap, Mastering Suite, New Sheet.`;
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [
-        {
-          parts: [
-            { inlineData: { mimeType: "audio/wav", data: audioBase64 } },
-            { text: prompt }
-          ]
-        }
-      ],
-      config: {
+      contents: [{ parts: [{ inlineData: { mimeType: "audio/wav", data: audioBase64 } }, { text: prompt }] }],
+      config: { 
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             detectedLocale: { type: Type.STRING },
             personaInstruction: { type: Type.STRING },
-            uiTranslations: { 
-              type: Type.OBJECT,
-              properties: {
-                "Registry": { type: Type.STRING },
-                "My Sheets": { type: Type.STRING },
-                "Actions": { type: Type.STRING },
-                "Speak": { type: Type.STRING },
-                "Dictate": { type: Type.STRING },
-                "Drop the Soap": { type: Type.STRING },
-                "Mastering Suite": { type: Type.STRING },
-                "New Sheet": { type: Type.STRING }
-              }
-            }
+            uiTranslations: { type: Type.OBJECT, additionalProperties: { type: Type.STRING } }
           },
           required: ["detectedLocale", "personaInstruction", "uiTranslations"]
         }
       }
     });
-
-    const data = JSON.parse(response.text || "{}");
-    return data;
+    return JSON.parse(response.text || "{}");
   } catch (err) {
-    console.error("Dialect Analysis Error:", err);
-    return { 
-      detectedLocale: "Global English", 
-      personaInstruction: "Standard storytelling tone.", 
-      uiTranslations: {} 
-    };
+    return { detectedLocale: "Global English", personaInstruction: "Standard tone.", uiTranslations: {} };
   }
 }
 
-/**
- * Registry search with search grounding.
- */
-export async function queryInsight(message: string): Promise<Message> {
+export async function smartSoap(text: string, level: 'rinse' | 'scrub' | 'sanitize'): Promise<{text: string, metrics: UsageMetrics}> {
+  let system = level === 'rinse' ? "Lightly fix grammar." : level === 'scrub' ? "Full literary polish." : "PII Redaction Mode.";
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: message,
-      config: {
-        systemInstruction: "You are an expert researcher for 'A Captive Audience'. Analyze the registry and provide insights into systemic adversity and carceral narratives. Use Google Search.",
-        tools: [{ googleSearch: {} }],
-      },
-    });
-
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    const sources: GroundingSource[] = groundingChunks?.map((chunk: any) => ({
-      web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
-    })).filter((s: any) => s.web?.uri) || [];
-
-    return {
-      role: 'assistant',
-      content: response.text || "No insights found.",
-      sources: sources.length > 0 ? sources : undefined
-    };
-  } catch (error) {
-    return { role: 'assistant', content: "Disconnected." };
-  }
-}
-
-export async function smartSoap(text: string, level: 'rinse' | 'scrub' | 'sanitize'): Promise<string> {
-  let prompt = `Process this carceral narrative: "${text}"`;
-  let system = "You are an editor for incarcerated writers.";
-  
-  if (level === 'rinse') system = "Lightly fix punctuation and grammar. Keep the raw voice.";
-  else if (level === 'scrub') system = "Clean grammar and flow. Maintain grit and dialect.";
-  else system = "Sanitize for legal safety. Remove real names and PII.";
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
+      contents: text,
       config: { systemInstruction: system },
     });
-    return response.text || text;
+    const resultText = response.text || text;
+    return { text: resultText, metrics: calculateUsage(resultText, 1.2) };
   } catch (err) {
-    return text;
-  }
-}
-
-export async function jiveContent(text: string, region: string): Promise<string> {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Remix this into rhythmic slang for the ${region} region: "${text}"`,
-      config: {
-        systemInstruction: "You are the Jive Master. Turn prose into rhythmic, street-flavored poetry.",
-      },
-    });
-    return response.text || text;
-  } catch (err) {
-    return text;
-  }
-}
-
-/**
- * Generate Speech using Gemini 2.5 TTS.
- */
-export async function generateSpeech(text: string, voiceName: string = 'Fenrir', persona: string = 'Standard', customPersona: string = ""): Promise<string | undefined> {
-  try {
-    const personaInstructions: Record<string, string> = {
-      'Bogan': 'Speak with a thick, authentic Australian Bogan accent, gritty and raw.',
-      'Hillbilly': 'Speak with a deep, rural American Appalachian accent.',
-      'Homeboy': 'Speak with a sharp, rhythmic inner-city US street dialect.',
-      'Lad': 'Speak with a classic Northern UK street dialect.',
-      'Eshay': 'Speak with a high-intensity, aggressive Australian Eshay dialect.',
-      'Standard': 'Read with deep emotion and clear, weighted resonance.'
-    };
-
-    const activeInstruction = customPersona || personaInstructions[persona] || personaInstructions['Standard'];
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ 
-        parts: [{ 
-          text: `Read this narrative exactly as described (${activeInstruction}): ${text.substring(0, 3000)}` 
-        }] 
-      }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voiceName as any },
-          },
-        },
-      },
-    });
-
-    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  } catch (err) {
-    console.error("Speech Generation Error:", err);
-    throw err;
+    return { text, metrics: calculateUsage(text, 0) };
   }
 }
 
@@ -233,55 +111,119 @@ export async function queryPartner(
   style: string, 
   region: string, 
   history: Message[],
-  activeSheetContent: string = "",
-  authorMemory: string = ""
-): Promise<Message> {
+  activeSheetContent: string = ""
+): Promise<Message & {metrics?: UsageMetrics}> {
   try {
-    const contents = history.map(h => ({
-      role: h.role === 'user' ? 'user' : 'model',
-      parts: [{ text: h.content }]
-    }));
-    
-    contents.push({ 
-      role: 'user', 
-      parts: [{ text: `[CONTEXT] ${activeSheetContent.substring(0, 1000)} [/CONTEXT]\n\nAUTHOR: ${message}` }] 
-    });
-    
-    const systemInstruction = `You are WRAPPER. ${WRAPPER_IDENTITY} ${LEGAL_GUARDRAIL}`;
+    const contents = history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.content }] }));
+    contents.push({ role: 'user', parts: [{ text: `[CONTEXT] ${activeSheetContent.substring(0, 500)} [/CONTEXT] ${message}` }] });
+    const systemInstruction = `You are WRAPPER. Regional Archive: ${region}. Style: ${style}. ${HUMANITARIAN_MISSION}`;
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: contents as any,
-      config: { systemInstruction, temperature: 0.9, tools: [{ googleSearch: {} }] },
+      config: { systemInstruction, tools: [{ googleSearch: {} }] },
     });
+    const content = response.text || "";
     
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    const sources: GroundingSource[] = groundingChunks?.map((chunk: any) => ({
-      web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
-    })).filter((s: any) => s.web?.uri) || [];
-    
+    // Extract Search Grounding sources if available
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources: GroundingSource[] = groundingChunks.map((chunk: any) => ({
+      web: {
+        uri: chunk.web?.uri || "",
+        title: chunk.web?.title || ""
+      }
+    })).filter((s: any) => s.web.uri);
+
     return {
       role: 'assistant',
-      content: response.text || "Connection lost.",
-      sources: sources.length > 0 ? sources : undefined
+      content,
+      sources,
+      metrics: calculateUsage(content, 1.5)
     };
   } catch (error) {
     return { role: 'assistant', content: "Disconnected." };
   }
 }
 
-export async function analyzeFullManuscript(content: string, goal: MasteringGoal = 'substack'): Promise<ManuscriptReport> {
-  const goalInstructions: Record<MasteringGoal, string> = {
-    newspaper: "Analyze for the 'About Time' Prison Newspaper. Focus on concise columns, high-impact headlines, and factual but gritty reporting.",
-    substack: "Analyze for a Substack post. Focus on hooks, serialized pacing, and digital engagement for email readers.",
-    paperback: "Analyze for a Paperback Manuscript. Focus on structural integrity, literary arc, and flow for a long-form book."
-  };
+/**
+ * queryInsight: Search grounding for archival discovery in Narratives.tsx
+ */
+export async function queryInsight(query: string): Promise<Message> {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: query,
+      config: {
+        tools: [{ googleSearch: {} }],
+        systemInstruction: "You are the Archive Intelligence. Provide deep insights on systemic justice and carceral data using up-to-date web information."
+      }
+    });
 
+    const content = response.text || "No records found in digital archive.";
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources: GroundingSource[] = groundingChunks.map((chunk: any) => ({
+      web: {
+        uri: chunk.web?.uri || "",
+        title: chunk.web?.title || ""
+      }
+    })).filter((s: any) => s.web.uri);
+
+    return {
+      role: 'assistant',
+      content,
+      sources
+    };
+  } catch (err) {
+    return { role: 'assistant', content: "Archive Link Interrupted." };
+  }
+}
+
+/**
+ * jiveContent: Tone and Dialect transformation for carceral voices
+ */
+export async function jiveContent(text: string, persona: string): Promise<{text: string, metrics: UsageMetrics}> {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Rewrite the following text exactly as if it were being spoken by a ${persona}. Maintain the core meaning but transform the lexical structure: ${text}`,
+    });
+    const resultText = response.text || text;
+    return { text: resultText, metrics: calculateUsage(resultText, 1.3) };
+  } catch (err) {
+    return { text, metrics: calculateUsage(text, 0) };
+  }
+}
+
+/**
+ * generateSpeech: Single-speaker text-to-speech synthesis
+ */
+export async function generateSpeech(text: string, voiceId: string = 'Zephyr'): Promise<string> {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: voiceId },
+          },
+        },
+      },
+    });
+    // Return raw PCM audio bytes as base64
+    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || "";
+  } catch (err) {
+    throw new Error("Speech synthesis failed.");
+  }
+}
+
+export async function analyzeFullManuscript(content: string, goal: MasteringGoal = 'substack'): Promise<ManuscriptReport & {metrics?: UsageMetrics}> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: content.substring(0, 32000),
       config: {
-        systemInstruction: `Analyze the full manuscript for a system-impacted writer. GOAL: ${goalInstructions[goal]}. Return a detailed report in JSON format.`,
+        systemInstruction: `Analyze full manuscript for ${goal}. Return JSON.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -293,14 +235,14 @@ export async function analyzeFullManuscript(content: string, goal: MasteringGoal
             resourceIntensity: { type: Type.NUMBER },
             marketabilityScore: { type: Type.NUMBER },
             suggestedTitle: { type: Type.STRING },
-            mediumSpecificAdvice: { type: Type.STRING, description: "Advice specific to the chosen output medium (Newspaper, Substack, or Paperback)." },
+            mediumSpecificAdvice: { type: Type.STRING },
           },
           required: ["summary", "toneAssessment", "structuralCheck", "legalSafetyAudit", "resourceIntensity", "marketabilityScore", "suggestedTitle", "mediumSpecificAdvice"],
         },
       },
     });
-
-    return JSON.parse(response.text?.trim() || "{}");
+    const report = JSON.parse(response.text?.trim() || "{}");
+    return { ...report, metrics: calculateUsage(content, 5) }; // Pro model is more expensive
   } catch (err) {
     return { summary: "Audit failed.", toneAssessment: "", structuralCheck: "", legalSafetyAudit: "", resourceIntensity: 0, marketabilityScore: 0, suggestedTitle: "Untitled", mediumSpecificAdvice: "" };
   }

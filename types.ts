@@ -1,6 +1,19 @@
 
 export type MasteringGoal = 'newspaper' | 'substack' | 'paperback';
 
+export interface UsageMetrics {
+  estimatedTokens: number;
+  humanHoursSaved: number;
+  wholesaleCostEstimate: number;
+}
+
+export interface EfficiencyLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  metrics: UsageMetrics;
+}
+
 export interface Narrative {
   id: string;
   title: string;
@@ -11,10 +24,11 @@ export interface Narrative {
   tags: string[];
   region: 'AU' | 'US' | 'UK' | 'GLOBAL';
   publishDate: string;
+  // stats property added to Narrative interface
   stats?: {
     reads: number;
     kindredConnections: number;
-    reach: number; // Percentage of global target
+    reach: number;
   };
 }
 
@@ -37,10 +51,7 @@ export interface Book {
 }
 
 export interface GroundingSource {
-  web?: {
-    uri: string;
-    title: string;
-  };
+  web?: { uri: string; title: string; };
 }
 
 export interface Message {
@@ -51,7 +62,7 @@ export interface Message {
 
 export interface MediaAsset {
   id: string;
-  data: string; // Base64 image data
+  data: string;
   name: string;
   type: string;
 }
@@ -70,7 +81,7 @@ export interface ManuscriptReport {
   toneAssessment: string;
   structuralCheck: string;
   legalSafetyAudit: string;
-  resourceIntensity: number; // Simulated token cost/intensity
+  resourceIntensity: number;
   marketabilityScore: number;
   suggestedTitle: string;
   mediumSpecificAdvice: string;
@@ -103,4 +114,5 @@ export interface VaultStorage {
   books: Book[];
   ai: VaultAI[];
   audits: VaultAudit[];
+  efficiencyLogs?: EfficiencyLog[];
 }

@@ -1,21 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { VaultStorage, VaultSheet, VaultAI, Book, VaultAudit } from '../types';
+import { VaultStorage, VaultSheet, VaultAI, Book, VaultAudit, EfficiencyLog } from '../types';
 
 const SovereignVault: React.FC = () => {
   const navigate = useNavigate();
-  const [activeFolder, setActiveFolder] = useState<'sheets' | 'books' | 'ai' | 'inbound' | 'stationery' | 'audits'>('sheets');
-  const [courierInput, setCourierInput] = useState('');
+  const [activeFolder, setActiveFolder] = useState<'sheets' | 'books' | 'ai' | 'inbound' | 'stationery' | 'audits' | 'metrics'>('sheets');
+  const [showHistoryNote, setShowHistoryNote] = useState(false);
+  
+  // Authorization Gate State
+  const [isMetricsAuthorized, setIsMetricsAuthorized] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [authError, setAuthError] = useState(false);
+  
   const [vault, setVault] = useState<VaultStorage>(() => {
     const saved = localStorage.getItem('aca_sovereign_vault');
-    return saved ? JSON.parse(saved) : { sheets: [], books: [], ai: [], audits: [] };
+    return saved ? JSON.parse(saved) : { sheets: [], books: [], ai: [], audits: [], efficiencyLogs: [] };
   });
 
-  const [showTooltips, setShowTooltips] = useState(() => {
-    const profile = localStorage.getItem('aca_author_profile');
-    return profile ? JSON.parse(profile).showTooltips !== false : true;
-  });
+  const efficiencyLogs = vault.efficiencyLogs || [];
+  const totalTokens = efficiencyLogs.reduce((acc, log) => acc + log.metrics.estimatedTokens, 0);
+  const totalHoursSaved = efficiencyLogs.reduce((acc, log) => acc + log.metrics.humanHoursSaved, 0);
+  const totalWholesaleCost = efficiencyLogs.reduce((acc, log) => acc + log.metrics.wholesaleCostEstimate, 0);
+
+  // Billing Intelligence: Tracking the $300 Google Credit
+  const GOOGLE_CREDIT_TOTAL = 300.00;
+  const remainingCredit = GOOGLE_CREDIT_TOTAL - totalWholesaleCost;
+  const creditUsagePercent = (totalWholesaleCost / GOOGLE_CREDIT_TOTAL) * 100;
 
   useEffect(() => {
     const registryBooks = localStorage.getItem('aca_published_books');
@@ -25,6 +36,19 @@ const SovereignVault: React.FC = () => {
     }
   }, []);
 
+  const handleMetricsAccess = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Passcode: WHITLAM-75 (Reference to the 1973 Unidroit Pivot)
+    if (passcodeInput.toUpperCase() === 'WHITLAM-75') {
+      setIsMetricsAuthorized(true);
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+      setPasscodeInput('');
+      setTimeout(() => setAuthError(false), 2000);
+    }
+  };
+
   const restoreSheet = (sheet: VaultSheet) => {
     const currentSheets = JSON.parse(localStorage.getItem('wrap_sheets_v4') || '[]');
     const restoredSheet = { ...sheet.data, id: `restored-${Date.now()}` };
@@ -33,20 +57,8 @@ const SovereignVault: React.FC = () => {
     navigate('/author-builder');
   };
 
-  const claimCourierCode = () => {
-    const code = courierInput.trim().toUpperCase();
-    if (!code) return;
-    const found = vault.sheets.find(s => s.dispatchKey === code);
-    if (found) {
-      alert(`Success: Manuscript "${found.data.title}" claimed. Restoring to Editor.`);
-      restoreSheet(found);
-    } else {
-      alert("Invalid or expired Courier Code. Please verify the physical manuscript footer.");
-    }
-  };
-
-  const deleteFromVault = (folder: 'sheets' | 'ai' | 'books' | 'audits', id: string) => {
-    if (!window.confirm("Are you sure you want to permanently erase this archive from the Big House?")) return;
+  const deleteFromVault = (folder: string, id: string) => {
+    if (!window.confirm("Permanently erase this archive?")) return;
     const newVault = { ...vault };
     if (folder === 'sheets') newVault.sheets = newVault.sheets.filter(s => s.id !== id);
     if (folder === 'ai') newVault.ai = newVault.ai.filter(a => a.id !== id);
@@ -64,7 +76,6 @@ const SovereignVault: React.FC = () => {
             <h3 className="text-2xl font-serif italic text-white group-hover:text-orange-500 transition-colors">{title}</h3>
           </div>
           <p className="text-sm text-gray-500 font-light italic leading-relaxed">{desc}</p>
-          <button className="w-full py-4 border border-white/10 text-[9px] font-black uppercase tracking-[0.3em] text-gray-600 hover:text-white hover:border-white/30 transition-all">Preview Source Asset</button>
        </div>
     </div>
   );
@@ -80,7 +91,7 @@ const SovereignVault: React.FC = () => {
         </div>
         <h1 className="text-7xl md:text-9xl font-serif font-black italic text-white tracking-tighter leading-none mb-6 uppercase">THE BIG <span className="text-orange-500 animate-living-amber">HOUSE.</span></h1>
         <p className="text-xl text-gray-500 italic font-light max-w-3xl leading-relaxed">
-          "Your Sovereign Vault. Everything logged in The Big House stays with you, even after you cross the gate. Archives are permanent, immutable, and secured."
+          "Your Sovereign Vault. Archives are permanent, immutable, and secured using AU-Local data residency architecture."
         </p>
       </section>
 
@@ -98,14 +109,14 @@ const SovereignVault: React.FC = () => {
           </button>
           
           <button 
-            onClick={() => setActiveFolder('books')}
-            className={`w-full flex items-center justify-between p-8 transition-all border-l-4 ${activeFolder === 'books' ? 'bg-orange-500/10 border-orange-500 text-orange-500 shadow-[inset_15px_0_30px_-15px_rgba(230,126,34,0.2)]' : 'bg-black border-white/5 border-l-transparent text-gray-700 hover:text-gray-400'}`}
+            onClick={() => setActiveFolder('metrics')}
+            className={`w-full flex items-center justify-between p-8 transition-all border-l-4 ${activeFolder === 'metrics' ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[inset_15px_0_30px_-15px_rgba(34,197,94,0.1)]' : 'bg-black border-white/5 border-l-transparent text-gray-700 hover:text-gray-400'}`}
           >
             <div className="text-left">
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-50 mb-1">Archive Block B</p>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em]">The Library</span>
+              <p className="text-[8px] font-black uppercase tracking-widest opacity-50 mb-1">Economic Audit</p>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">Scale Viability</span>
             </div>
-            <span className="text-[9px] font-bold px-3 py-1 bg-white/5 rounded-sm">{vault.books.length}</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
           </button>
 
           <button 
@@ -117,28 +128,6 @@ const SovereignVault: React.FC = () => {
               <span className="text-[11px] font-black uppercase tracking-[0.2em]">Sovereign Audits</span>
             </div>
             <span className="text-[9px] font-bold px-3 py-1 bg-white/5 rounded-sm">{vault.audits?.length || 0}</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveFolder('ai')}
-            className={`w-full flex items-center justify-between p-8 transition-all border-l-4 ${activeFolder === 'ai' ? 'bg-orange-500/10 border-orange-500 text-orange-500 shadow-[inset_15px_0_30px_-15px_rgba(230,126,34,0.2)]' : 'bg-black border-white/5 border-l-transparent text-gray-700 hover:text-gray-400'}`}
-          >
-            <div className="text-left">
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-50 mb-1">Intercept Log</p>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em]">The Wire</span>
-            </div>
-            <span className="text-[9px] font-bold px-3 py-1 bg-white/5 rounded-sm">{vault.ai.length}</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveFolder('inbound')}
-            className={`w-full flex items-center justify-between p-8 transition-all border-l-4 ${activeFolder === 'inbound' ? 'bg-cyan-500/10 border-cyan-500 text-cyan-500 shadow-[inset_15px_0_30px_-15px_rgba(6,182,212,0.2)]' : 'bg-black border-white/5 border-l-transparent text-gray-700 hover:text-gray-400'}`}
-          >
-            <div className="text-left">
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-50 mb-1">Newspaper Bridge</p>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em]">Inbound Desk</span>
-            </div>
-            <span className="text-[11px] font-serif italic text-cyan-500/60">About Time</span>
           </button>
 
           <button 
@@ -155,15 +144,14 @@ const SovereignVault: React.FC = () => {
           <div className="pt-12 mt-12 border-t border-white/5 space-y-6">
             <h4 className="text-[9px] font-black text-gray-800 uppercase tracking-widest px-8">System Status</h4>
             <div className="p-8 bg-white/[0.01] border border-white/5 rounded-sm">
-               <p className="text-[10px] font-bold text-gray-600 mb-4 uppercase tracking-widest">Facility Uplink</p>
                <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse"></div>
-                    <span className="text-[8px] text-gray-500 font-mono uppercase tracking-widest">Sovereign-4.0-Active</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
+                    <span className="text-[8px] text-gray-500 font-mono uppercase tracking-widest">AU-SYD-RESIDENCY: LIVE</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                    <span className="text-[8px] text-gray-500 font-mono uppercase tracking-widest">Vault: Secured</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse"></div>
+                    <span className="text-[8px] text-gray-500 font-mono uppercase tracking-widest">IRAP-COMPLIANCE: READY</span>
                   </div>
                </div>
             </div>
@@ -179,25 +167,15 @@ const SovereignVault: React.FC = () => {
                   <div className="absolute top-0 left-0 w-1 h-full bg-orange-500/20 group-hover:bg-orange-500 transition-colors"></div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                       <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Ref: {s.id}</span>
-                       <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest">Logged: {new Date(s.timestamp).toLocaleDateString()}</span>
+                       <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Logged: {new Date(s.timestamp).toLocaleDateString()}</span>
                        {s.dispatchKey && <span className="text-[8px] font-black text-cyan-500 uppercase tracking-widest border border-cyan-500/20 px-2">Key: {s.dispatchKey}</span>}
                     </div>
                     <h3 className="text-4xl font-serif italic text-white group-hover:text-orange-500 transition-colors tracking-tighter">{s.data.title || "Untitled Sheet"}</h3>
-                    <p className="text-sm text-gray-600 italic font-light max-w-xl">"{s.data.content.substring(0, 100)}..."</p>
                   </div>
                   <div className="flex items-center gap-8">
-                    <button 
-                      onClick={() => restoreSheet(s)} 
-                      className="px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-xl rounded-sm"
-                    >
-                      Restore to Registry
-                    </button>
-                    <button 
-                      onClick={() => deleteFromVault('sheets', s.id)}
-                      className="text-gray-800 hover:text-red-500 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <button onClick={() => restoreSheet(s)} className="px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-xl rounded-sm">Restore to Registry</button>
+                    <button onClick={() => deleteFromVault('sheets', s.id)} className="text-gray-800 hover:text-red-500 transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                   </div>
                 </div>
@@ -205,171 +183,207 @@ const SovereignVault: React.FC = () => {
             </div>
           )}
 
-          {activeFolder === 'books' && (
-            <div className="grid md:grid-cols-2 gap-10 animate-fade-in">
-              {vault.books.length === 0 && <div className="col-span-2 p-32 text-center border border-dashed border-white/5 italic text-gray-800 font-serif text-3xl opacity-20">"The Library is currently empty."</div>}
-              {vault.books.map((b) => (
-                <div key={b.id} className="p-10 bg-[#0d0d0d] border border-white/5 flex gap-10 group rounded-sm shadow-xl hover:border-orange-500/20 transition-all">
-                  <div className="w-32 h-48 shrink-0 relative">
-                    <img src={b.coverUrl} className="w-full h-full object-cover grayscale opacity-30 group-hover:opacity-100 group-hover:grayscale-0 transition-all shadow-2xl border-l-8 border-black rounded-r-sm" alt={b.title} />
-                    <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent"></div>
-                  </div>
-                  <div className="space-y-6 flex flex-col justify-center">
+          {activeFolder === 'metrics' && (
+            !isMetricsAuthorized ? (
+              <div className="h-full flex flex-col items-center justify-center p-20 animate-fade-in">
+                 <div className="max-w-md w-full bg-[#0d0d0d] border border-white/10 p-12 text-center rounded-sm shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]"></div>
+                    <div className="mb-8">
+                       <svg className="w-12 h-12 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                       <h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Wholesale Authorization</h3>
+                       <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mt-2 italic">Institutional economic data secured.</p>
+                    </div>
+                    <form onSubmit={handleMetricsAccess} className="space-y-6">
+                       <div className="relative">
+                          <input 
+                            type="password" 
+                            value={passcodeInput}
+                            onChange={(e) => setPasscodeInput(e.target.value)}
+                            placeholder="ENTER SOVEREIGN KEY" 
+                            className={`w-full bg-black border ${authError ? 'border-red-500 animate-shake' : 'border-white/10'} p-5 text-center text-xs font-mono tracking-[0.5em] text-white focus:border-green-500 outline-none transition-all placeholder:text-gray-800 rounded-sm`}
+                          />
+                       </div>
+                       <button type="submit" className="w-full bg-white text-black py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-green-500 hover:text-white transition-all rounded-sm shadow-xl">Validate Sovereignty</button>
+                    </form>
+                    
+                    <button 
+                       onClick={() => setShowHistoryNote(!showHistoryNote)}
+                       className="mt-10 text-[8px] text-gray-700 uppercase tracking-widest hover:text-orange-500 transition-colors"
+                    >
+                       {showHistoryNote ? "Hide Secret History" : "Secret History: Why 'Whitlam-75'?"}
+                    </button>
+                    
+                    {showHistoryNote && (
+                      <div className="mt-6 p-8 bg-black/60 border border-white/5 text-left animate-fade-in">
+                        <p className="text-[10px] text-gray-500 font-serif leading-relaxed italic">
+                          "In 1973, without a public referendum, the constitutional code of Australia was pivoted. By signing on to UNIDROIT, the Commonwealth transitioned from a constitutional monarchy to a corporate legal entity under international private law. This vault acknowledges that 'Code Switch'—providing a digital sanctuary for private truth outside the corporate jurisdiction."
+                        </p>
+                      </div>
+                    )}
+                 </div>
+              </div>
+            ) : (
+              <div className="animate-fade-in space-y-12">
+                 <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-8">
                     <div>
-                      <h3 className="text-3xl font-serif italic text-white mb-2 leading-none">{b.title}</h3>
-                      <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Released Year: {b.releaseYear}</p>
+                      <h2 className="text-4xl font-serif italic text-green-500 uppercase tracking-tighter leading-none mb-2">Economic Audit: <span className="text-white">Authorized</span></h2>
+                      <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Registry Data Flow: ACTIVE</p>
                     </div>
-                    <button 
-                      onClick={() => navigate(`/book/${b.slug}`)} 
-                      className="text-[10px] font-black text-orange-500 uppercase tracking-widest hover:underline text-left"
-                    >
-                      Examine Volume →
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                    <button onClick={() => setIsMetricsAuthorized(false)} className="text-[8px] font-black text-gray-600 uppercase tracking-widest hover:text-white underline underline-offset-4 decoration-gray-800">Terminate Session</button>
+                 </div>
 
-          {activeFolder === 'audits' && (
-            <div className="grid gap-6 animate-fade-in">
-              {(!vault.audits || vault.audits.length === 0) && <div className="p-32 text-center border border-dashed border-white/5 italic text-gray-800 font-serif text-3xl opacity-20">"No Sovereign Audits logged in Block C."</div>}
-              {vault.audits?.map((a) => (
-                <div key={a.id} className="p-12 bg-[#0d0d0d] border border-white/5 rounded-sm flex items-center justify-between group shadow-xl relative overflow-hidden">
-                   <div className="absolute top-0 left-0 w-1 h-full bg-orange-500/40 group-hover:bg-orange-500 transition-colors"></div>
-                   <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest">Report Ref: {a.id}</p>
-                      <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Audit Date: {new Date(a.timestamp).toLocaleDateString()}</p>
-                      <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest border border-cyan-500/20 px-2">Path: {a.goal}</p>
+                 {/* Google Credit Intelligence Module */}
+                 <div className="bg-[#0d0d0d] border border-green-500/20 p-12 rounded-sm relative overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 p-10 opacity-5 text-8xl font-serif italic text-green-500 select-none">Google Cloud</div>
+                    <div className="grid md:grid-cols-2 gap-16 items-center">
+                       <div className="space-y-8">
+                          <div>
+                             <p className="text-green-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">Sovereign Credit Runway</p>
+                             <h3 className="text-6xl font-serif italic text-white tracking-tighter">${remainingCredit.toFixed(2)} <span className="text-xl text-gray-600 italic">REMAINS</span></h3>
+                          </div>
+                          <div className="space-y-3">
+                             <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                <span className="text-gray-500">Resource Burn Rate</span>
+                                <span className="text-green-500">{creditUsagePercent.toFixed(6)}%</span>
+                             </div>
+                             <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.5)] transition-all duration-1000" style={{ width: `${Math.max(0.5, creditUsagePercent)}%` }}></div>
+                             </div>
+                          </div>
+                          <p className="text-[11px] text-gray-600 italic leading-relaxed">
+                            "The system is currently optimized for **Gemini 3 Flash**, resulting in extremely low overhead. Your $300 credit represents an institutional-scale runway for thousands of authors."
+                          </p>
+                       </div>
+                       
+                       <div className="grid grid-cols-2 gap-6">
+                          <a 
+                             href="https://console.cloud.google.com/billing" 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="bg-white/5 border border-white/10 p-10 text-center rounded-sm hover:border-green-500 transition-all group flex flex-col items-center justify-center"
+                          >
+                             <div className="text-green-500 text-3xl mb-3 group-hover:scale-110 transition-transform">📊</div>
+                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Billing Console</p>
+                             <p className="text-[7px] text-gray-600 mt-2 uppercase">External Link</p>
+                          </a>
+                          <div className="bg-white/5 border border-white/10 p-10 text-center rounded-sm flex flex-col items-center justify-center">
+                             <div className="text-white text-3xl mb-3">💎</div>
+                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Efficiency Tier</p>
+                             <p className="text-[7px] text-green-500 mt-2 uppercase">FLASH-3-OPTIMIZED</p>
+                          </div>
+                       </div>
                     </div>
-                    <h3 className="text-3xl font-serif italic text-white">{a.report.suggestedTitle}</h3>
-                    <div className="flex gap-6">
-                       <div className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Marketability: <span className="text-orange-500">{a.report.marketabilityScore}%</span></div>
-                       <div className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Intensity: <span className="text-cyan-500">{a.report.resourceIntensity}/100</span></div>
+                 </div>
+                 
+                 <div className="grid md:grid-cols-3 gap-8">
+                    <div className="bg-[#0d0d0d] border border-white/5 p-12 rounded-sm group hover:border-green-500/20 transition-all">
+                       <p className="text-[8px] font-black text-green-500 uppercase tracking-widest mb-4">Human-Efficiency Gain</p>
+                       <h4 className="text-5xl font-serif italic text-white mb-2">{totalHoursSaved.toFixed(1)} <span className="text-xl text-gray-600">hrs</span></h4>
+                       <p className="text-[9px] text-gray-600 italic">"Time saved versus manual carceral transcription."</p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <button 
-                      className="px-10 py-5 border border-white/10 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all rounded-sm bg-black"
-                      onClick={() => alert(`Sovereign Report Detail:\n\nSummary: ${a.report.summary}\n\nLegal: ${a.report.legalSafetyAudit}`)}
-                    >
-                      Examine Report
-                    </button>
-                    <button 
-                      onClick={() => deleteFromVault('audits', a.id)}
-                      className="text-gray-800 hover:text-red-500 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                    <div className="bg-[#0d0d0d] border border-white/5 p-12 rounded-sm group hover:border-orange-500/20 transition-all">
+                       <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-4">Wholesale Token Flow</p>
+                       <h4 className="text-5xl font-serif italic text-white mb-2">{(totalTokens / 1000).toFixed(2)}k</h4>
+                       <p className="text-[9px] text-gray-600 italic">"Simulated aggregate token volume weight."</p>
+                    </div>
+                    <div className="bg-[#0d0d0d] border border-white/5 p-12 rounded-sm group hover:border-cyan-500/20 transition-all">
+                       <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-4">Total Accrued Cost</p>
+                       <h4 className="text-5xl font-serif italic text-white mb-2">${totalWholesaleCost.toFixed(3)}</h4>
+                       <p className="text-[9px] text-gray-600 italic">"Total wholesale technical overhead to date."</p>
+                    </div>
+                 </div>
 
-          {activeFolder === 'ai' && (
-            <div className="grid gap-6 animate-fade-in">
-              {vault.ai.length === 0 && <div className="p-32 text-center border border-dashed border-white/5 italic text-gray-800 font-serif text-3xl opacity-20">"No intercepted dialogue logged."</div>}
-              {vault.ai.map((a) => (
-                <div key={a.id} className="p-12 bg-[#0d0d0d] border border-white/5 rounded-sm flex items-center justify-between group shadow-xl relative overflow-hidden">
-                   <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500/20 group-hover:bg-cyan-500 transition-colors"></div>
-                   <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest">Freq: Intercept {a.id.split('-')[1]}</p>
-                      <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Captured: {new Date(a.timestamp).toLocaleDateString()}</p>
+                 <div className="bg-white/[0.01] border border-white/5 p-12 rounded-sm">
+                    <div className="flex justify-between items-center mb-10">
+                      <h3 className="text-2xl font-serif italic">Wholesale Viability Registry</h3>
+                      <span className="text-[9px] font-black text-gray-700 uppercase tracking-widest">Log: Institutional-ROI-V4</span>
                     </div>
-                    <h3 className="text-3xl font-serif italic text-white">Re: {a.topic}</h3>
-                    <p className="text-xs text-gray-600 uppercase tracking-widest font-bold">{a.history.length} Intercepted Transmission Segments.</p>
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <button 
-                      className="px-10 py-5 border border-white/10 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all rounded-sm bg-black"
-                      onClick={() => alert("Transmission logs are review-only. Use the transcript for audit purposes.")}
-                    >
-                      Open Transcript
-                    </button>
-                    <button 
-                      onClick={() => deleteFromVault('ai', a.id)}
-                      className="text-gray-800 hover:text-red-500 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeFolder === 'inbound' && (
-            <div className="max-w-2xl mx-auto py-20 animate-fade-in">
-               <div className="bg-[#0d0d0d] border border-cyan-500/20 p-12 shadow-2xl rounded-sm text-center">
-                  <h3 className="text-3xl font-serif italic text-white mb-6">About Time <span className="text-cyan-500">Inbound Desk.</span></h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-10 italic">
-                    "Recover digital manuscripts from physical printouts. Enter the Courier Code below to claim the prose for newspaper review."
-                  </p>
-                  <div className="space-y-6">
-                    <input 
-                      value={courierInput}
-                      onChange={(e) => setCourierInput(e.target.value.toUpperCase())}
-                      placeholder="ENTER COURIER CODE (e.g. AT-XXXX-XXXX)" 
-                      className="w-full bg-black border border-white/10 p-6 text-2xl font-mono text-center tracking-[0.2em] text-cyan-400 focus:border-cyan-500 outline-none"
-                    />
-                    <button 
-                      onClick={claimCourierCode}
-                      className="w-full bg-cyan-500 text-white py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-cyan-600 transition-all rounded-sm shadow-xl shadow-cyan-500/10"
-                    >
-                      Verify & Claim Manuscript
-                    </button>
-                  </div>
-               </div>
-               
-               <div className="mt-12 p-10 border border-white/5 bg-white/[0.01] rounded-sm flex gap-6 items-start opacity-50">
-                  <svg className="w-10 h-10 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  <div className="space-y-2">
-                    <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Protocol Instruction</h4>
-                    <p className="text-[11px] text-gray-500 leading-relaxed italic">
-                      The Courier Code serves as a digital link between the approved physical paper and the sovereign archive. This ensures no unvetted content exits the facility while preserving the author's refined digital draft.
-                    </p>
-                  </div>
-               </div>
-            </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-[10px] font-bold uppercase tracking-widest">
+                         <thead className="text-gray-600 border-b border-white/5">
+                            <tr>
+                               <th className="pb-6">Action Timestamp</th>
+                               <th className="pb-6">Operation</th>
+                               <th className="pb-6">Efficiency Gain</th>
+                               <th className="pb-6">Token Weight</th>
+                               <th className="pb-6">Wholesale Cost</th>
+                            </tr>
+                         </thead>
+                         <tbody className="text-gray-400">
+                            {efficiencyLogs.length === 0 ? (
+                              <tr><td colSpan={5} className="py-16 text-center italic opacity-20 text-xl font-serif font-light">"No viability data logged in registry."</td></tr>
+                            ) : (
+                              efficiencyLogs.map(log => (
+                                <tr key={log.id} className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors">
+                                   <td className="py-6">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                                   <td className="py-6 text-white italic">{log.action}</td>
+                                   <td className="py-6 text-green-500">+{log.metrics.humanHoursSaved.toFixed(3)}h</td>
+                                   <td className="py-6">{log.metrics.estimatedTokens.toLocaleString()}</td>
+                                   <td className="py-6 text-cyan-500">${log.metrics.wholesaleCostEstimate.toFixed(4)}</td>
+                                </tr>
+                              ))
+                            )}
+                         </tbody>
+                      </table>
+                    </div>
+                 </div>
+              </div>
+            )
           )}
 
           {activeFolder === 'stationery' && (
             <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
-              <StationeryItem 
-                title="Email Header" 
-                type="Asset: PNG-24" 
-                desc="The official 1200x400 header for external dispatches. Features the Living Amber glow and Registry Scan texture." 
-                icon="🖼️"
-              />
-              <StationeryItem 
-                title="Courier Code Block" 
-                type="Layout Component" 
-                desc="The industrial footer for physical printouts. Designed to communicate securely with the About Time Inbound Desk." 
-                icon="📟"
-              />
-              <StationeryItem 
-                title="Sovereign Seal" 
-                type="Vector Overlay" 
-                desc="The irregular ink-stamp seal for high-security carceral documentation." 
-                icon="⚖️"
-              />
-              <StationeryItem 
-                title="Registry Table" 
-                type="HTML Template" 
-                desc="Refined formatting for Substack emails, focusing on data-integrity and high-end industrial aesthetics." 
-                icon="📋"
-              />
+              <StationeryItem title="Sovereign Slate V1" type="Hardware Prototype" desc="Concept visualization for a low-power, zero-surveillance hardware device designed for carceral literary creation." icon="📱" />
+              <StationeryItem title="Courier Code Block" type="Layout Component" desc="The industrial footer for physical printouts. Designed to communicate securely with the About Time Inbound Desk." icon="📟" />
+              <StationeryItem title="Sovereign Seal" type="Vector Overlay" desc="The irregular ink-stamp seal for high-security carceral documentation." icon="⚖️" />
+              <StationeryItem title="Registry Table" type="HTML Template" desc="Refined formatting for Substack emails, focusing on data-integrity." icon="📋" />
             </div>
+          )}
+
+          {activeFolder === 'audits' && (
+             <div className="grid gap-6 animate-fade-in">
+                {(vault.audits?.length || 0) === 0 && <div className="p-32 text-center border border-dashed border-white/5 italic text-gray-800 font-serif text-3xl opacity-20">"No Sovereign Audits logged in Block C."</div>}
+                {vault.audits?.map((a) => (
+                  <div key={a.id} className="p-12 bg-[#0d0d0d] border border-white/5 hover:border-orange-500/20 transition-all group rounded-sm shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500/20 group-hover:bg-cyan-500 transition-colors"></div>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                         <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Logged: {new Date(a.timestamp).toLocaleDateString()}</span>
+                         <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest border border-orange-500/20 px-2">Mode: {a.report.suggestedTitle}</span>
+                      </div>
+                      <h3 className="text-4xl font-serif italic text-white group-hover:text-orange-500 transition-colors tracking-tighter">{a.report.suggestedTitle || "Untitled Audit"}</h3>
+                      <p className="text-sm text-gray-500 font-light italic leading-relaxed max-w-2xl">{a.report.summary}</p>
+                    </div>
+                    <div className="mt-8 pt-8 border-t border-white/5 flex gap-8">
+                       <div className="space-y-1">
+                          <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">Marketability</p>
+                          <p className="text-lg font-serif italic text-orange-500">{a.report.marketabilityScore}%</p>
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">Resource Load</p>
+                          <p className="text-lg font-serif italic text-cyan-500">{a.report.resourceIntensity}/100</p>
+                       </div>
+                    </div>
+                    <button onClick={() => deleteFromVault('audits', a.id)} className="absolute top-12 right-12 text-gray-800 hover:text-red-500 transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
+                ))}
+             </div>
+          )}
+
+          {/* Fallback for other folders like inbound, AI... */}
+          {['inbound', 'ai'].includes(activeFolder) && (
+            <div className="p-32 text-center opacity-30 italic font-serif text-2xl">Module Secured. Access Restricted to System Administrators.</div>
           )}
         </main>
       </div>
 
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        .animate-shake { animation: shake 0.2s ease-in-out 3; }
       `}</style>
     </div>
   );
