@@ -81,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           />
           <NavItem 
             to="/author-builder" 
-            label="My Sheets" 
+            label="MAKE A WRAP SHEET" 
             title="WRAP Workspace" 
             subtitle="Draft and refine your legacy. Personalize your WRAP Profile here." 
           />
@@ -132,7 +132,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         <div className="px-12 pt-12 pb-3 space-y-8 flex flex-col items-center">
           <Link to="/published-books" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
           <Link to="/narratives" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Narratives</Link>
-          <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-amber">My Sheets</Link>
+          <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-amber">MAKE A WRAP SHEET</Link>
           <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2">The Big House</Link>
           <Link to="/wrap-it-up" onClick={() => setIsOpen(false)} className="text-[var(--accent)]/60 text-xl font-serif italic py-2 animate-living-amber">Mastering Suite</Link>
           <Link to="/mission" onClick={() => setIsOpen(false)} className="text-gray-500 text-xl font-sans uppercase tracking-[0.3em] py-2">Mission</Link>

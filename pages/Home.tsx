@@ -36,7 +36,7 @@ const Home: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row justify-center gap-10 animate-fade-in mt-12">
             <Link to="/author-builder" className="group relative bg-orange-500 hover:bg-orange-600 text-white px-20 py-8 font-black tracking-[0.6em] uppercase text-[11px] transition-all shadow-2xl rounded-sm animate-living-amber-bg overflow-hidden">
-              <span className="relative z-10">Enter My Sheets</span>
+              <span className="relative z-10">MAKE A WRAP SHEET</span>
               <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
             </Link>
             <Link to="/published-books" className="bg-white/5 hover:bg-white/10 text-white px-20 py-8 font-black tracking-[0.6em] uppercase text-[11px] border border-white/10 backdrop-blur-3xl transition-all hover:border-white/30 rounded-sm">

@@ -12,20 +12,76 @@ const SAMPLE_BOOKS: Book[] = [
     description: "There is no way of knowing how many family violence orders are enforced across Australia. What we do know is how many have wound up in court. In 2023–24, 42% of all civil cases finalised in Australian Magistrates’ Courts involved originating applications for domestic violence orders — around 131,000 cases.",
     coverUrl: 'https://images.unsplash.com/photo-1541829081725-6f1c93bb3c24?q=80&w=1200&auto=format&fit=crop',
     slug: 'the-ivo-trap',
-    releaseYear: '2024'
+    releaseYear: '2024',
+    buyUrl: 'https://www.ingramspark.com/'
   }
 ];
 
-// Recalibrated Ceiling: 1.5MB (Safety standard for browser localStorage)
 const MAX_FILE_SIZE = 1.5 * 1024 * 1024;
 const INDUSTRIAL_ASPECT = 1600 / 2700; 
+
+// --- Sovereign Vault Core V4 ---
+const VAULT_NAME = 'aca_sovereign_registry';
+const VAULT_VERSION = 4; // Upgraded to V4 for atomic text persistence
+
+const openVault = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(VAULT_NAME, VAULT_VERSION);
+    request.onupgradeneeded = (event: any) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('books')) {
+        db.createObjectStore('books', { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const saveToVault = async (book: Book) => {
+  const db = await openVault();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('books', 'readwrite');
+    const store = transaction.objectStore('books');
+    store.put(book);
+    transaction.oncomplete = () => resolve(true);
+    transaction.onerror = () => reject(transaction.error);
+  });
+};
+
+const getFromVault = async (): Promise<Book[]> => {
+  try {
+    const db = await openVault();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('books', 'readonly');
+      const store = transaction.objectStore('books');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    return [];
+  }
+};
+
+const factoryReset = async () => {
+  if (window.confirm("CRITICAL: Wipe all local data, images, and sheets for a Clean Slate?")) {
+    localStorage.clear();
+    const request = indexedDB.deleteDatabase(VAULT_NAME);
+    request.onsuccess = () => {
+      alert("System purged. Reloading...");
+      window.location.href = "/";
+    };
+  }
+};
+// ------------------------------
 
 const PublishedBooks: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [isAddingBook, setIsAddingBook] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [storageUsed, setStorageUsed] = useState(0);
+  const [masteringSuccess, setMasteringSuccess] = useState(false);
   
   const [masteringAsset, setMasteringAsset] = useState<{ 
     url: string, 
@@ -36,96 +92,45 @@ const PublishedBooks: React.FC = () => {
 
   const [cropOffset, setCropOffset] = useState({ x: 0, y: 0, scale: 1 });
   const [useIndustrialCrop, setUseIndustrialCrop] = useState(false);
-  const [masteringGrade, setMasteringGrade] = useState<'sovereign' | 'legacy'>('sovereign');
   const [isDragging, setIsDragging] = useState(false);
   const startPos = useRef({ x: 0, y: 0 });
 
-  const [newBook, setNewBook] = useState<Partial<Book>>(() => {
-    const draft = localStorage.getItem('aca_book_registry_draft');
-    return draft ? JSON.parse(draft) : {
-      title: '',
-      subtitle: '',
-      author: '',
-      description: '',
-      releaseYear: new Date().getFullYear().toString(),
-      coverUrl: ''
-    };
+  const [newBook, setNewBook] = useState<Partial<Book>>({
+    title: '',
+    subtitle: '',
+    author: '',
+    description: '',
+    releaseYear: new Date().getFullYear().toString(),
+    coverUrl: '',
+    buyUrl: 'https://www.ingramspark.com/'
   });
 
   const frontInputRef = useRef<HTMLInputElement>(null);
-  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadRegistry();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('aca_book_registry_draft', JSON.stringify(newBook));
-  }, [newBook]);
-
-  const loadRegistry = () => {
-    const saved = localStorage.getItem('aca_published_books');
-    const userBooks: Book[] = saved ? JSON.parse(saved) : [];
+  const loadRegistry = async () => {
+    const userBooks = await getFromVault();
     const combined = [...userBooks];
     SAMPLE_BOOKS.forEach(sample => {
       if (!combined.find(b => b.slug === sample.slug)) combined.push(sample);
     });
     setBooks(combined);
-    
-    let totalChars = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key === 'aca_published_books' || key.startsWith('aca_'))) {
-        totalChars += localStorage.getItem(key)?.length || 0;
-      }
-    }
-    setStorageUsed((totalChars * 2) / (1024 * 1024)); 
-  };
-
-  const clearRegistry = () => {
-    if (window.confirm("PERMANENT ACTION: This will erase all custom books from the local registry to free up 5MB of storage. Proceed?")) {
-      localStorage.removeItem('aca_published_books');
-      localStorage.removeItem('aca_book_registry_draft');
-      loadRegistry();
-      window.location.reload();
-    }
-  };
-
-  const exportRegistry = () => {
-    const saved = localStorage.getItem('aca_published_books');
-    if (!saved) return;
-    const blob = new Blob([saved], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ACA-Registry-Backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-  };
-
-  const importRegistry = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = event.target?.result as string;
-        JSON.parse(data);
-        localStorage.setItem('aca_published_books', data);
-        loadRegistry();
-        alert("Sovereign Registry Restored.");
-      } catch (err) {
-        alert("Invalid vault file.");
-      }
-    };
-    reader.readAsText(file);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.type === 'application/pdf') {
+       setError("PDF REJECTED: Browsers cannot render PDF as images. Please use a high-quality JPEG or PNG.");
+       return;
+    }
+
     if (file.size > MAX_FILE_SIZE) {
-      setError(`CRITICAL OVERSIZE: ${(file.size / 1024 / 1024).toFixed(1)}MB. Limit is 1.5MB to prevent system lock.`);
+      setError(`CRITICAL OVERSIZE: ${(file.size / 1024 / 1024).toFixed(1)}MB. Use 1.5MB for stability.`);
       return;
     }
 
@@ -134,14 +139,10 @@ const PublishedBooks: React.FC = () => {
       const url = event.target?.result as string;
       const img = new Image();
       img.onload = () => {
-        setMasteringAsset({ 
-          url, 
-          originalSize: file.size,
-          width: img.width,
-          height: img.height
-        });
+        setMasteringAsset({ url, originalSize: file.size, width: img.width, height: img.height });
         setCropOffset({ x: 0, y: 0, scale: 1 });
         setError(null);
+        setMasteringSuccess(false);
       };
       img.src = url;
     };
@@ -155,13 +156,9 @@ const PublishedBooks: React.FC = () => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      if (useIndustrialCrop) {
-        canvas.width = 1600;
-        canvas.height = 2700;
-      } else {
-        canvas.width = img.width;
-        canvas.height = img.height;
-      }
+      canvas.width = useIndustrialCrop ? 1600 : img.width;
+      canvas.height = useIndustrialCrop ? 2700 : img.height;
+      
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.fillStyle = '#000';
@@ -186,21 +183,28 @@ const PublishedBooks: React.FC = () => {
         ctx.drawImage(img, 0, 0);
       }
 
-      // Recalibrated Quality for 1.5MB safety:
-      // 0.92 provides perfect visual fidelity but significantly reduces string bloat.
-      const quality = masteringGrade === 'sovereign' ? 0.92 : 0.80;
-      const finalDataUrl = canvas.toDataURL('image/jpeg', quality);
-      
+      const finalDataUrl = canvas.toDataURL('image/jpeg', 0.90);
       setNewBook(prev => ({ ...prev, coverUrl: finalDataUrl }));
       setMasteringAsset(null);
       setIsProcessing(false);
-      setError(null);
+      setMasteringSuccess(true);
     };
     img.src = masteringAsset.url;
   };
 
-  const saveNewBook = () => {
-    if (!newBook.title || !newBook.coverUrl) return;
+  const saveNewBook = async () => {
+    if (!newBook.title || !newBook.coverUrl) {
+      setError("INTEGRITY ERROR: Title and Master Image are mandatory for Vault registry.");
+      return;
+    }
+    
+    // Explicitly forge the slug to ensure "stickiness" in the link logic
+    const uniqueSlug = newBook.title.toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
     const bookToSave: Book = {
       id: Date.now().toString(),
       title: newBook.title,
@@ -208,21 +212,20 @@ const PublishedBooks: React.FC = () => {
       author: newBook.author || 'Anonymous',
       description: newBook.description || '',
       coverUrl: newBook.coverUrl,
+      buyUrl: newBook.buyUrl || 'https://www.ingramspark.com/',
       releaseYear: newBook.releaseYear || '2024',
-      slug: newBook.title.toLowerCase().replace(/\s+/g, '-')
+      slug: uniqueSlug
     };
     
     try {
-      const current = localStorage.getItem('aca_published_books');
-      const existing = current ? JSON.parse(current) : [];
-      localStorage.setItem('aca_published_books', JSON.stringify([bookToSave, ...existing]));
-      localStorage.removeItem('aca_book_registry_draft');
-      loadRegistry();
+      await saveToVault(bookToSave);
+      await loadRegistry();
       setIsAddingBook(false);
-      setNewBook({ title: '', subtitle: '', author: '', description: '', releaseYear: '2024', coverUrl: '' });
+      setNewBook({ title: '', subtitle: '', author: '', description: '', releaseYear: '2024', coverUrl: '', buyUrl: 'https://www.ingramspark.com/' });
+      setMasteringSuccess(false);
       setError(null);
     } catch (e) {
-      setError("VAULT SATURATED: Storage full. Please use 'Clear Vault' or 'Backup' to free space.");
+      setError("VAULT WRITE ERROR: The registry failed to lock the data. Try a 'Factory Reset'.");
     }
   };
 
@@ -231,28 +234,13 @@ const PublishedBooks: React.FC = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 border-b border-white/5">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 animate-fade-in">
           <div>
-            <span className="text-[var(--accent)] tracking-[0.6em] uppercase text-[10px] font-bold mb-6 block">The Storefront</span>
+            <span className="text-[var(--accent)] tracking-[0.6em] uppercase text-[10px] font-bold mb-6 block">Master Registry</span>
             <h1 className="text-6xl md:text-9xl font-serif font-black mb-12 italic leading-none tracking-tighter uppercase text-white">Book <span className="animate-living-amber">Registry.</span></h1>
-            <p className="text-xl md:text-2xl text-gray-400 font-light max-w-3xl leading-relaxed italic opacity-80">"Permanent archival of 1.5MB sovereign masters. Balanced for clarity and vault stability."</p>
+            <p className="text-xl md:text-2xl text-gray-400 font-light max-w-3xl leading-relaxed italic opacity-80">"Sovereign Vault V4.0 — High-Fidelity Text & Image Persistence."</p>
           </div>
           <div className="pb-12 flex flex-col md:flex-row gap-6">
-            <div className="flex flex-col gap-2">
-              <button onClick={() => setIsAddingBook(true)} className="bg-[var(--accent)] text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Register Master</button>
-              <div className="flex items-center gap-2 px-1">
-                <div className="flex-grow h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className={`h-full transition-all duration-1000 ${storageUsed > 4 ? 'bg-red-500' : 'bg-orange-500'}`} style={{ width: `${(storageUsed / 5) * 100}%` }}></div>
-                </div>
-                <span className={`text-[8px] font-black uppercase tracking-widest ${storageUsed > 4 ? 'text-red-500 animate-pulse' : 'text-gray-600'}`}>{storageUsed.toFixed(1)}MB / 5.0MB</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <button onClick={exportRegistry} className="border border-white/10 text-white px-8 py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all rounded-sm">Backup Registry</button>
-              <div className="flex justify-between gap-2">
-                <button onClick={() => importInputRef.current?.click()} className="text-[7px] text-gray-700 font-bold uppercase tracking-widest hover:text-orange-500 transition-colors underline underline-offset-4">Restore</button>
-                <button onClick={clearRegistry} className="text-[7px] text-red-900 font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Clear Vault</button>
-              </div>
-              <input type="file" ref={importInputRef} onChange={importRegistry} className="hidden" accept=".json" />
-            </div>
+            <button onClick={() => setIsAddingBook(true)} className="bg-[var(--accent)] text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Register Master</button>
+            <button onClick={factoryReset} className="text-[7px] text-red-900 font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Clean Slate Reset</button>
           </div>
         </div>
       </section>
@@ -262,7 +250,18 @@ const PublishedBooks: React.FC = () => {
           {books.map((book) => (
             <div key={book.id} className="group flex flex-col relative animate-fade-in">
               <Link to={`/book/${book.slug}`} className="relative mb-8 block shadow-2xl border-l-[10px] border-black rounded-r-sm bg-[#0a0a0a] aspect-[16/27] overflow-hidden flex items-center justify-center p-3">
-                <img src={book.coverUrl} alt={book.title} className="w-full h-full object-contain grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000" />
+                {book.coverUrl ? (
+                  <img 
+                    src={book.coverUrl} 
+                    alt={book.title} 
+                    className="w-full h-full object-contain grayscale-[30%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
+                    onError={(e) => {
+                       (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1600x2700?text=Vault+Link+Broken';
+                    }}
+                  />
+                ) : (
+                  <div className="text-gray-800 text-[10px] font-black uppercase tracking-widest text-center px-6">Master Asset Not Syncing</div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-transparent opacity-60"></div>
               </Link>
               <h3 className="text-3xl font-serif font-bold italic mb-1 text-white group-hover:text-[var(--accent)] transition-colors">{book.title}</h3>
@@ -271,7 +270,9 @@ const PublishedBooks: React.FC = () => {
             </div>
           ))}
           <div onClick={() => setIsAddingBook(true)} className="border border-white/5 border-dashed p-12 flex flex-col items-center justify-center text-center bg-white/[0.02] hover:border-[var(--accent)]/40 transition-all group aspect-[16/27] cursor-pointer rounded-sm">
-             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mb-6"><span className="text-[var(--accent)] text-2xl">+</span></div>
+             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-[var(--accent)] text-2xl font-serif italic">+</span>
+             </div>
              <h4 className="text-white font-serif italic text-xl">Register Master</h4>
           </div>
         </div>
@@ -281,42 +282,62 @@ const PublishedBooks: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
           <div className="max-w-7xl w-full bg-[#0a0a0a] border border-white/10 p-12 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button onClick={() => setIsAddingBook(false)} className="absolute top-8 right-8 text-gray-700 hover:text-white text-3xl leading-none">×</button>
-            <h2 className="text-4xl font-serif italic text-white mb-6 border-b border-white/5 pb-6 uppercase tracking-tighter">Book Registry</h2>
+            <h2 className="text-4xl font-serif italic text-white mb-6 border-b border-white/5 pb-6 uppercase tracking-tighter">Vault Registration</h2>
             
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 p-6 mb-10 rounded-sm">
-                <p className="text-red-500 text-[10px] font-black uppercase tracking-widest leading-loose">{error}</p>
-              </div>
-            )}
+            {error && <div className="bg-red-500/10 border border-red-500/50 p-6 mb-10 rounded-sm text-red-500 text-[10px] font-black uppercase tracking-widest">{error}</div>}
 
             <div className="grid lg:grid-cols-3 gap-12">
                <div className="lg:col-span-1 space-y-8">
                   <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Book Title</label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Book Title</label>
+                      {newBook.title && <span className="text-[7px] text-green-500 font-black uppercase animate-pulse">Synced</span>}
+                    </div>
                     <input value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white rounded-sm" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Author</label>
-                    <input value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-[var(--accent)] text-white rounded-sm" />
+                    <label className="text-[9px] font-bold text-cyan-500 uppercase tracking-widest">IngramSpark Storefront Link</label>
+                    <input value={newBook.buyUrl} onChange={e => setNewBook({...newBook, buyUrl: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none focus:border-cyan-500 text-cyan-400 rounded-sm" />
                   </div>
-                  <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none text-white min-h-[120px] rounded-sm" placeholder="Description..." />
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Full Blurb / Description</label>
+                      {newBook.description && <span className="text-[7px] text-green-500 font-black uppercase animate-pulse">Mastered</span>}
+                    </div>
+                    <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-black border border-white/10 p-5 text-sm font-serif outline-none text-white min-h-[160px] rounded-sm resize-none" placeholder="Enter the definitive text..." />
+                  </div>
                </div>
                
                <div className="lg:col-span-1 space-y-8">
-                  <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest text-orange-500 underline">High-Res Front Master</label>
+                  <label className="text-[9px] font-bold text-orange-500 uppercase tracking-widest underline">High-Res Front Master (JPEG)</label>
                   <div onClick={() => frontInputRef.current?.click()} className="w-full aspect-[16/27] bg-black border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer group hover:border-[var(--accent)]/40 relative overflow-hidden rounded-sm p-4 transition-all">
-                    {newBook.coverUrl ? <img src={newBook.coverUrl} className="w-full h-full object-contain" /> : <div className="text-center"><span className="text-[10px] text-gray-700 uppercase tracking-widest block mb-2">Upload Asset</span><span className="text-[8px] text-gray-800 uppercase italic">Max 1.5MB</span></div>}
+                    {newBook.coverUrl ? (
+                      <div className="w-full h-full relative">
+                        <img src={newBook.coverUrl} className="w-full h-full object-contain" alt="Master Preview" />
+                        {masteringSuccess && (
+                          <div className="absolute inset-x-0 bottom-0 bg-green-500 text-white p-3 flex flex-col items-center animate-living-amber-bg">
+                            <span className="text-[8px] font-black uppercase tracking-[0.4em]">Vault Synchronized</span>
+                            <span className="text-[6px] font-bold uppercase tracking-widest opacity-80 mt-1">Ready for Registry</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <span className="text-[10px] text-gray-700 uppercase tracking-widest block mb-2">Upload JPEG Asset</span>
+                        <span className="text-[8px] text-gray-800 uppercase italic">Max 1.5MB</span>
+                      </div>
+                    )}
                     <input type="file" ref={frontInputRef} onChange={handleFileUpload} className="hidden" accept="image/png,image/jpeg" />
                   </div>
-                  <button onClick={saveNewBook} disabled={!newBook.title || !newBook.coverUrl || !!error || isProcessing} className="w-full bg-orange-500 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all rounded-sm">Sync Registry</button>
+                  <button onClick={saveNewBook} disabled={!newBook.title || !newBook.coverUrl || !!error || isProcessing} className="w-full bg-orange-500 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all rounded-sm">Sync to Master Vault</button>
                </div>
 
                <div className="lg:col-span-1 bg-white/[0.02] border border-white/5 p-8 rounded-sm self-start">
-                  <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest mb-6 underline">The 1.5MB Standard</h4>
+                  <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest mb-6 underline">The Sovereign Standard</h4>
                   <div className="space-y-6 text-[9px] text-gray-500 uppercase tracking-widest leading-loose">
-                    <p>Focus: <span className="text-white">Vault Equilibrium</span>. We've capped masters at 1.5MB to ensure the browser never crashes.</p>
-                    <p>Resolution: Our <span className="text-white">Sovereign Grade</span> uses 92% JPEG compression for the highest visual clarity at half the file size.</p>
-                    <p>Health: If you see a <span className="text-red-500">Black Screen</span>, your vault is over-saturated. Use the 'Clear Vault' tool to reset.</p>
+                    <p>Format: <span className="text-white font-bold">JPEG or PNG</span> only.</p>
+                    <p>Database: <span className="text-white font-bold">IndexedDB Master Vault V4.0</span>. This survives page reloads and browser restarts.</p>
+                    <p>Persistence: Every field (Title, Blurb, Image) is locked into a single atomic transaction.</p>
                   </div>
                </div>
             </div>
@@ -328,12 +349,7 @@ const PublishedBooks: React.FC = () => {
         <div className="fixed inset-0 z-[200] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-fade-in">
           <div className="max-w-4xl w-full flex flex-col h-full max-h-[90vh]">
             <div className="mb-8 flex justify-between items-end">
-               <div>
-                  <h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Precision Mastery Tool</h3>
-                  <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest">
-                    Limit: 1.5MB for stability | Current Asset: {(masteringAsset.originalSize / 1024 / 1024).toFixed(1)}MB
-                  </p>
-               </div>
+               <div><h3 className="text-2xl font-serif italic text-white uppercase tracking-tighter">Precision Mastery Tool</h3></div>
                <button onClick={() => setMasteringAsset(null)} className="text-gray-500 hover:text-white text-5xl leading-none">&times;</button>
             </div>
 
@@ -344,17 +360,6 @@ const PublishedBooks: React.FC = () => {
                  onMouseLeave={() => setIsDragging(false)}
                  onWheel={(e) => { if (useIndustrialCrop) setCropOffset(prev => ({ ...prev, scale: Math.max(0.1, Math.min(5, prev.scale - e.deltaY * 0.001)) })); }}
             >
-               {useIndustrialCrop && (
-                 <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-                    <div className="h-[80%] aspect-[16/27] border-2 border-orange-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.8)] relative">
-                       <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-orange-500 -mt-0.5 -ml-0.5"></div>
-                       <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-orange-500 -mt-0.5 -mr-0.5"></div>
-                       <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-orange-500 -mb-0.5 -ml-0.5"></div>
-                       <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-orange-500 -mb-0.5 -mr-0.5"></div>
-                    </div>
-                 </div>
-               )}
-
                <img src={masteringAsset.url} 
                     style={{ transform: useIndustrialCrop ? `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropOffset.scale})` : 'none' }}
                     className={`${useIndustrialCrop ? 'max-h-[80%]' : 'max-w-full max-h-full object-contain'} transition-transform duration-75 pointer-events-none select-none`}
@@ -362,21 +367,11 @@ const PublishedBooks: React.FC = () => {
             </div>
 
             <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-8 bg-black/40 p-8 border border-white/5 rounded-sm">
-               <div className="flex flex-wrap items-center gap-8">
-                  <div className="flex bg-white/5 p-1 border border-white/10 rounded-sm">
-                    <button onClick={() => setUseIndustrialCrop(false)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${!useIndustrialCrop ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Original Ratio</button>
-                    <button onClick={() => setUseIndustrialCrop(true)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${useIndustrialCrop ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Industrial (16:27)</button>
-                  </div>
-                  
-                  <div className="flex bg-white/5 p-1 border border-white/10 rounded-sm">
-                    <button onClick={() => setMasteringGrade('legacy')} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${masteringGrade === 'legacy' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Legacy (80% Quality)</button>
-                    <button onClick={() => setMasteringGrade('sovereign')} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${masteringGrade === 'sovereign' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Sovereign (92% Quality)</button>
-                  </div>
+               <div className="flex bg-white/5 p-1 border border-white/10 rounded-sm">
+                 <button onClick={() => setUseIndustrialCrop(false)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${!useIndustrialCrop ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Original Ratio</button>
+                 <button onClick={() => setUseIndustrialCrop(true)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${useIndustrialCrop ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Industrial (16:27)</button>
                </div>
-               <div className="flex gap-4">
-                 <button onClick={() => setMasteringAsset(null)} className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all">Cancel</button>
-                 <button onClick={commitMastering} className="bg-orange-500 text-white px-12 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Commit Master</button>
-               </div>
+               <button onClick={commitMastering} className="bg-orange-500 text-white px-12 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Commit Master</button>
             </div>
           </div>
         </div>

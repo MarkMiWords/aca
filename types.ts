@@ -48,6 +48,7 @@ export interface Book {
   coverUrl: string;
   slug: string;
   releaseYear: string;
+  buyUrl?: string;
 }
 
 export interface GroundingSource {
