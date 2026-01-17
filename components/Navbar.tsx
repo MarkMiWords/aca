@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
@@ -11,18 +10,17 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
+  // Load tooltip preference
+  const showTooltips = (() => {
+    const profile = localStorage.getItem('aca_author_profile');
+    return profile ? JSON.parse(profile).showTooltips !== false : true;
+  })();
+
   return (
     <nav className="fixed w-full z-50 bg-[#050505]/95 backdrop-blur-3xl border-b border-white/[0.03]">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/30 to-transparent"></div>
       
       <div className="w-full h-24 flex items-center justify-between">
-        
-        {/* 
-            Left Section: Centering the logo over the sidebar.
-            Increased to h-48 to match the footer exactly.
-            CRITICAL: pointer-events-none on the div ensures the invisible box of the logo 
-            doesn't block clicks on the sidebar chapters below it.
-        */}
         <div className="flex items-center h-full">
           <div className="w-80 flex justify-center items-center h-full pt-32 overflow-visible pointer-events-none">
             <Link to="/" className="group block overflow-visible pointer-events-auto">
@@ -33,7 +31,6 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
             </Link>
           </div>
           
-          {/* Sovereign Protocol Beta Tag */}
           <div className="hidden xl:flex items-center self-end pb-8 ml-8">
              <span className="text-[8px] font-black text-orange-500/60 uppercase tracking-[0.4em] flex items-center gap-2">
                <span className="w-1 h-1 rounded-full bg-orange-500 animate-pulse animate-living-amber-bg"></span>
@@ -42,11 +39,21 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           </div>
         </div>
         
-        {/* Right Section: Core Navigation */}
         <div className="hidden md:flex items-center space-x-6 pr-12 lg:pr-20">
           <Link to="/published-books" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">Books</Link>
           <Link to="/narratives" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">Narratives</Link>
           <Link to="/author-builder" className="text-gray-400 hover:text-white px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-white">My Sheets</Link>
+          
+          <div className="relative group/tooltip">
+            <Link to="/sovereign-vault" className="text-orange-500 px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all hover:glow-amber animate-living-amber">THE BIG HOUSE</Link>
+            {showTooltips && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-56 text-center bg-black border border-white/10 p-4 shadow-2xl rounded-sm">
+                <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">The Big House</p>
+                <p className="text-[10px] text-gray-500 italic leading-tight">Your Sovereign Vault. Everything stored in The Big House stays with you, even after you cross the gate.</p>
+              </div>
+            )}
+          </div>
+
           <Link to="/wrap-it-up" className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-orange-500 hover:text-white rounded-sm animate-living-amber-border animate-living-amber">Mastering Suite</Link>
 
           <div className="h-4 w-[1px] bg-white/10 mx-2"></div>
@@ -60,7 +67,6 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           </button>
         </div>
 
-        {/* Mobile menu trigger */}
         <div className="md:hidden flex items-center pr-6">
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -73,12 +79,12 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
       <div className={`${isOpen ? 'block' : 'hidden'} md:hidden bg-[#050505] h-screen border-t border-white/5`}>
         <div className="px-12 pt-12 pb-3 space-y-8 flex flex-col items-center">
           <Link to="/published-books" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
           <Link to="/narratives" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Narratives</Link>
           <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-orange-500 text-3xl font-serif italic py-2 animate-living-amber">My Sheets</Link>
+          <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-orange-500 text-3xl font-serif italic py-2">The Big House</Link>
           <Link to="/wrap-it-up" onClick={() => setIsOpen(false)} className="text-orange-500/60 text-xl font-serif italic py-2 animate-living-amber">Mastering Suite</Link>
           <Link to="/mission" onClick={() => setIsOpen(false)} className="text-gray-500 text-xl font-sans uppercase tracking-[0.3em] py-2">Mission</Link>
         </div>

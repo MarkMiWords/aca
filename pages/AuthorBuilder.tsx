@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { queryPartner, smartSoap, jiveContent, generateSpeech, analyzeVoiceAndDialect } from '../services/geminiService';
-import { Message, Chapter, MediaAsset } from '../types';
+import { queryPartner, smartSoap, jiveContent, generateSpeech, analyzeVoiceAndDialect, performOCR } from '../services/geminiService';
+import { Message, Chapter, MediaAsset, VaultStorage, VaultSheet, VaultAI } from '../types';
 
 // Declare mammoth for Word import
 declare const mammoth: any;
@@ -32,6 +33,15 @@ const FONT_PAIRINGS = [
   { name: 'Typewriter', title: 'font-mono uppercase tracking-tighter', body: 'font-mono text-base tracking-tight' },
   { name: 'Manuscript', title: 'font-serif italic font-light', body: 'font-serif italic text-2xl leading-relaxed' },
 ];
+
+function generateCourierCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'AT-';
+  for (let i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  code += '-';
+  for (let i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  return code;
+}
 
 function pcmToWavBlob(base64: string, sampleRate: number = 24000): Blob {
   const binaryString = atob(base64);
@@ -83,19 +93,19 @@ const AuthorBuilder: React.FC = () => {
   const [isDogging, setIsDogging] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSpeakingLoading, setIsSpeakingLoading] = useState(false);
+  const [isOCRLoading, setIsOCRLoading] = useState(false);
   const [wrapperWidth, setWrapperWidth] = useState(384); 
+  const [isPrintView, setIsPrintView] = useState(false);
+  const [currentPrintKey, setCurrentPrintKey] = useState("");
   
-  // WRAP Settings
   const [style, setStyle] = useState(STYLES[2]); 
   const [region, setRegion] = useState(REGIONS[1]);
 
-  // Studio Intelligence Preferences
   const [showTooltips, setShowTooltips] = useState(() => {
     const profile = localStorage.getItem('aca_author_profile');
     return profile ? JSON.parse(profile).showTooltips !== false : true;
   });
 
-  // Custom Dialect / Virty Engine States
   const [uiStrings, setUiStrings] = useState<Record<string, string>>({
     registry: "Registry",
     sheets: "My Sheets",
@@ -114,7 +124,6 @@ const AuthorBuilder: React.FC = () => {
   const [isRecordingLab, setIsRecordingLab] = useState(false);
   const [recordingProgress, setRecordingProgress] = useState(0);
   
-  // Speak Settings
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id);
   const [selectedPersona, setSelectedPersona] = useState(customPersona ? 'MyVoice' : PERSONAS[0]);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
@@ -127,9 +136,9 @@ const AuthorBuilder: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const ocrInputRef = useRef<HTMLInputElement>(null);
   const isResizing = useRef(false);
 
-  // Helper to find nested chapters
   const findChapterById = (list: Chapter[], id: string): Chapter | undefined => {
     for (const c of list) {
       if (c.id === id) return c;
@@ -147,7 +156,6 @@ const AuthorBuilder: React.FC = () => {
     localStorage.setItem('wrap_sheets_v4', JSON.stringify(chapters));
   }, [chapters]);
 
-  // Resize Logic
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
@@ -169,7 +177,6 @@ const AuthorBuilder: React.FC = () => {
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      // Main Content Recognition
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
@@ -189,13 +196,8 @@ const AuthorBuilder: React.FC = () => {
           setChapters(prev => updateChapterInList(prev));
         }
       };
-      recognitionRef.current.onend = () => {
-        if (isListening) {
-           try { recognitionRef.current.start(); } catch(e) {}
-        }
-      };
+      recognitionRef.current.onend = () => { if (isListening) try { recognitionRef.current.start(); } catch(e) {} };
 
-      // Partner (WRAP) Recognition
       partnerRecognitionRef.current = new SpeechRecognition();
       partnerRecognitionRef.current.continuous = true;
       partnerRecognitionRef.current.interimResults = true;
@@ -206,38 +208,22 @@ const AuthorBuilder: React.FC = () => {
         }
         if (transcript) setPartnerInput(prev => prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + transcript);
       };
-      partnerRecognitionRef.current.onend = () => {
-        if (isPartnerListening) {
-           try { partnerRecognitionRef.current.start(); } catch(e) {}
-        }
-      };
+      partnerRecognitionRef.current.onend = () => { if (isPartnerListening) try { partnerRecognitionRef.current.start(); } catch(e) {} };
     }
   }, [activeChapterId, isListening, isPartnerListening]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (messages.length > 0) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPartnerLoading]);
 
   const toggleListening = () => {
-    if (isListening) { 
-      setIsListening(false); 
-      recognitionRef.current?.stop(); 
-    } else { 
-      setIsListening(true); 
-      recognitionRef.current?.start(); 
-    }
+    if (isListening) { setIsListening(false); recognitionRef.current?.stop(); }
+    else { setIsListening(true); recognitionRef.current?.start(); }
   };
 
   const togglePartnerListening = () => {
-    if (isPartnerListening) { 
-      setIsPartnerListening(false); 
-      partnerRecognitionRef.current?.stop(); 
-    } else { 
-      setIsPartnerListening(true); 
-      partnerRecognitionRef.current?.start(); 
-    }
+    if (isPartnerListening) { setIsPartnerListening(false); partnerRecognitionRef.current?.stop(); }
+    else { setIsPartnerListening(true); partnerRecognitionRef.current?.start(); }
   };
 
   const startVoiceLabRecording = async () => {
@@ -245,7 +231,6 @@ const AuthorBuilder: React.FC = () => {
     const recorder = new MediaRecorder(stream);
     mediaRecorderRef.current = recorder;
     audioChunksRef.current = [];
-    
     recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
     recorder.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
@@ -262,33 +247,22 @@ const AuthorBuilder: React.FC = () => {
             setDetectedLocale(results.detectedLocale);
             setSelectedPersona('MyVoice');
           }
-        } finally {
-          setIsPartnerLoading(false);
-          setIsVoiceLabOpen(false);
-        }
+        } finally { setIsPartnerLoading(false); setIsVoiceLabOpen(false); }
       };
       reader.readAsDataURL(audioBlob);
     };
-
     recorder.start();
     setIsRecordingLab(true);
     setRecordingProgress(0);
-    
     let count = 0;
     const interval = setInterval(() => {
       count += 1;
       setRecordingProgress((count / 30) * 100);
-      if (count >= 30) {
-        clearInterval(interval);
-        stopVoiceLabRecording();
-      }
+      if (count >= 30) { clearInterval(interval); stopVoiceLabRecording(); }
     }, 1000);
   };
 
-  const stopVoiceLabRecording = () => {
-    mediaRecorderRef.current?.stop();
-    setIsRecordingLab(false);
-  };
+  const stopVoiceLabRecording = () => { mediaRecorderRef.current?.stop(); setIsRecordingLab(false); };
 
   const handleSoap = async (level: 'rinse' | 'scrub' | 'sanitize') => {
     if (!activeChapter.content.trim()) return;
@@ -304,9 +278,7 @@ const AuthorBuilder: React.FC = () => {
         });
       };
       setChapters(prev => updateChapterInList(prev));
-    } finally {
-      setIsSoaping(false);
-    }
+    } finally { setIsSoaping(false); }
   };
 
   const handleDoggerel = async () => {
@@ -322,17 +294,11 @@ const AuthorBuilder: React.FC = () => {
         });
       };
       setChapters(prev => updateChapterInList(prev));
-    } finally {
-      setIsDogging(false);
-    }
+    } finally { setIsDogging(false); }
   };
 
   const handleSpeak = async () => {
-    if (isSpeaking) {
-      audioRef.current?.pause();
-      setIsSpeaking(false);
-      return;
-    }
+    if (isSpeaking) { audioRef.current?.pause(); setIsSpeaking(false); return; }
     if (!activeChapter.content.trim()) return;
     setIsSpeakingLoading(true);
     setShowSpeakMenu(false);
@@ -350,40 +316,75 @@ const AuthorBuilder: React.FC = () => {
         setIsSpeaking(true);
         audio.play();
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSpeakingLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setIsSpeakingLoading(false); }
+  };
+
+  const handleExportToVault = () => {
+    const vault: VaultStorage = JSON.parse(localStorage.getItem('aca_sovereign_vault') || '{"sheets":[],"books":[],"ai":[]}');
+    const newKey = generateCourierCode();
+    const newSheet: VaultSheet = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      dispatchKey: newKey,
+      status: 'archived',
+      data: { ...activeChapter }
+    };
+    vault.sheets.push(newSheet);
+    localStorage.setItem('aca_sovereign_vault', JSON.stringify(vault));
+    alert(`Material safely logged in THE BIG HOUSE.\nCourier Code generated: ${newKey}`);
+    setShowActionMenu(false);
+    return newKey;
+  };
+
+  const handlePrintForNewspaper = () => {
+    const key = handleExportToVault();
+    setCurrentPrintKey(key);
+    setIsPrintView(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrintView(false);
+    }, 500);
+  };
+
+  const handleOCRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsOCRLoading(true);
+    setShowActionMenu(false);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = (event.target?.result as string).split(',')[1];
+      try {
+        const transcription = await performOCR(base64);
+        const updateList = (list: Chapter[]): Chapter[] => list.map(c => {
+          if (c.id === activeChapterId) return { ...c, content: (c.content ? c.content + '\n\n' : '') + transcription };
+          if (c.subChapters) return { ...c, subChapters: updateList(c.subChapters) };
+          return c;
+        });
+        setChapters(prev => updateList(prev));
+      } catch (err: any) { alert(err.message); } finally { setIsOCRLoading(false); }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePartnerChat = async (e?: React.FormEvent, customMsg?: string) => {
     if (e) e.preventDefault();
     const finalMsg = customMsg || partnerInput;
     if (!finalMsg.trim()) return;
-
     const userMsg = finalMsg;
     setPartnerInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsPartnerLoading(true);
-
     try {
       const response = await queryPartner(userMsg, style, region, messages, activeChapter.content);
       setMessages(prev => [...prev, response]);
-    } finally {
-      setIsPartnerLoading(false);
-    }
+    } finally { setIsPartnerLoading(false); }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 4 * 1024 * 1024) {
-      alert("File is too large. Please keep images and documents under 4MB to ensure they fit in the Sovereign Vault.");
-      return;
-    }
-
+    if (file.size > 4 * 1024 * 1024) { alert("File is too large."); return; }
     const reader = new FileReader();
     if (file.name.endsWith('.docx')) {
       reader.onload = async (event) => {
@@ -393,10 +394,8 @@ const AuthorBuilder: React.FC = () => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const nodes = Array.from(doc.body.childNodes);
-        
         let newChapters: Chapter[] = [];
         let currentChapter: Chapter | null = null;
-        
         nodes.forEach((node, idx) => {
           const text = node.textContent?.trim() || "";
           if (node.nodeName === 'H1') {
@@ -405,9 +404,7 @@ const AuthorBuilder: React.FC = () => {
           } else if (node.nodeName === 'H2' && currentChapter) {
             currentChapter.subChapters?.push({ id: `h2-${idx}-${Date.now()}`, title: text, content: '', order: currentChapter.subChapters.length, media: [], subChapters: [] });
           } else if (text) {
-             const target = currentChapter?.subChapters && currentChapter.subChapters.length > 0 
-               ? currentChapter.subChapters[currentChapter.subChapters.length - 1] 
-               : currentChapter;
+             const target = currentChapter?.subChapters && currentChapter.subChapters.length > 0 ? currentChapter.subChapters[currentChapter.subChapters.length - 1] : currentChapter;
              if (target) target.content += text + '\n\n';
              else {
                currentChapter = { id: `h1-init-${idx}-${Date.now()}`, title: 'Imported Fragment', content: text + '\n\n', order: 0, media: [], subChapters: [] };
@@ -415,18 +412,12 @@ const AuthorBuilder: React.FC = () => {
              }
           }
         });
-        if (newChapters.length > 0) {
-          setChapters(newChapters);
-          setActiveChapterId(newChapters[0].id);
-        } else {
-          setChapters([{ id: '1', title: file.name.replace('.docx', ''), content: html.replace(/<[^>]*>/g, '\n'), order: 0, media: [], subChapters: [] }]);
-        }
+        if (newChapters.length > 0) { setChapters(newChapters); setActiveChapterId(newChapters[0].id); }
+        else setChapters([{ id: '1', title: file.name.replace('.docx', ''), content: html.replace(/<[^>]*>/g, '\n'), order: 0, media: [], subChapters: [] }]);
       };
       reader.readAsArrayBuffer(file);
     } else {
-      reader.onload = (event) => {
-        setChapters([{ id: '1', title: file.name.split('.')[0], content: event.target?.result as string, order: 0, media: [], subChapters: [] }]);
-      };
+      reader.onload = (event) => setChapters([{ id: '1', title: file.name.split('.')[0], content: event.target?.result as string, order: 0, media: [], subChapters: [] }]);
       reader.readAsText(file);
     }
     setShowActionMenu(false);
@@ -435,18 +426,9 @@ const AuthorBuilder: React.FC = () => {
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      alert("Visual asset too large. Please keep covers and images under 4MB for optimal performance.");
-      return;
-    }
     const reader = new FileReader();
     reader.onload = (event) => {
-      const newMedia: MediaAsset = {
-        id: Date.now().toString(),
-        data: event.target?.result as string,
-        name: file.name,
-        type: file.type
-      };
+      const newMedia: MediaAsset = { id: Date.now().toString(), data: event.target?.result as string, name: file.name, type: file.type };
       const updateChapterInList = (list: Chapter[]): Chapter[] => {
         return list.map(c => {
           if (c.id === activeChapterId) return { ...c, media: [...(c.media || []), newMedia] };
@@ -463,10 +445,7 @@ const AuthorBuilder: React.FC = () => {
   const exportContent = (type: 'txt' | 'docx' | 'md') => {
     let fullText = "";
     const compile = (list: Chapter[]) => {
-      list.forEach(c => {
-        fullText += `${c.title}\n\n${c.content}\n\n`;
-        if (c.subChapters) compile(c.subChapters);
-      });
+      list.forEach(c => { fullText += `${c.title}\n\n${c.content}\n\n`; if (c.subChapters) compile(c.subChapters); });
     };
     compile(chapters);
     const mimeType = type === 'txt' ? 'text/plain' : type === 'md' ? 'text/markdown' : 'application/msword';
@@ -493,9 +472,7 @@ const AuthorBuilder: React.FC = () => {
           {chapter.title === DEFAULT_TITLE ? 'Untitled Sheet' : chapter.title}
         </p>
       </div>
-      {chapter.subChapters?.map(sub => (
-        <SidebarItem key={sub.id} chapter={sub} depth={depth + 1} />
-      ))}
+      {chapter.subChapters?.map(sub => <SidebarItem key={sub.id} chapter={sub} depth={depth + 1} />)}
     </div>
   );
 
@@ -503,17 +480,52 @@ const AuthorBuilder: React.FC = () => {
     setShowHelpMenu(false);
     switch(action) {
       case 'care': navigate('/support'); break;
-      case 'write': 
-        (document.querySelector('textarea[placeholder="The narrative begins here..."]') as HTMLTextAreaElement)?.focus();
-        break;
-      case 'heading':
-        (document.querySelector('textarea[placeholder="' + DEFAULT_TITLE + '"]') as HTMLTextAreaElement)?.focus();
-        break;
+      case 'write': (document.querySelector('textarea[placeholder="The narrative begins here..."]') as HTMLTextAreaElement)?.focus(); break;
+      case 'heading': (document.querySelector('textarea[placeholder="' + DEFAULT_TITLE + '"]') as HTMLTextAreaElement)?.focus(); break;
       case 'edit': handleSoap('scrub'); break;
-      case 'research': handlePartnerChat(undefined, "I want to research a topic related to my current sheet..."); break;
-      case 'brainstorm': handlePartnerChat(undefined, "I need to brainstorm some ideas for my narrative..."); break;
+      case 'research': handlePartnerChat(undefined, "I want to research a topic..."); break;
+      case 'brainstorm': handlePartnerChat(undefined, "I need to brainstorm some ideas..."); break;
     }
   };
+
+  if (isPrintView) {
+    return (
+      <div className="bg-white text-black p-20 min-h-screen font-serif">
+        <header className="border-b-4 border-black pb-8 mb-12 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter leading-none mb-2">A Captive Audience</h1>
+            <p className="text-xs font-bold uppercase tracking-widest">Official Manuscript Submission Registry</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-bold uppercase">Date: {new Date().toLocaleDateString()}</p>
+            <p className="text-[10px] font-bold uppercase">Form: ACA-AT-2024</p>
+          </div>
+        </header>
+        <section className="mb-20">
+          <h2 className="text-3xl font-bold italic mb-10 underline decoration-2 underline-offset-8">{activeChapter.title}</h2>
+          <div className="text-xl leading-relaxed whitespace-pre-wrap">{activeChapter.content}</div>
+        </section>
+        <footer className="mt-auto pt-12 border-t border-dashed border-gray-300">
+          <div className="grid grid-cols-2 gap-12">
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Institutional Approval</p>
+              <div className="h-16 border border-black/10 bg-gray-50 flex items-end p-2">
+                 <span className="text-[8px] uppercase font-bold text-gray-300">Officer Signature / Stamp Here</span>
+              </div>
+            </div>
+            <div className="bg-black text-white p-8 rounded-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-2">Digital Dispatch Key</p>
+              <p className="text-3xl font-mono tracking-[0.2em] mb-4">{currentPrintKey}</p>
+              <p className="text-[8px] uppercase leading-relaxed opacity-60">
+                INSTRUCTIONS FOR ABOUT TIME EDITORS:<br/>
+                Login to 'THE BIG HOUSE' vault. Select 'Inbound Desk'. Enter the Courier Code above to securely recover the digital prose of this manuscript.
+              </p>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-6rem)] bg-[#020202] text-white overflow-hidden selection:bg-orange-500/30">
@@ -596,9 +608,9 @@ const AuthorBuilder: React.FC = () => {
            </div>
 
            <div className="flex items-center gap-6">
-              {(isSoaping || isDogging || isPartnerLoading || isSpeakingLoading) && (
+              {(isSoaping || isDogging || isPartnerLoading || isSpeakingLoading || isOCRLoading) && (
                 <span className="text-[8px] font-black text-orange-500 animate-pulse uppercase tracking-widest">
-                  {isSpeakingLoading ? 'Analyzing Voice Patterns...' : 'Processing...'}
+                  {isSpeakingLoading ? 'Analyzing Voice Patterns...' : isOCRLoading ? 'Scanning Ink...' : 'Processing...'}
                 </span>
               )}
               
@@ -695,13 +707,16 @@ const AuthorBuilder: React.FC = () => {
                 {showTooltips && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
                     <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Vault Utility</p>
-                    <p className="text-[10px] text-gray-500 italic leading-tight">Import, export, or add visual assets to this sheet.</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Import, export, or archive this sheet for safety.</p>
                   </div>
                 )}
                 {showActionMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-[#0d0d0d] border border-white/10 shadow-2xl rounded-sm z-[100] overflow-hidden">
+                    <button onClick={() => ocrInputRef.current?.click()} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:text-white hover:bg-orange-500/10 border-b border-white/5">Paper to Pixel (OCR)</button>
+                    <button onClick={handlePrintForNewspaper} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-500 hover:text-white hover:bg-cyan-500/10 border-b border-white/5">Print for Newspaper Review</button>
                     <button onClick={() => fileInputRef.current?.click()} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 border-b border-white/5">Import (Word/MD)</button>
                     <button onClick={() => mediaInputRef.current?.click()} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 border-b border-white/5">Load Media / Cover</button>
+                    <button onClick={handleExportToVault} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5 border-b border-white/5">Export to THE BIG HOUSE</button>
                     <button onClick={() => exportContent('docx')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 border-b border-white/5">Export Word (.docx)</button>
                     <button onClick={() => exportContent('md')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 border-b border-white/5">Export Markdown (.md)</button>
                     <button onClick={() => exportContent('txt')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5">Export Text (.txt)</button>
@@ -711,6 +726,7 @@ const AuthorBuilder: React.FC = () => {
               
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".docx,.txt,.md" />
               <input type="file" ref={mediaInputRef} onChange={handleMediaUpload} className="hidden" accept="image/*" />
+              <input type="file" ref={ocrInputRef} onChange={handleOCRUpload} className="hidden" accept="image/*" />
            </div>
         </div>
 
@@ -761,7 +777,7 @@ const AuthorBuilder: React.FC = () => {
                   }));
                   setChapters(prev => updateList(prev));
                 }}
-                className={`w-full flex-grow bg-transparent border-none outline-none focus:ring-0 resize-none text-gray-400 leading-[1.8] placeholder:text-gray-900 transition-all ${currentFont.body}`}
+                className={`w-full flex-grow bg-transparent border-none outline-none focus:ring-0 resize-none text-gray-400 text-xl font-serif leading-[2.2] placeholder:text-gray-900 transition-all ${currentFont.body}`}
                 placeholder="The narrative begins here..."
               />
            </div>
@@ -820,7 +836,7 @@ const AuthorBuilder: React.FC = () => {
                 {showTooltips && (
                   <div className="absolute bottom-full left-0 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
                     <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Tone Selection</p>
-                    <p className="text-[10px] text-gray-500 italic leading-tight">This helps us to know where the story is aimed at and what audience to write to.</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Aim your narrative at a specific audience or genre.</p>
                   </div>
                 )}
               </div>
@@ -834,7 +850,7 @@ const AuthorBuilder: React.FC = () => {
                 {showTooltips && (
                   <div className="absolute bottom-full right-0 mb-4 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-[100] w-48 text-center bg-black border border-white/10 p-3 shadow-2xl rounded-sm">
                     <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-1 leading-none">Local Context</p>
-                    <p className="text-[10px] text-gray-500 italic leading-tight">This helps us to differentiate local slang and terms.</p>
+                    <p className="text-[10px] text-gray-500 italic leading-tight">Differentiate local slang and regional terms.</p>
                   </div>
                 )}
               </div>
@@ -891,6 +907,11 @@ const AuthorBuilder: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        @media print {
+          nav, aside, .no-print { display: none !important; }
+          main { width: 100% !important; padding: 0 !important; overflow: visible !important; }
+          body { background: white !important; color: black !important; }
+        }
       `}</style>
     </div>
   );

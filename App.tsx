@@ -16,6 +16,7 @@ import Security from './pages/Security';
 import Kindred from './pages/Kindred';
 import SovereignSlate from './pages/SovereignSlate';
 import WrapperInfo from './pages/WrapperInfo';
+import SovereignVault from './pages/SovereignVault';
 import Origin from './pages/Origin';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -54,6 +55,7 @@ const App: React.FC = () => {
             <Route path="/origin-story" element={<Origin />} />
             <Route path="/author-builder" element={<AuthorBuilder />} />
             <Route path="/sovereign-slate" element={<SovereignSlate />} />
+            <Route path="/sovereign-vault" element={<SovereignVault />} />
             <Route path="/wrap-it-up" element={<WrapItUp />} />
           </Routes>
         </main>

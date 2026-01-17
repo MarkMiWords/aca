@@ -72,3 +72,24 @@ export interface ManuscriptReport {
   marketabilityScore: number;
   suggestedTitle: string;
 }
+
+export interface VaultSheet {
+  id: string;
+  timestamp: string;
+  dispatchKey?: string;
+  status: 'draft' | 'archived' | 'dispatched';
+  data: Chapter;
+}
+
+export interface VaultAI {
+  id: string;
+  timestamp: string;
+  topic: string;
+  history: Message[];
+}
+
+export interface VaultStorage {
+  sheets: VaultSheet[];
+  books: Book[];
+  ai: VaultAI[];
+}

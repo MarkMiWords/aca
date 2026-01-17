@@ -18,8 +18,42 @@ const WRAPPER_IDENTITY = `
 `;
 
 /**
+ * OCR Engine: Converts image data (handwritten scraps or typed pages) to digital text.
+ */
+export async function performOCR(imageBase64: string): Promise<string> {
+  const prompt = `
+    Perform high-precision OCR on this image. 
+    1. Transcribe every word exactly as written, including slang and regional dialect.
+    2. Maintain the original paragraph structure.
+    3. If handwriting is illegible, use [?] to indicate a gap.
+    4. Return ONLY the transcribed text.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          parts: [
+            { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
+            { text: prompt }
+          ]
+        }
+      ],
+      config: {
+        systemInstruction: "You are an expert paleographer and transcriptionist specializing in prison-issued stationery and handwritten notes.",
+      }
+    });
+
+    return response.text || "";
+  } catch (err) {
+    console.error("OCR Error:", err);
+    throw new Error("The Paper-to-Pixel bridge failed. Ensure the image is clear.");
+  }
+}
+
+/**
  * Analyzes a user's voice sample to detect dialect, language, and persona traits.
- * This powers the "God Mode" adaptation of the UI and the custom voice profile.
  */
 export async function analyzeVoiceAndDialect(audioBase64: string): Promise<{ 
   detectedLocale: string, 
@@ -156,7 +190,6 @@ export async function jiveContent(text: string, region: string): Promise<string>
 
 /**
  * Generate Speech using Gemini 2.5 TTS.
- * This handles both pre-built personas and the user's custom calibrated "Voice Lab" persona.
  */
 export async function generateSpeech(text: string, voiceName: string = 'Fenrir', persona: string = 'Standard', customPersona: string = ""): Promise<string | undefined> {
   try {
@@ -169,7 +202,6 @@ export async function generateSpeech(text: string, voiceName: string = 'Fenrir',
       'Standard': 'Read with deep emotion and clear, weighted resonance.'
     };
 
-    // If customPersona is provided (from Voice Lab), it takes precedence.
     const activeInstruction = customPersona || personaInstructions[persona] || personaInstructions['Standard'];
 
     const response = await ai.models.generateContent({
