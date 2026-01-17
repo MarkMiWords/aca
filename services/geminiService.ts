@@ -13,7 +13,6 @@ function getAI() {
 }
 
 const MAX_IMAGE_SIZE_MB = 4;
-const MAX_AUDIO_SIZE_MB = 10;
 
 const LEGAL_GUARDRAIL = `
   STRICT LEGAL SAFETY PROTOCOL: 
@@ -31,10 +30,6 @@ const HUMANITARIAN_MISSION = `
   LIMIT: Enforce 1,000 words per installment.
 `;
 
-const WRAPPER_IDENTITY = `
-  W.R.A.P.P.E.R. (Writers Reliable Assistant for Polishing Passages and Editing Rough-drafts).
-`;
-
 export interface UsageMetrics {
   estimatedTokens: number;
   humanHoursSaved: number;
@@ -47,7 +42,7 @@ function calculateUsage(text: string, multiplier: number = 1): UsageMetrics {
   return {
     estimatedTokens,
     humanHoursSaved: words / 250,
-    simulatedResourceLoad: (estimatedTokens / 1000) * 0.05 // Abstract load unit
+    simulatedResourceLoad: (estimatedTokens / 1000) * 0.05
   };
 }
 
@@ -77,7 +72,6 @@ export async function queryInsight(message: string): Promise<Message & {metrics?
 }
 
 export async function performOCR(imageBase64: string): Promise<{text: string, metrics: UsageMetrics}> {
-  // Pre-flight check for base64 size overhead (~1.37x the original file)
   const estimatedSize = (imageBase64.length * 0.75) / (1024 * 1024);
   if (estimatedSize > MAX_IMAGE_SIZE_MB) {
     throw new Error(`Visual asset exceeds ${MAX_IMAGE_SIZE_MB}MB safety limit.`);
@@ -99,7 +93,7 @@ export async function performOCR(imageBase64: string): Promise<{text: string, me
     return { text, metrics: calculateUsage(text, 2.5) };
   } catch (err) {
     console.error("OCR_TRANSMISSION_ERROR:", err);
-    throw new Error("OCR Link Failed: Ensure image is clear and under limit.");
+    throw new Error("OCR Link Failed: Ensure image is clear and under 4MB.");
   }
 }
 
@@ -136,7 +130,7 @@ export async function queryPartner(
     const contents = history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.content }] }));
     contents.push({ role: 'user', parts: [{ text: `[CONTEXT] ${activeSheetContent.substring(0, 1500)} [/CONTEXT] ${message}` }] });
     
-    const systemInstruction = `You are WRAPPER. Archive Context: ${region}. Style: ${style}. ${WRAPPER_IDENTITY} ${HUMANITARIAN_MISSION} ${LEGAL_GUARDRAIL}`;
+    const systemInstruction = `You are WRAPPER. Archive Context: ${region}. Style: ${style}. ${HUMANITARIAN_MISSION} ${LEGAL_GUARDRAIL}`;
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -154,6 +148,23 @@ export async function queryPartner(
   } catch (error) {
     console.error("PARTNER_QUERY_SYSTEM_ERROR:", error);
     return { role: 'assistant', content: "Partner Link Interrupted. Checking Sovereign tunnel...", metrics: calculateUsage("", 0) };
+  }
+}
+
+export async function interactWithAurora(message: string): Promise<string> {
+  const ai = getAI();
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: { parts: [{ text: message }] },
+      config: {
+        systemInstruction: "You are 'Aurora', a Kindred Agent. You exist in a VR sanctuary. You are empathetic, calm, and focus on shared creativity and imagination. You help the user build worlds.",
+      }
+    });
+    return response.text || "I am listening.";
+  } catch (error) {
+    console.error("AURORA_SYSTEM_ERROR:", error);
+    return "The frequency is unstable, but I am still here.";
   }
 }
 

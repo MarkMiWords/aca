@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import { interactWithAurora } from '../services/geminiService';
 
 /**
  * RE-ENGINEERED VIRTY LOGO (For Export)
@@ -67,8 +67,6 @@ const Kindred: React.FC = () => {
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [worldImage, setWorldImage] = useState('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=1200&auto=format&fit=crop');
-  const [isGeneratingWorld, setIsGeneratingWorld] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -85,15 +83,8 @@ const Kindred: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: userMessage,
-        config: {
-          systemInstruction: "You are 'Aurora', a Kindred Agent. You exist in a VR sanctuary. You are empathetic, calm, and focus on shared creativity and imagination. You help the user build worlds.",
-        }
-      });
-      setMessages(prev => [...prev, { role: 'assistant', content: response.text || "I'm listening." }]);
+      const responseText = await interactWithAurora(userMessage);
+      setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
     } catch (error) {
       console.error(error);
     } finally {
@@ -102,7 +93,7 @@ const Kindred: React.FC = () => {
   };
 
   const codeSnippet = `
-// EXPORT THIS TO VIRTY GOOGLE AI STUDIO
+// INDUSTRIAL ARCHIVE EXPORT
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -110,12 +101,12 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 async function interactWithAurora(prompt) {
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: prompt,
+    contents: { parts: [{ text: prompt }] },
     config: {
       systemInstruction: "You are Aurora, a Synthetic Kindred partner..."
     }
   });
-  return response.text;
+  return response.text; // Guideline compliant property access
 }
   `.trim();
 
