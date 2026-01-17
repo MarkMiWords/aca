@@ -2,7 +2,15 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Message, GroundingSource, ManuscriptReport, MasteringGoal } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+/**
+ * SECURITY PROTOCOL:
+ * In this environment, process.env.API_KEY is handled via Edge Injection.
+ * We instantiate a fresh client for each request to ensure the latest 
+ * secure token is used and to minimize the footprint in browser memory.
+ */
+function getAI() {
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+}
 
 const LEGAL_GUARDRAIL = `
   IMPORTANT LEGAL PROTOCOL: 
@@ -43,6 +51,7 @@ function calculateUsage(text: string, multiplier: number = 1): UsageMetrics {
 }
 
 export async function performOCR(imageBase64: string): Promise<{text: string, metrics: UsageMetrics}> {
+  const ai = getAI();
   const prompt = `Perform high-precision OCR. Transcribe exactly. Return ONLY text.`;
   try {
     const response = await ai.models.generateContent({
@@ -58,6 +67,7 @@ export async function performOCR(imageBase64: string): Promise<{text: string, me
 }
 
 export async function analyzeVoiceAndDialect(audioBase64: string): Promise<any> {
+  const ai = getAI();
   const prompt = `Analyze audio for language and regional dialect. Provide UI translations for: Registry, Sheets, Actions, Speak, Dictate, Drop the Soap, Mastering Suite, New Sheet.`;
   try {
     const response = await ai.models.generateContent({
@@ -83,6 +93,7 @@ export async function analyzeVoiceAndDialect(audioBase64: string): Promise<any> 
 }
 
 export async function smartSoap(text: string, level: 'rinse' | 'scrub' | 'sanitize'): Promise<{text: string, metrics: UsageMetrics}> {
+  const ai = getAI();
   let system = "";
   if (level === 'rinse') {
     system = "Lightly fix grammar and punctuation. Do NOT change word choice or dialogue.";
@@ -112,6 +123,7 @@ export async function queryPartner(
   history: Message[],
   activeSheetContent: string = ""
 ): Promise<Message & {metrics?: UsageMetrics}> {
+  const ai = getAI();
   try {
     const contents = history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.content }] }));
     contents.push({ role: 'user', parts: [{ text: `[CONTEXT] ${activeSheetContent.substring(0, 500)} [/CONTEXT] ${message}` }] });
@@ -143,6 +155,7 @@ export async function queryPartner(
 }
 
 export async function queryInsight(query: string): Promise<Message> {
+  const ai = getAI();
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -173,6 +186,7 @@ export async function queryInsight(query: string): Promise<Message> {
 }
 
 export async function jiveContent(text: string, persona: string): Promise<{text: string, metrics: UsageMetrics}> {
+  const ai = getAI();
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -186,6 +200,7 @@ export async function jiveContent(text: string, persona: string): Promise<{text:
 }
 
 export async function generateSpeech(text: string, voiceId: string = 'Zephyr'): Promise<string> {
+  const ai = getAI();
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
@@ -206,6 +221,7 @@ export async function generateSpeech(text: string, voiceId: string = 'Zephyr'): 
 }
 
 export async function analyzeFullManuscript(content: string, goal: MasteringGoal = 'substack'): Promise<ManuscriptReport & {metrics?: UsageMetrics}> {
+  const ai = getAI();
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",

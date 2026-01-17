@@ -152,6 +152,8 @@ const AuthorBuilder: React.FC = () => {
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, []);
 
+  const isAnythingLoading = isPartnerLoading || isSoaping || isOCRLoading;
+
   return (
     <div className="flex h-[calc(100vh-6rem)] bg-[#020202] text-white overflow-hidden selection:bg-orange-500/30">
       <aside className="w-80 border-r border-white/5 bg-[#080808] flex flex-col shrink-0">
@@ -227,8 +229,10 @@ const AuthorBuilder: React.FC = () => {
                 <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Profile: {authorProfile ? authorProfile.name : 'Uncalibrated'}</span>
               </Link>
               <div className="flex items-center gap-2 bg-black/40 px-3 py-1 border border-white/5 rounded-full">
-                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                 <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest">Shield Active</span>
+                 <div className={`w-1.5 h-1.5 rounded-full ${isAnythingLoading ? 'bg-orange-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
+                 <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest">
+                   {isAnythingLoading ? 'Shield Syncing' : 'Shield Secured'}
+                 </span>
               </div>
            </div>
            {!authorProfile && <Link to="/wrapper-info" className="text-[8px] font-black text-orange-500 animate-pulse underline">Set Profile</Link>}
