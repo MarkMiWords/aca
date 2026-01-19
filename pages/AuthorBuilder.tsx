@@ -301,7 +301,7 @@ const AuthorBuilder: React.FC = () => {
       const response = await queryPartner(msg, style, region, messages, activeChapter.content);
       setMessages(prev => [...prev, response]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sovereign Link Interrupted. This often happens due to SSL mismatches during site moves. Try toggling 'Direct AI Mode' in the Dev Console (CTRL+SHIFT+D)." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sovereign Link Interrupted. This often happens due to SSL mismatches during site moves. Try toggling 'Direct AI Mode' in the Dev Console (CTRL+ALT+D)." }]);
     } finally { setIsPartnerLoading(false); }
   };
 
@@ -539,7 +539,7 @@ const AuthorBuilder: React.FC = () => {
                  <p className="text-[9px] text-gray-300 italic">
                     {apiStatus === 'active' ? 'Link established via production server.' : 
                      apiStatus === 'direct' ? 'Bypassing server via local SDK link.' : 
-                     'SSL or API Key handshake required. Open Dev Console (CTRL+SHIFT+D).'}
+                     'SSL or API Key handshake required. Open Dev Console (CTRL+ALT+D).'}
                  </p>
               </div>
            </div>

@@ -101,7 +101,7 @@ async function callSovereignAPI(endpoint: string, body: any) {
   } catch (err: any) {
     if (err.message.includes('Failed to fetch')) {
       devLog('error', "NETWORK/SSL FAULT: The browser blocked the request. This usually happens during DNS propagation.");
-      devLog('info', "TIP: Toggle 'Direct AI Mode' in the Dev Console (CTRL+SHIFT+D) to bypass this SSL error.");
+      devLog('info', "TIP: Toggle 'Direct AI Mode' in the Dev Console (CTRL+ALT+D) to bypass this SSL error.");
     }
     devLog('error', `Link Exception [${endpoint}]: ${err.message}`);
     throw err;

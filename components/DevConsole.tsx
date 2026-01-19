@@ -22,9 +22,10 @@ export const DevConsole: React.FC = () => {
     };
     window.addEventListener('aca-dev-log', handleLog);
     
-    // Keyboard shortcut: Ctrl + Shift + D to toggle console
+    // Keyboard shortcut: Ctrl + Alt + D to toggle console (Alt is safer than Shift)
     const handleKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+      if (e.ctrlKey && e.altKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
         setIsOpen(prev => !prev);
       }
     };
@@ -56,7 +57,7 @@ export const DevConsole: React.FC = () => {
     >
       <span className="flex items-center gap-2">
         <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-        Dev Console [CTRL+SHIFT+D]
+        Dev Console [CTRL+ALT+D]
       </span>
     </button>
   );
