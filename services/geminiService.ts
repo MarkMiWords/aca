@@ -18,12 +18,12 @@ const getDirectMode = () => localStorage.getItem('aca_dev_direct') === 'true';
  */
 async function callSovereignAPI(endpoint: string, body: any) {
   const isDirect = getDirectMode();
-  devLog('request', `[${isDirect ? 'DIRECT' : 'SERVER'}] POST /api/${endpoint}`);
-
+  
   // DIRECT BROWSER BYPASS FOR DEVELOPER TESTING
-  if (isDirect && (endpoint === 'partner' || endpoint === 'soap')) {
-    devLog('info', `Executing ${endpoint} locally via Gemini SDK...`);
+  if (isDirect) {
+    devLog('request', `[DIRECT BROWSER] Calling ${endpoint}...`);
     try {
+      // Create fresh instance to ensure we catch the AI Studio injected key
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       if (endpoint === 'partner') {
@@ -50,7 +50,7 @@ async function callSovereignAPI(endpoint: string, body: any) {
         const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         const sources = chunks.map((c: any) => ({ web: { uri: c.web?.uri || "", title: c.web?.title || "" } }));
         
-        devLog('response', `Direct ${endpoint} success.`);
+        devLog('response', `[DIRECT] ${endpoint} success.`);
         return { role: 'assistant', content, sources };
       }
 
@@ -61,19 +61,20 @@ async function callSovereignAPI(endpoint: string, body: any) {
           contents: [{ role: 'user', parts: [{ text }] }],
           config: { systemInstruction: `MODE: ${level.toUpperCase()}. Polish prose while maintaining grit.` }
         });
-        devLog('response', `Direct ${endpoint} success.`);
+        devLog('response', `[DIRECT] ${endpoint} success.`);
         return { text: response.text };
       }
+      
+      // Fallback for endpoints not yet mirrored in client-side SDK logic
+      devLog('info', `Endpoint ${endpoint} not mirrored in Direct Mode. Attempting Server Link...`);
     } catch (err: any) {
-      devLog('error', `Direct Mode Exception: ${err.message}`);
-      if (err.message.includes("Requested entity was not found")) {
-        devLog('info', "RESET REQUIRED: Please re-authorize your key via 'LINK COLD' button.");
-      }
+      devLog('error', `Direct Link Exception: ${err.message}`);
       throw err;
     }
   }
 
   // STANDARD SERVER PATHWAY
+  devLog('request', `[SERVER] POST /api/${endpoint}`);
   try {
     const start = Date.now();
     const response = await fetch(`/api/${endpoint}`, {
@@ -85,14 +86,23 @@ async function callSovereignAPI(endpoint: string, body: any) {
     const duration = Date.now() - start;
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown Network Fault' }));
+      const errorData = await response.json().catch(() => ({ error: 'Handshake Failure' }));
       devLog('error', `[${response.status}] ${endpoint}: ${errorData.error}`);
+      
+      if (response.status === 404 || response.status === 502) {
+        devLog('info', "Check your Vercel Deployment or SSL status in Namecheap.");
+      }
+      
       throw new Error(errorData.error || `Sovereign Link Failure: ${endpoint}`);
     }
     
     devLog('response', `[${response.status}] ${endpoint} completed in ${duration}ms`);
     return response.json();
   } catch (err: any) {
+    if (err.message.includes('Failed to fetch')) {
+      devLog('error', "NETWORK/SSL FAULT: The browser blocked the request. This usually happens during DNS propagation.");
+      devLog('info', "TIP: Toggle 'Direct AI Mode' in the Dev Console (CTRL+SHIFT+D) to bypass this SSL error.");
+    }
     devLog('error', `Link Exception [${endpoint}]: ${err.message}`);
     throw err;
   }

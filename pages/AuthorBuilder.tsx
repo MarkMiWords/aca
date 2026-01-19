@@ -92,7 +92,7 @@ const AuthorBuilder: React.FC = () => {
   const [hasClonedVoice, setHasClonedVoice] = useState(false);
   
   // Sovereign Link / API Status
-  const [apiStatus, setApiStatus] = useState<'checking' | 'active' | 'unauthorized'>('checking');
+  const [apiStatus, setApiStatus] = useState<'checking' | 'active' | 'direct' | 'unauthorized'>('checking');
 
   // Voice Calibration States
   const [speakGender, setSpeakGender] = useState<'Male' | 'Female'>('Female');
@@ -131,18 +131,21 @@ const AuthorBuilder: React.FC = () => {
   }, []);
 
   const checkApiStatus = async () => {
+    const isDirect = localStorage.getItem('aca_dev_direct') === 'true';
+    if (isDirect) {
+      setApiStatus('direct');
+      return;
+    }
+
     devLog('info', 'Checking Sovereign Link authorization status...');
     try {
       if (typeof (window as any).aistudio !== 'undefined') {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        devLog('info', `AI Studio Key Detection: ${hasKey ? 'DETECTED' : 'NONE'}`);
         setApiStatus(hasKey ? 'active' : 'unauthorized');
       } else {
-        devLog('info', 'AI Studio Environment not detected. Using system link.');
-        setApiStatus('active'); // Fallback to assumed environment variable
+        setApiStatus('active'); // Assume env-based on production
       }
     } catch (e: any) {
-      devLog('error', `API Status Check failed: ${e.message}`);
       setApiStatus('unauthorized');
     }
   };
@@ -151,9 +154,7 @@ const AuthorBuilder: React.FC = () => {
     if (typeof (window as any).aistudio !== 'undefined') {
       devLog('info', 'Opening AI Studio Key Selection Dialog...');
       await (window as any).aistudio.openSelectKey();
-      // Per official rules: assume success after trigger
       setApiStatus('active'); 
-      devLog('info', 'Key selection triggered. Attempting to activate link.');
     }
   };
 
@@ -181,7 +182,6 @@ const AuthorBuilder: React.FC = () => {
     devLog('request', 'Initiating Gemini Live Native Audio Session');
 
     try {
-      // Create fresh instance right before call for the latest API key from picker
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       let nextStartTime = 0;
       const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -210,7 +210,6 @@ const AuthorBuilder: React.FC = () => {
             scriptProcessor.connect(inputAudioContext.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            // Robust Part Iteration
             if (message.serverContent?.modelTurn?.parts) {
               for (const part of message.serverContent.modelTurn.parts) {
                 if (part.inlineData?.data) {
@@ -239,9 +238,6 @@ const AuthorBuilder: React.FC = () => {
           onerror: (e) => { 
             devLog('error', `Live Link Error: ${e.message}`);
             setIsLiveActive(false); 
-            if (e.message?.includes("Requested entity was not found")) {
-               setApiStatus('unauthorized');
-            }
           },
           onclose: () => {
             devLog('info', 'Live Link CLOSED');
@@ -305,7 +301,7 @@ const AuthorBuilder: React.FC = () => {
       const response = await queryPartner(msg, style, region, messages, activeChapter.content);
       setMessages(prev => [...prev, response]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sovereign Link Interrupted. Please check your project's API status." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sovereign Link Interrupted. This often happens due to SSL mismatches during site moves. Try toggling 'Direct AI Mode' in the Dev Console (CTRL+SHIFT+D)." }]);
     } finally { setIsPartnerLoading(false); }
   };
 
@@ -530,18 +526,21 @@ const AuthorBuilder: React.FC = () => {
 
            {/* Sovereign Link Status Diagnostic */}
            <div className="flex items-center gap-4 bg-black/40 p-4 rounded-sm border border-white/5 group/diag relative">
-              <div className={`w-2 h-2 rounded-full ${apiStatus === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${apiStatus === 'active' ? 'bg-blue-500' : apiStatus === 'direct' ? 'bg-green-500' : 'bg-red-500'} ${apiStatus !== 'unauthorized' ? 'animate-pulse' : ''}`}></div>
               <div className="flex-grow">
                  <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Sovereign Link Status</p>
-                 <p className={`text-[9px] font-bold ${apiStatus === 'active' ? 'text-green-500' : 'text-red-500'} uppercase`}>{apiStatus === 'active' ? 'Operational' : 'Unauthorized'}</p>
+                 <p className={`text-[9px] font-bold ${apiStatus === 'active' ? 'text-blue-500' : apiStatus === 'direct' ? 'text-green-500' : 'text-red-500'} uppercase`}>
+                    {apiStatus === 'active' ? 'Server Connected' : apiStatus === 'direct' ? 'Direct AI Active' : 'Unauthorized'}
+                 </p>
               </div>
-              {apiStatus !== 'active' && (
-                <button onClick={handleSelectApiKey} className="text-[8px] font-black text-white bg-white/10 px-3 py-1 uppercase tracking-widest rounded-sm hover:bg-white/20">Authorize</button>
-              )}
               
               <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/diag:opacity-100 transition-opacity w-full bg-black border border-white/10 p-4 rounded-sm shadow-2xl z-50 pointer-events-none">
                  <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Diagnostic Details:</p>
-                 <p className="text-[9px] text-gray-300 italic">{apiStatus === 'active' ? 'Connection bridged via production credentials.' : 'Key Selection Required. Use AI Studio key picker to authorize your session.'}</p>
+                 <p className="text-[9px] text-gray-300 italic">
+                    {apiStatus === 'active' ? 'Link established via production server.' : 
+                     apiStatus === 'direct' ? 'Bypassing server via local SDK link.' : 
+                     'SSL or API Key handshake required. Open Dev Console (CTRL+SHIFT+D).'}
+                 </p>
               </div>
            </div>
 
