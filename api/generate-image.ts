@@ -1,14 +1,14 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const handler = async (event: any) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { prompt } = JSON.parse(event.body || "{}");
+  const { prompt } = req.body;
   if (!prompt) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Prompt is required" }) };
+    return res.status(400).json({ error: "Prompt is required" });
   }
 
   try {
@@ -37,18 +37,12 @@ export const handler = async (event: any) => {
     }
 
     if (!base64Image) {
-      return { statusCode: 500, body: JSON.stringify({ error: "No image data returned from model." }) };
+      return res.status(500).json({ error: "No image data returned from model." });
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ imageUrl: `data:image/png;base64,${base64Image}` }),
-    };
+    return res.status(200).json({ imageUrl: `data:image/png;base64,${base64Image}` });
   } catch (error: any) {
     console.error("API_IMAGE_GEN_ERROR:", error?.message || error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Image generation failed." }),
-    };
+    return res.status(500).json({ error: "Image generation failed." });
   }
-};
+}

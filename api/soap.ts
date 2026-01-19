@@ -16,14 +16,14 @@ const LEGAL_GUARDRAIL = `
   3. Ensure no PII (Personally Identifiable Information) is exposed.
 `;
 
-export const handler = async (event: any) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { text, level } = JSON.parse(event.body || "{}");
+  const { text, level } = req.body;
   if (!text) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Text is required" }) };
+    return res.status(400).json({ error: "Text is required" });
   }
 
   const safeText = text.slice(0, 10000);
@@ -42,15 +42,9 @@ export const handler = async (event: any) => {
     });
 
     const resultText = response.text || safeText;
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ text: resultText }),
-    };
+    return res.status(200).json({ text: resultText });
   } catch (error: any) {
     console.error("API_SOAP_ERROR:", error?.message || error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Sovereign Link Interrupted" }),
-    };
+    return res.status(500).json({ error: "Sovereign Link Interrupted" });
   }
-};
+}

@@ -1,12 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-export const handler = async (event: any) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { content, goal } = JSON.parse(event.body || "{}");
+  const { content, goal } = req.body;
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -34,15 +34,9 @@ export const handler = async (event: any) => {
     });
 
     const report = JSON.parse(response.text || "{}");
-    return {
-      statusCode: 200,
-      body: JSON.stringify(report),
-    };
+    return res.status(200).json(report);
   } catch (error: any) {
     console.error("API_MANUSCRIPT_ERROR:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Audit failed" }),
-    };
+    return res.status(500).json({ error: "Audit failed" });
   }
-};
+}

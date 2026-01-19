@@ -1,14 +1,14 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const handler = async (event: any) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { imageBase64 } = JSON.parse(event.body || "{}");
+  const { imageBase64 } = req.body;
   if (!imageBase64) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Image data required" }) };
+    return res.status(400).json({ error: "Image data required" });
   }
 
   try {
@@ -25,15 +25,9 @@ export const handler = async (event: any) => {
       config: { systemInstruction: "Institutional OCR Mode. Absolute fidelity to source." }
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ text: response.text || "" }),
-    };
+    return res.status(200).json({ text: response.text || "" });
   } catch (error: any) {
     console.error("API_OCR_ERROR:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "OCR processing failed" }),
-    };
+    return res.status(500).json({ error: "OCR processing failed" });
   }
-};
+}

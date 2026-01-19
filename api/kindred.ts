@@ -1,14 +1,14 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const handler = async (event: any) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { message } = JSON.parse(event.body || "{}");
+  const { message } = req.body;
   if (!message) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Message is required" }) };
+    return res.status(400).json({ error: "Message is required" });
   }
 
   const safeMessage = message.slice(0, 4000);
@@ -22,15 +22,9 @@ export const handler = async (event: any) => {
         systemInstruction: "You are 'Aurora', a Kindred Agent. Empathetic, calm, creative sanctuary partner.",
       }
     });
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ text: response.text || "I am listening." }),
-    };
+    return res.status(200).json({ text: response.text || "I am listening." });
   } catch (error: any) {
     console.error("API_KINDRED_ERROR:", error?.message || error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Kindred link failed" }),
-    };
+    return res.status(500).json({ error: "Kindred link failed" });
   }
-};
+}

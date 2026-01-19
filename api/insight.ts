@@ -1,14 +1,14 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const handler = async (event: any) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { message } = JSON.parse(event.body || "{}");
+  const { message } = req.body;
   if (!message) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Query is required" }) };
+    return res.status(400).json({ error: "Query is required" });
   }
 
   const safeQuery = message.slice(0, 1000);
@@ -30,15 +30,9 @@ export const handler = async (event: any) => {
       web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
     })).filter((s: any) => s.web.uri);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ role: 'assistant', content, sources }),
-    };
+    return res.status(200).json({ role: 'assistant', content, sources });
   } catch (error: any) {
     console.error("API_INSIGHT_ERROR:", error?.message || error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Insight link failed" }),
-    };
+    return res.status(500).json({ error: "Insight link failed" });
   }
-};
+}
