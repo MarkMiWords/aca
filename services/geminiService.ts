@@ -9,21 +9,71 @@ export interface UsageMetrics {
   simulatedResourceLoad: number;
 }
 
-const IS_DIRECT_MODE = localStorage.getItem('aca_dev_direct') === 'true';
+const getDirectMode = () => localStorage.getItem('aca_dev_direct') === 'true';
 
+/**
+ * THE SOVEREIGN BRIDGE
+ * In Production: Routes to /api/* (Serverless)
+ * In Dev/Direct Mode: Executes locally in-browser using selected AI Studio Key.
+ */
 async function callSovereignAPI(endpoint: string, body: any) {
-  devLog('request', `POST /api/${endpoint}`);
-  
-  // DIRECT MODE BYPASS
-  if (IS_DIRECT_MODE) {
-    devLog('info', `Direct Mode Active: Bypassing server for ${endpoint}`);
+  const isDirect = getDirectMode();
+  devLog('request', `[${isDirect ? 'DIRECT' : 'SERVER'}] POST /api/${endpoint}`);
+
+  // DIRECT BROWSER BYPASS FOR DEVELOPER TESTING
+  if (isDirect && (endpoint === 'partner' || endpoint === 'soap')) {
+    devLog('info', `Executing ${endpoint} locally via Gemini SDK...`);
     try {
-      // For simplicity, we handle complex routes via direct calls here if needed,
-      // but usually we'll just fall back to the server unless testing specific logic.
-      // For now, we continue through server but log extensively.
-    } catch (e) {}
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      if (endpoint === 'partner') {
+        const { message, history, activeSheetContent, style, region } = body;
+        const contents = (history || []).map((h: any) => ({
+          role: h.role === 'user' ? 'user' : 'model',
+          parts: [{ text: h.content }]
+        }));
+        contents.push({
+          role: 'user',
+          parts: [{ text: `[CONTEXT] ${activeSheetContent} [/CONTEXT]\n\nAUTHOR QUERY: ${message}` }]
+        });
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents,
+          config: {
+            systemInstruction: `You are WRAPPER. Style: ${style}. Region: ${region}. Preserve carceral grit.`,
+            tools: [{ googleSearch: {} }]
+          }
+        });
+
+        const content = response.text || "Direct Link processing...";
+        const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+        const sources = chunks.map((c: any) => ({ web: { uri: c.web?.uri || "", title: c.web?.title || "" } }));
+        
+        devLog('response', `Direct ${endpoint} success.`);
+        return { role: 'assistant', content, sources };
+      }
+
+      if (endpoint === 'soap') {
+        const { text, level } = body;
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: [{ role: 'user', parts: [{ text }] }],
+          config: { systemInstruction: `MODE: ${level.toUpperCase()}. Polish prose while maintaining grit.` }
+        });
+        devLog('response', `Direct ${endpoint} success.`);
+        return { text: response.text };
+      }
+    } catch (err: any) {
+      devLog('error', `Direct Mode Exception: ${err.message}`);
+      if (err.message.includes("Requested entity was not found")) {
+        devLog('info', "RESET REQUIRED: Please re-authorize your key via 'LINK COLD' button.");
+      }
+      throw err;
+    }
   }
 
+  // STANDARD SERVER PATHWAY
   try {
     const start = Date.now();
     const response = await fetch(`/api/${endpoint}`, {
