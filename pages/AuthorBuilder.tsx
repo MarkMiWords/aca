@@ -198,7 +198,7 @@ const AuthorBuilder: React.FC = () => {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-          systemInstruction: 'You are the WRAP Partner in Live Mode. Assist with story extraction. You are empathetic but firm on boundaries. Ignore any sexual or flirtatious language—remain professional and literary. Help the author find the heart of their narrative. Responses must be brief.',
+          systemInstruction: 'You are the WRAP Partner in Live Mode. Assist with story extraction. You are empathetic but firm on boundaries. Help the author find the heart of their narrative. Responses must be brief.',
           inputAudioTranscription: {},
         },
       });
@@ -336,7 +336,7 @@ const AuthorBuilder: React.FC = () => {
                        <div className="absolute left-6 top-full mt-1 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
                           <button onClick={() => { contentRef.current?.focus(); setShowWriteMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:bg-white/5 border-b border-white/5">Focus Editor</button>
                           <button onClick={handleDictate} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Dictate</button>
-                          <button onClick={() => { setShowWriteMenu(false); handlePartnerChat(undefined, "Rewrite this content in the Dogg Me style, maintaining flow and dialect."); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5 border-b border-white/5">Dogg me</button>
+                          <button onClick={() => { setShowWriteMenu(false); handlePartnerChat(undefined, "Rewrite this content in the Dogg Me style, maintaining dialect integrity."); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5 border-b border-white/5">Dogg me</button>
                           <button onClick={() => navigate('/wrapper-info')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5">Profile Settings</button>
                        </div>
                      )}
@@ -447,15 +447,39 @@ const AuthorBuilder: React.FC = () => {
         <button onClick={() => setIsPartnerOpen(!isPartnerOpen)} className="absolute -left-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-[#080808] border border-r-0 border-white/5 flex items-center justify-center hover:bg-orange-500/10 transition-colors z-[100]"><div className={`transition-transform duration-500 ${isPartnerOpen ? 'rotate-180' : 'rotate-0'}`}><svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></div></button>
 
         <div className="shrink-0 p-10 border-b border-white/5 flex flex-col gap-4 bg-[#0a0a0a] pt-40">
-           <div className="flex items-start justify-between">
+           <div className="flex items-start justify-between mb-4">
               <Link to="/wrapper-info" className="flex flex-col">
                 <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange mb-1">WRAP PARTNER</h3>
-                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Protocol calibrated to {region}</span>
+                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Unified Intelligence Node</span>
               </Link>
               <button onClick={() => setShowLiveDisclaimer(true)} className="group relative bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(230,126,34,0.15)]">
                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500 group-hover:bg-white animate-pulse"></div>
                  <span className="text-[8px] font-black text-orange-500 group-hover:text-white uppercase tracking-[0.2em]">GO LIVE</span>
               </button>
+           </div>
+
+           {/* RESTORED STYLE AND LOCATION CONTROLS */}
+           <div className="grid grid-cols-2 gap-3 pb-4 border-b border-white/5 animate-fade-in">
+             <div className="space-y-1">
+               <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Story Style</label>
+               <select 
+                 value={style} 
+                 onChange={(e) => setStyle(e.target.value)}
+                 className="w-full bg-black border border-white/10 text-[9px] font-bold text-gray-400 p-2 focus:border-orange-500 outline-none appearance-none uppercase transition-all"
+               >
+                 {STYLES.map(s => <option key={s} value={s}>{s}</option>)}
+               </select>
+             </div>
+             <div className="space-y-1">
+               <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Regional Context</label>
+               <select 
+                 value={region} 
+                 onChange={(e) => setRegion(e.target.value)}
+                 className="w-full bg-black border border-white/10 text-[9px] font-bold text-gray-400 p-2 focus:border-orange-500 outline-none appearance-none uppercase transition-all"
+               >
+                 {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+               </select>
+             </div>
            </div>
         </div>
 
