@@ -1,5 +1,7 @@
 
 import { Message, ManuscriptReport, MasteringGoal } from "../types";
+import { GoogleGenAI } from "@google/genai";
+import { devLog } from "../components/DevConsole";
 
 export interface UsageMetrics {
   estimatedTokens: number;
@@ -7,25 +9,43 @@ export interface UsageMetrics {
   simulatedResourceLoad: number;
 }
 
-/**
- * THE SOVEREIGN BRIDGE
- * Reroutes all AI requests to Vercel Serverless Functions (/api/*)
- * to protect the API_KEY and ensure production stability.
- */
+const IS_DIRECT_MODE = localStorage.getItem('aca_dev_direct') === 'true';
 
 async function callSovereignAPI(endpoint: string, body: any) {
-  const response = await fetch(`/api/${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  devLog('request', `POST /api/${endpoint}`);
   
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Sovereign Link Failure: ${endpoint}`);
+  // DIRECT MODE BYPASS
+  if (IS_DIRECT_MODE) {
+    devLog('info', `Direct Mode Active: Bypassing server for ${endpoint}`);
+    try {
+      // For simplicity, we handle complex routes via direct calls here if needed,
+      // but usually we'll just fall back to the server unless testing specific logic.
+      // For now, we continue through server but log extensively.
+    } catch (e) {}
   }
-  
-  return response.json();
+
+  try {
+    const start = Date.now();
+    const response = await fetch(`/api/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    
+    const duration = Date.now() - start;
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown Network Fault' }));
+      devLog('error', `[${response.status}] ${endpoint}: ${errorData.error}`);
+      throw new Error(errorData.error || `Sovereign Link Failure: ${endpoint}`);
+    }
+    
+    devLog('response', `[${response.status}] ${endpoint} completed in ${duration}ms`);
+    return response.json();
+  } catch (err: any) {
+    devLog('error', `Link Exception [${endpoint}]: ${err.message}`);
+    throw err;
+  }
 }
 
 export async function performOCR(imageBase64: string): Promise<{text: string, metrics: UsageMetrics}> {

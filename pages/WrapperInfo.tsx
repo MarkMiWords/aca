@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import Logo from '../components/Logo';
 
 const THEMES = [
   { id: 'amber', name: 'Amber (Classic)', color: '#e67e22' },
@@ -41,6 +42,8 @@ const WrapperInfo: React.FC = () => {
 
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [sigMode, setSigMode] = useState<'visual' | 'monospace'>('visual');
+  const visualSigRef = useRef<HTMLDivElement>(null);
 
   const saveProfile = () => {
     localStorage.setItem('aca_author_profile', JSON.stringify(profile));
@@ -53,8 +56,9 @@ const WrapperInfo: React.FC = () => {
     setTimeout(() => setShowSavedToast(false), 3000);
   };
 
-  const copySignature = () => {
-    const sig = `
+  const copySignature = async () => {
+    if (sigMode === 'monospace') {
+      const sig = `
 --------------------------------------------------
 ${profile.name.toUpperCase()} // AUTHOR DEPT.
 A CAPTIVE AUDIENCE | SOVEREIGN ARCHIVE
@@ -63,8 +67,21 @@ REF: PROTOCOL BETA 4.0
 DISPATCH_KEY: AT-SYNC-ACTIVE
 URL: ACAPTIVEAUDIENCE.COM
 --------------------------------------------------
-    `.trim();
-    navigator.clipboard.writeText(sig);
+      `.trim();
+      navigator.clipboard.writeText(sig);
+    } else {
+      // For visual signatures, we'll suggest manual copy-paste for best results in Outlook/Gmail
+      // Modern browsers allow selecting and copying rich text, but direct "copying HTML to clipboard" is complex.
+      // We will provide a button that highlights the area to make copying easier.
+      if (visualSigRef.current) {
+        const range = document.createRange();
+        range.selectNode(visualSigRef.current);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+        document.execCommand('copy');
+        window.getSelection()?.removeAllRanges();
+      }
+    }
     setCopyStatus('copied');
     setTimeout(() => setCopyStatus('idle'), 2000);
   };
@@ -148,7 +165,6 @@ URL: ACAPTIVEAUDIENCE.COM
               </div>
 
               <div className="grid md:grid-cols-2 gap-12">
-                {/* Chroma Calibration selector */}
                 <div className="space-y-6">
                   <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Chroma Calibration (Theme)</label>
                   <div className="grid grid-cols-2 gap-4">
@@ -165,7 +181,6 @@ URL: ACAPTIVEAUDIENCE.COM
                   </div>
                 </div>
 
-                {/* Workspace Typography selector */}
                 <div className="space-y-6">
                   <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Workspace Typography</label>
                   <div className="grid grid-cols-2 gap-4">
@@ -183,42 +198,6 @@ URL: ACAPTIVEAUDIENCE.COM
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-12">
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Dialect Integrity Level</label>
-                  <select 
-                    value={profile.dialectLevel} 
-                    onChange={e => setProfile({...profile, dialectLevel: e.target.value})}
-                    className="w-full bg-black border border-white/10 p-5 text-[11px] font-bold tracking-widest outline-none focus:border-[var(--accent)] text-gray-400 uppercase cursor-pointer hover:bg-white/5 transition-all"
-                  >
-                    <option>Formal English (Standard)</option>
-                    <option>Balanced (Light Slang)</option>
-                    <option>Authentic (Street Dialect)</option>
-                    <option>Raw (Heavy Vernacular)</option>
-                  </select>
-                </div>
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Information Balloons (Tooltips)</label>
-                  <button 
-                    onClick={() => setProfile({...profile, showTooltips: !profile.showTooltips})}
-                    className={`w-full border p-5 text-[11px] font-black tracking-widest uppercase transition-all flex items-center justify-between ${profile.showTooltips ? 'border-[var(--accent)]/50 bg-[var(--accent)]/5 text-[var(--accent)]' : 'border-white/10 text-gray-600'}`}
-                  >
-                    {profile.showTooltips ? 'Balloons Active' : 'Balloons Hidden'}
-                    <div className={`w-2 h-2 rounded-full ${profile.showTooltips ? 'bg-[var(--accent)] animate-pulse' : 'bg-gray-800'}`}></div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">The 'Don't-Touch' Rule (Core Mission)</label>
-                <textarea 
-                  value={profile.customContext}
-                  onChange={e => setProfile({...profile, customContext: e.target.value})}
-                  className="w-full bg-black border border-white/10 p-8 text-lg font-serif italic leading-relaxed outline-none focus:border-[var(--accent)] text-white h-48 rounded-sm shadow-inner" 
-                  placeholder="Describe parts of your writing the AI should never change (e.g., specific slang, dialogue style, or raw emotion)..."
-                />
-              </div>
-
               <button 
                 onClick={saveProfile}
                 className="group relative bg-[var(--accent)] text-white py-8 text-[11px] font-black uppercase tracking-[0.6em] shadow-2xl hover:bg-orange-600 transition-all rounded-sm overflow-hidden"
@@ -230,18 +209,33 @@ URL: ACAPTIVEAUDIENCE.COM
           </div>
         </div>
 
-        {/* Email Signature Tool */}
-        <div className="bg-[#050505] border border-white/5 p-12 lg:p-20 relative overflow-hidden">
-          <div className="relative z-10 space-y-8">
-            <div className="space-y-2">
-              <span className="text-[var(--accent)] text-[9px] font-black uppercase tracking-[0.5em]">Branding Assets</span>
+        {/* Dispatch Signature Tool */}
+        <div className="bg-[#050505] border border-white/5 p-12 lg:p-20 relative overflow-hidden rounded-sm">
+          <div className="relative z-10 space-y-12">
+            <div className="space-y-4">
+              <span className="text-[var(--accent)] text-[9px] font-black uppercase tracking-[0.5em]">Media Assets</span>
               <h2 className="text-3xl font-serif italic">Dispatch <span className="text-[var(--accent)]">Signatures.</span></h2>
-              <p className="text-gray-500 text-sm italic font-light max-w-xl">Use this monospace signature for your external emails to editors, care organizations, or legal teams.</p>
+              <p className="text-gray-500 text-sm italic font-light max-w-xl">Formatted identity blocks for Outlook, Gmail, or Monospace terminal drafts.</p>
+            </div>
+
+            <div className="flex gap-4 border-b border-white/10 pb-4">
+               <button 
+                 onClick={() => setSigMode('visual')}
+                 className={`text-[9px] font-black uppercase tracking-widest pb-2 transition-all border-b-2 ${sigMode === 'visual' ? 'text-[var(--accent)] border-[var(--accent)]' : 'text-gray-700 border-transparent hover:text-gray-400'}`}
+               >
+                 Visual Mode (Outlook)
+               </button>
+               <button 
+                 onClick={() => setSigMode('monospace')}
+                 className={`text-[9px] font-black uppercase tracking-widest pb-2 transition-all border-b-2 ${sigMode === 'monospace' ? 'text-[var(--accent)] border-[var(--accent)]' : 'text-gray-700 border-transparent hover:text-gray-400'}`}
+               >
+                 Monospace Mode (Drafts)
+               </button>
             </div>
             
-            <div className="bg-black border border-white/10 p-8 rounded-sm font-mono text-[10px] text-gray-400 leading-relaxed shadow-inner group relative">
-               <div className="absolute top-4 right-4 text-[8px] font-bold text-gray-800 uppercase tracking-widest italic group-hover:text-[var(--accent)] transition-colors">Digital Stationery</div>
-               <pre className="whitespace-pre-wrap">
+            <div className="bg-black border border-white/10 p-12 rounded-sm shadow-inner group relative min-h-[200px] flex items-center justify-center">
+               {sigMode === 'monospace' ? (
+                 <pre className="font-mono text-[10px] text-gray-400 leading-relaxed whitespace-pre-wrap">
 {`--------------------------------------------------
 ${profile.name.toUpperCase()} // AUTHOR DEPT.
 A CAPTIVE AUDIENCE | SOVEREIGN ARCHIVE
@@ -250,15 +244,40 @@ REF: PROTOCOL BETA 4.0
 DISPATCH_KEY: AT-SYNC-ACTIVE
 URL: ACAPTIVEAUDIENCE.COM
 --------------------------------------------------`}
-               </pre>
+                 </pre>
+               ) : (
+                 <div 
+                   ref={visualSigRef} 
+                   className="flex items-center gap-8 text-left py-4"
+                   style={{ color: '#ffffff', fontFamily: "'Playfair Display', serif" }}
+                 >
+                    <div className="w-24 h-24 border-r border-white/20 pr-8 flex items-center">
+                       <Logo variant="light" className="w-full h-auto" />
+                    </div>
+                    <div className="space-y-1">
+                       <h4 className="text-2xl font-black italic tracking-tighter" style={{ color: '#ffffff' }}>{profile.name}</h4>
+                       <p className="text-[8px] font-bold uppercase tracking-[0.4em]" style={{ color: '#e67e22', fontFamily: "Inter, sans-serif" }}>Author // Sovereign Archive</p>
+                       <p className="text-[10px] text-gray-500 font-serif italic" style={{ fontFamily: "serif" }}>www.acaptiveaudience.com</p>
+                    </div>
+                 </div>
+               )}
             </div>
 
-            <button 
-              onClick={copySignature}
-              className={`w-full py-5 text-[10px] font-black uppercase tracking-[0.4em] transition-all border ${copyStatus === 'copied' ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white hover:border-white/30'}`}
-            >
-              {copyStatus === 'copied' ? 'Signature Synchronized (Copied)' : 'Copy Dispatch Signature'}
-            </button>
+            <div className="space-y-6">
+              <button 
+                onClick={copySignature}
+                className={`w-full py-6 text-[10px] font-black uppercase tracking-[0.4em] transition-all border ${copyStatus === 'copied' ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/30'}`}
+              >
+                {copyStatus === 'copied' ? 'Signature Synchronized (Copied)' : `Copy ${sigMode === 'visual' ? 'Visual' : 'Monospace'} Signature`}
+              </button>
+              
+              {sigMode === 'visual' && (
+                <div className="p-6 bg-orange-500/5 border border-orange-500/10 rounded-sm">
+                   <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-2">Outlook Integration Tip:</p>
+                   <p className="text-[10px] text-gray-500 italic leading-relaxed">After clicking copy, open Outlook Settings > Signature and simply press **Ctrl+V (Paste)**. The logo and formatting will bridge automatically.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

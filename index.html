@@ -6,7 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer-when-downgrade">
     <link rel="canonical" href="https://www.acaptiveaudience.com/" />
+    
+    <!-- SEO & Social Meta Tags -->
     <title>A Captive Audience | Truthful Prison Narratives</title>
+    <meta name="description" content="A digital storytelling and media platform giving voice to incarcerated and formerly incarcerated people through authentic narratives and immersive experiences.">
+    <meta property="og:title" content="A Captive Audience | Reclaim the Narrative">
+    <meta property="og:description" content="Sovereign digital workspace for carceral and systemic legacy storytelling.">
+    <meta property="og:url" content="https://www.acaptiveaudience.com/">
+    <meta property="og:type" content="website">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +30,6 @@
             --white-glow: rgba(255, 255, 255, 0.15);
         }
         
-        /* Chroma Profile Definitions */
         body.theme-blue { --accent: #3498db; --accent-gold: #5dade2; --accent-beige: #d6eaf8; --accent-glow: rgba(52, 152, 219, 0.4); }
         body.theme-red { --accent: #e74c3c; --accent-gold: #f1948a; --accent-beige: #fadbd8; --accent-glow: rgba(231, 76, 60, 0.4); }
         body.theme-emerald { --accent: #2ecc71; --accent-gold: #82e0aa; --accent-beige: #d4efdf; --accent-glow: rgba(46, 204, 113, 0.4); }
@@ -37,7 +44,6 @@
             overflow-x: hidden;
         }
 
-        /* Film Grain Texture Overlay */
         body::before {
             content: "";
             position: fixed;
@@ -84,7 +90,6 @@
         .animate-subtle-drift { animation: subtle-drift 120s infinite alternate ease-in-out; }
     </style>
     <script>
-        // Apply theme immediately to prevent flashing
         const profile = JSON.parse(localStorage.getItem('aca_author_profile') || '{}');
         if (profile.theme && profile.theme !== 'amber') {
             document.documentElement.className = 'theme-' + profile.theme;

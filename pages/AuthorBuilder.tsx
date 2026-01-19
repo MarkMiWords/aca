@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { queryPartner, smartSoap, performOCR } from '../services/geminiService';
 import { Message, Chapter } from '../types';
+import { devLog } from '../components/DevConsole';
 
 const STYLES = ['Fiction', 'Non-Fiction', 'Prison Life', 'Crime Life', 'Love Story', 'Sad Story', 'Tragic Story', 'Life Story'];
 const REGIONS = ['Asia', 'Australia', 'North America', 'South America', 'United Kingdom', 'Europe'];
@@ -90,6 +91,9 @@ const AuthorBuilder: React.FC = () => {
   const [isCloningVoice, setIsCloningVoice] = useState(false);
   const [hasClonedVoice, setHasClonedVoice] = useState(false);
   
+  // Sovereign Link / API Status
+  const [apiStatus, setApiStatus] = useState<'checking' | 'active' | 'unauthorized'>('checking');
+
   // Voice Calibration States
   const [speakGender, setSpeakGender] = useState<'Male' | 'Female'>('Female');
   const [speakAccent, setSpeakAccent] = useState('Australian');
@@ -123,6 +127,37 @@ const AuthorBuilder: React.FC = () => {
   const isLimitReached = wordCount >= MAX_WORDS;
 
   useEffect(() => {
+    checkApiStatus();
+  }, []);
+
+  const checkApiStatus = async () => {
+    devLog('info', 'Checking Sovereign Link authorization status...');
+    try {
+      if (typeof (window as any).aistudio !== 'undefined') {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        devLog('info', `AI Studio Key Detection: ${hasKey ? 'DETECTED' : 'NONE'}`);
+        setApiStatus(hasKey ? 'active' : 'unauthorized');
+      } else {
+        devLog('info', 'AI Studio Environment not detected. Using system link.');
+        setApiStatus('active'); // Fallback to assumed environment variable
+      }
+    } catch (e: any) {
+      devLog('error', `API Status Check failed: ${e.message}`);
+      setApiStatus('unauthorized');
+    }
+  };
+
+  const handleSelectApiKey = async () => {
+    if (typeof (window as any).aistudio !== 'undefined') {
+      devLog('info', 'Opening AI Studio Key Selection Dialog...');
+      await (window as any).aistudio.openSelectKey();
+      // Per official rules: assume success after trigger
+      setApiStatus('active'); 
+      devLog('info', 'Key selection triggered. Attempting to activate link.');
+    }
+  };
+
+  useEffect(() => {
     if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
     window.scrollTo(0, 0);
   }, [activeChapterId]);
@@ -143,7 +178,10 @@ const AuthorBuilder: React.FC = () => {
     setLiveTranscription("Establishing Sovereign Link...");
     setLiveSpokenWords(0);
     
+    devLog('request', 'Initiating Gemini Live Native Audio Session');
+
     try {
+      // Create fresh instance right before call for the latest API key from picker
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       let nextStartTime = 0;
       const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -157,6 +195,7 @@ const AuthorBuilder: React.FC = () => {
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         callbacks: {
           onopen: () => {
+            devLog('response', 'Sovereign Live Session OPENED');
             setLiveTranscription("Listening to your truth...");
             const source = inputAudioContext.createMediaStreamSource(stream);
             const scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
@@ -171,15 +210,20 @@ const AuthorBuilder: React.FC = () => {
             scriptProcessor.connect(inputAudioContext.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            if (message.serverContent?.modelTurn?.parts[0]?.inlineData?.data) {
-              const base64 = message.serverContent.modelTurn.parts[0].inlineData.data;
-              nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
-              const audioBuffer = await decodeAudioData(decode(base64), outputAudioContext, 24000, 1);
-              const source = outputAudioContext.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(outputNode);
-              source.start(nextStartTime);
-              nextStartTime += audioBuffer.duration;
+            // Robust Part Iteration
+            if (message.serverContent?.modelTurn?.parts) {
+              for (const part of message.serverContent.modelTurn.parts) {
+                if (part.inlineData?.data) {
+                  const base64 = part.inlineData.data;
+                  nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
+                  const audioBuffer = await decodeAudioData(decode(base64), outputAudioContext, 24000, 1);
+                  const source = outputAudioContext.createBufferSource();
+                  source.buffer = audioBuffer;
+                  source.connect(outputNode);
+                  source.start(nextStartTime);
+                  nextStartTime += audioBuffer.duration;
+                }
+              }
             }
             if (message.serverContent?.inputTranscription) {
               const newText = message.serverContent.inputTranscription.text;
@@ -192,13 +236,22 @@ const AuthorBuilder: React.FC = () => {
               ));
             }
           },
-          onerror: (e) => { console.error(e); setIsLiveActive(false); },
-          onclose: () => setIsLiveActive(false),
+          onerror: (e) => { 
+            devLog('error', `Live Link Error: ${e.message}`);
+            setIsLiveActive(false); 
+            if (e.message?.includes("Requested entity was not found")) {
+               setApiStatus('unauthorized');
+            }
+          },
+          onclose: () => {
+            devLog('info', 'Live Link CLOSED');
+            setIsLiveActive(false);
+          },
         },
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-          systemInstruction: 'You are the WRAP Partner in Live Mode. Assist with story extraction. You are empathetic but firm on boundaries. Help the author find the heart of their narrative. Responses must be brief.',
+          systemInstruction: 'You are the WRAP Partner in Live Mode. Assist with story extraction. Help the author find the heart of their narrative. Responses must be brief and professional.',
           inputAudioTranscription: {},
         },
       });
@@ -211,7 +264,10 @@ const AuthorBuilder: React.FC = () => {
           sessionPromise.then(s => s.close());
         } 
       };
-    } catch (err) { setIsLiveActive(false); }
+    } catch (err: any) { 
+      devLog('error', `Live Link Initialization failed: ${err.message}`);
+      setIsLiveActive(false); 
+    }
   };
 
   const stopLiveLink = () => {
@@ -226,6 +282,8 @@ const AuthorBuilder: React.FC = () => {
     try {
       const result = await smartSoap(activeChapter.content, level, style, region);
       setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
+    } catch (err: any) {
+      console.error("Soap Failure:", err);
     } finally { setIsSoaping(false); }
   };
 
@@ -246,6 +304,8 @@ const AuthorBuilder: React.FC = () => {
     try {
       const response = await queryPartner(msg, style, region, messages, activeChapter.content);
       setMessages(prev => [...prev, response]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sovereign Link Interrupted. Please check your project's API status." }]);
     } finally { setIsPartnerLoading(false); }
   };
 
@@ -298,6 +358,8 @@ const AuthorBuilder: React.FC = () => {
         setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: (c.content || "") + "\n\n" + result.text } : c));
       };
       reader.readAsDataURL(file);
+    } catch (err) {
+       console.error("OCR Failure:", err);
     } finally { setIsProducing(false); }
   };
 
@@ -452,10 +514,35 @@ const AuthorBuilder: React.FC = () => {
                 <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange mb-1">WRAP PARTNER</h3>
                 <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Unified Intelligence Node</span>
               </Link>
-              <button onClick={() => setShowLiveDisclaimer(true)} className="group relative bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(230,126,34,0.15)]">
-                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500 group-hover:bg-white animate-pulse"></div>
-                 <span className="text-[8px] font-black text-orange-500 group-hover:text-white uppercase tracking-[0.2em]">GO LIVE</span>
+              <button 
+                onClick={() => {
+                   if (apiStatus === 'unauthorized') handleSelectApiKey();
+                   else setShowLiveDisclaimer(true);
+                }} 
+                className={`group relative ${apiStatus === 'unauthorized' ? 'bg-red-500/10 border-red-500/30' : 'bg-orange-500/10 border-orange-500/30'} border px-3 py-1.5 rounded-full hover:bg-orange-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(230,126,34,0.15)]`}
+              >
+                 <div className={`w-1.5 h-1.5 rounded-full ${apiStatus === 'unauthorized' ? 'bg-red-500' : 'bg-orange-500'} group-hover:bg-white animate-pulse`}></div>
+                 <span className={`text-[8px] font-black ${apiStatus === 'unauthorized' ? 'text-red-500' : 'text-orange-500'} group-hover:text-white uppercase tracking-[0.2em]`}>
+                    {apiStatus === 'unauthorized' ? 'LINK COLD' : 'GO LIVE'}
+                 </span>
               </button>
+           </div>
+
+           {/* Sovereign Link Status Diagnostic */}
+           <div className="flex items-center gap-4 bg-black/40 p-4 rounded-sm border border-white/5 group/diag relative">
+              <div className={`w-2 h-2 rounded-full ${apiStatus === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className="flex-grow">
+                 <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Sovereign Link Status</p>
+                 <p className={`text-[9px] font-bold ${apiStatus === 'active' ? 'text-green-500' : 'text-red-500'} uppercase`}>{apiStatus === 'active' ? 'Operational' : 'Unauthorized'}</p>
+              </div>
+              {apiStatus !== 'active' && (
+                <button onClick={handleSelectApiKey} className="text-[8px] font-black text-white bg-white/10 px-3 py-1 uppercase tracking-widest rounded-sm hover:bg-white/20">Authorize</button>
+              )}
+              
+              <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/diag:opacity-100 transition-opacity w-full bg-black border border-white/10 p-4 rounded-sm shadow-2xl z-50 pointer-events-none">
+                 <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Diagnostic Details:</p>
+                 <p className="text-[9px] text-gray-300 italic">{apiStatus === 'active' ? 'Connection bridged via production credentials.' : 'Key Selection Required. Use AI Studio key picker to authorize your session.'}</p>
+              </div>
            </div>
 
            {/* STYLE AND LOCATION CONTROLS - ALIGNED WITH HUB */}
@@ -487,6 +574,13 @@ const AuthorBuilder: React.FC = () => {
            {messages.map((m, i) => (
              <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start animate-fade-in'}`}>
                 <div className={`max-w-[90%] p-6 rounded-sm text-sm font-serif italic leading-relaxed ${m.role === 'user' ? 'bg-white/5 border border-white/10 text-gray-500' : 'bg-orange-500/5 border border-orange-500/20 text-gray-300'}`}>{m.content}</div>
+                {m.sources && m.sources.length > 0 && (
+                   <div className="mt-4 px-4 space-y-1">
+                      {m.sources.map((s, idx) => (
+                         <a key={idx} href={s.web?.uri} target="_blank" rel="noopener noreferrer" className="block text-[8px] text-gray-700 hover:text-orange-500 uppercase tracking-widest truncate max-w-[200px]">Link: {s.web?.title || 'Source'}</a>
+                      ))}
+                   </div>
+                )}
              </div>
            ))}
            {isPartnerLoading && <div className="text-[9px] text-orange-500 animate-pulse uppercase tracking-widest px-2">Consulting...</div>}
@@ -544,7 +638,7 @@ const AuthorBuilder: React.FC = () => {
               <h3 className="text-3xl font-serif italic text-white mb-8">Sovereign <span className="text-orange-500">Boundaries.</span></h3>
               <div className="space-y-6 text-sm text-gray-500 italic leading-relaxed mb-12 text-left bg-black/40 p-8 rounded-sm">
                  <p>1. <span className="text-white font-bold">BETA MODE:</span> This link is experimental. Maintain narrative focus. Expletives are permitted when they serve the truth of your narrative.</p>
-                 <p>2. <span className="text-white font-bold">PROFESSIONAL PARTNERSHIP:</span> WRAP is a sovereign writing partner, not a social channel. No sexualized language or boundary-crossing is permitted.</p>
+                 <p>2. <span className="text-white font-bold">PROFESSIONAL PARTNERSHIP:</span> WRAP is a sovereign writing partner, not a social channel. No boundary-crossing is permitted.</p>
                  <p>3. <span className="text-white font-bold">INJECTION MODE:</span> Spoken words are injected into your active sheet in real-time.</p>
               </div>
               <div className="flex flex-col gap-4">

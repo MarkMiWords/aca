@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import BookDetails from './pages/BookDetails';
 import PublishedBooks from './pages/PublishedBooks';
@@ -21,6 +21,7 @@ import Origin from './pages/Origin';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BugReportModal from './components/BugReportModal';
+import { DevConsole } from './components/DevConsole';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -38,6 +39,11 @@ const App: React.FC = () => {
     const profile = JSON.parse(localStorage.getItem('aca_author_profile') || '{}');
     if (profile.theme && profile.theme !== 'amber') {
       document.body.className = `theme-${profile.theme}`;
+    }
+    
+    // Production Domain Console Log
+    if (window.location.hostname.includes('acaptiveaudience.com')) {
+      console.log("%c SOVEREIGN FORGE PRO LIVE ", "background: #e67e22; color: #fff; font-weight: bold; padding: 4px;");
     }
   }, []);
 
@@ -69,6 +75,7 @@ const App: React.FC = () => {
         </main>
         <Footer />
         <BugReportModal isOpen={isBugModalOpen} onClose={() => setIsBugModalOpen(false)} />
+        <DevConsole />
       </div>
     </Router>
   );
