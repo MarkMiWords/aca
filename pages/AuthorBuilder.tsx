@@ -280,6 +280,27 @@ const AuthorBuilder: React.FC = () => {
     } finally { setIsProducing(false); }
   };
 
+  const handleDictate = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Sovereign Dictation requires a compatible browser.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.onstart = () => setIsPartnerMicActive(true);
+    recognition.onend = () => setIsPartnerMicActive(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setChapters(prev => prev.map(c => 
+        c.id === activeChapterId 
+        ? { ...c, content: (c.content ? c.content + " " : "") + transcript } 
+        : c
+      ));
+    };
+    recognition.start();
+    setShowWriteMenu(false);
+  };
+
   return (
     <div className="flex h-[calc(100vh-6rem)] bg-[#020202] text-white overflow-hidden selection:bg-orange-500/30">
       <aside className="w-80 border-r border-white/5 bg-[#080808] flex flex-col shrink-0 overflow-hidden">
@@ -314,8 +335,8 @@ const AuthorBuilder: React.FC = () => {
                      {showWriteMenu && (
                        <div className="absolute left-6 top-full mt-1 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
                           <button onClick={() => { contentRef.current?.focus(); setShowWriteMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:bg-white/5 border-b border-white/5">Focus Editor</button>
-                          <button onClick={() => { setShowWriteMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Dictate</button>
-                          <button onClick={() => { setShowWriteMenu(false); handlePartnerChat(undefined, "Rewrite this content in the Dogg Me style."); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5 border-b border-white/5">Dogg me</button>
+                          <button onClick={handleDictate} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Dictate</button>
+                          <button onClick={() => { setShowWriteMenu(false); handlePartnerChat(undefined, "Rewrite this content in the Dogg Me style, enhancing the rhythm and street dialect while preserving truth."); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5 border-b border-white/5">Dogg me</button>
                           <button onClick={() => navigate('/wrapper-info')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5">Profile Settings</button>
                        </div>
                      )}
@@ -349,7 +370,7 @@ const AuthorBuilder: React.FC = () => {
                             {isCloningVoice ? 'Cloning...' : hasClonedVoice ? 'Voice Synced' : 'Clone Voice'}
                           </button>
                           
-                          <div className="space-y-4">
+                          <div className="space-y-4 pt-4 border-t border-white/5">
                              <div className="space-y-1">
                                 <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Gender</label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -368,7 +389,7 @@ const AuthorBuilder: React.FC = () => {
 
                              <div className="space-y-2">
                                 <div className="flex justify-between items-center text-[8px] font-black text-gray-600 uppercase">
-                                   <span>Speed</span>
+                                   <span>Articulation Speed</span>
                                    <span>{speakSpeed}x</span>
                                 </div>
                                 <input type="range" min="0.5" max="2" step="0.1" value={speakSpeed} onChange={(e) => setSpeakSpeed(parseFloat(e.target.value))} className="w-full accent-cyan-400" />
@@ -498,8 +519,8 @@ const AuthorBuilder: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-[2px] bg-orange-500 animate-living-amber-bg"></div>
               <h3 className="text-3xl font-serif italic text-white mb-8">Sovereign <span className="text-orange-500">Boundaries.</span></h3>
               <div className="space-y-6 text-sm text-gray-500 italic leading-relaxed mb-12 text-left bg-black/40 p-8 rounded-sm">
-                 <p>1. <span className="text-white font-bold">BETA MODE:</span> This link is experimental. Maintain narrative focus. Expletives are permitted in narrative context.</p>
-                 <p>2. <span className="text-white font-bold">PROFESSIONAL PARTNERSHIP:</span> No sexualized language or social 'chatting' with WRAP is permitted.</p>
+                 <p>1. <span className="text-white font-bold">BETA MODE:</span> This link is experimental. Maintain narrative focus. Expletives are permitted when they serve the truth of your narrative.</p>
+                 <p>2. <span className="text-white font-bold">PROFESSIONAL PARTNERSHIP:</span> WRAP is a sovereign writing partner, not a social channel. No sexualized language or boundary-crossing is permitted.</p>
                  <p>3. <span className="text-white font-bold">INJECTION MODE:</span> Spoken words are injected into your active sheet in real-time.</p>
               </div>
               <div className="flex flex-col gap-4">
