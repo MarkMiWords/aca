@@ -59,10 +59,14 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           </div>
           
           <div className="hidden xl:flex items-center self-end pb-8 ml-8">
-             <span className="text-[8px] font-black text-[var(--accent)]/60 uppercase tracking-[0.4em] flex items-center gap-2">
+             <Link 
+               to="/mission"
+               className="text-[8px] font-black text-[var(--accent)]/60 uppercase tracking-[0.4em] flex items-center gap-2 hover:text-[var(--accent)] transition-all group"
+             >
                <span className="w-1 h-1 rounded-full bg-[var(--accent)] animate-pulse animate-living-amber-bg"></span>
                Protocol Beta 4.0
-             </span>
+               <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">→</span>
+             </Link>
           </div>
         </div>
         
@@ -99,6 +103,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
               <div className="absolute top-full right-0 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-[100] w-64 translate-y-2 group-hover/tooltip:translate-y-0">
                 <div className="bg-black border border-[var(--accent)]/20 p-5 shadow-2xl rounded-sm backdrop-blur-3xl">
                    <p className="text-[8px] font-black text-[var(--accent)] uppercase tracking-widest mb-1 leading-none">The Audit Desk</p>
+                   {/* FIXED: Removed undefined 'subtitle' variable reference and using direct text */}
                    <p className="text-[10px] text-gray-500 italic leading-tight font-serif">Perform legal safety audits and format for Substack or print distribution.</p>
                 </div>
               </div>

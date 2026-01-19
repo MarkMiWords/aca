@@ -18,6 +18,105 @@ const Mission: React.FC = () => {
       </section>
       
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-32">
+        
+        {/* WHAT & WHO SECTION */}
+        <section className="grid md:grid-cols-2 gap-16 border-b border-white/5 pb-24">
+          <div className="space-y-6">
+            <h3 className="text-[var(--accent)] tracking-[0.4em] uppercase text-[10px] font-black">What is this?</h3>
+            <h2 className="text-4xl font-serif font-bold italic">A Sovereign <span className="text-white/40">Workspace.</span></h2>
+            <p className="text-gray-400 leading-relaxed font-light text-lg italic">
+              A Captive Audience is a digital storytelling and media project built around real, first-hand prison narratives. It is a secure infrastructure designed to bridge the gap between carceral isolation and global publication.
+            </p>
+          </div>
+          <div className="space-y-6">
+            <h3 className="text-white tracking-[0.4em] uppercase text-[10px] font-black">Who is it for?</h3>
+            <h2 className="text-4xl font-serif font-bold italic">The <span className="text-[var(--accent)]">Impacted.</span></h2>
+            <p className="text-gray-400 leading-relaxed font-light text-lg italic">
+              Specifically built for incarcerated and formerly incarcerated authors, family court litigants, and anyone navigating the friction of the legal system who refuses to have their truth sanitized or silenced.
+            </p>
+          </div>
+        </section>
+
+        {/* ARCHITECTURE: THE FORGING PROCESS */}
+        <section className="bg-[#0a0a0a] border border-white/5 p-12 md:p-20 relative overflow-hidden shadow-2xl rounded-sm">
+           <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl font-serif italic text-white select-none pointer-events-none">ENGINE</div>
+           
+           <div className="mb-20">
+              <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[10px] font-black mb-4 block">The Forging Protocol</span>
+              <h2 className="text-5xl md:text-6xl font-serif font-bold italic text-white mb-6">Architecture of <span className="text-[var(--accent)]">Reclamation.</span></h2>
+              <p className="text-gray-400 text-lg font-light leading-relaxed italic max-w-2xl">
+                We have engineered a workspace that removes the "Grammar Barrier." Authorship should not require a degree or a keyboard. It requires a voice.
+              </p>
+           </div>
+
+           <div className="grid md:grid-cols-3 gap-12 relative">
+              {/* Step 01 */}
+              <div className="space-y-6 relative z-10">
+                 <div className="flex items-center gap-4 mb-8">
+                    <span className="text-4xl font-serif italic text-[var(--accent)]">01</span>
+                    <div className="h-[1px] flex-grow bg-white/10"></div>
+                 </div>
+                 <h4 className="text-white font-serif italic text-2xl">Vocal Ingestion</h4>
+                 <p className="text-sm text-gray-500 font-light leading-relaxed">
+                    <strong className="text-white block mb-2 font-black uppercase text-[10px] tracking-widest">Talk, Don't Type.</strong>
+                    Our "Live Link" and "Sovereign Dictation" tools turn raw spoken truth into digital text in real-time. We remove the friction of the keyboard, allowing the author to focus on the emotional cadence of their story.
+                 </p>
+              </div>
+
+              {/* Step 02 */}
+              <div className="space-y-6 relative z-10">
+                 <div className="flex items-center gap-4 mb-8">
+                    <span className="text-4xl font-serif italic text-[var(--accent)]">02</span>
+                    <div className="h-[1px] flex-grow bg-white/10"></div>
+                 </div>
+                 <h4 className="text-white font-serif italic text-2xl">Dialect Integrity</h4>
+                 <p className="text-sm text-gray-500 font-light leading-relaxed">
+                    <strong className="text-white block mb-2 font-black uppercase text-[10px] tracking-widest">Grit Sovereignty.</strong>
+                    Standard AI tries to "fix" your English. Our Sovereign Engine is trained to recognize carceral grit and regional slang as a resource, not an error. It preserves the raw dialect of the yard.
+                 </p>
+              </div>
+
+              {/* Step 03 */}
+              <div className="space-y-6 relative z-10">
+                 <div className="flex items-center gap-4 mb-8">
+                    <span className="text-4xl font-serif italic text-[var(--accent)]">03</span>
+                    <div className="h-[1px] flex-grow bg-white/10"></div>
+                 </div>
+                 <h4 className="text-white font-serif italic text-2xl">Structural Forging</h4>
+                 <p className="text-sm text-gray-500 font-light leading-relaxed">
+                    <strong className="text-white block mb-2 font-black uppercase text-[10px] tracking-widest">Automated Mastering.</strong>
+                    The platform handles the structural heavy lifting—grammar, formatting, and legal auditing—leaving the author with a retail-ready manuscript without needing to understand the "rules" of the system.
+                 </p>
+              </div>
+           </div>
+
+           <div className="mt-20 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+              <div className="flex items-center gap-6">
+                 <div className="text-center">
+                    <p className="text-[var(--accent)] text-xl font-serif italic font-bold">100%</p>
+                    <p className="text-[8px] text-gray-700 font-black uppercase tracking-widest">Voice Sovereignty</p>
+                 </div>
+                 <div className="text-center">
+                    <p className="text-white text-xl font-serif italic font-bold">ZERO</p>
+                    <p className="text-[8px] text-gray-700 font-black uppercase tracking-widest">Typing Required</p>
+                 </div>
+              </div>
+              <Link to="/author-builder" className="text-[var(--accent)] text-[10px] font-black uppercase tracking-[0.4em] hover:text-white transition-all underline underline-offset-8">Experience the Architecture →</Link>
+           </div>
+        </section>
+
+        {/* MISSION STATEMENT SECTION */}
+        <section className="text-center py-12">
+           <span className="text-orange-500 tracking-[0.8em] uppercase text-[10px] font-black mb-8 block animate-living-amber">The Core Objective</span>
+           <div className="relative inline-block">
+             <div className="absolute -inset-4 bg-[var(--accent)]/5 blur-2xl rounded-full"></div>
+             <h2 className="relative text-5xl md:text-7xl font-serif font-black italic tracking-tighter leading-tight">
+               "To reclaim the narrative by providing <br/>
+               <span className="text-[var(--accent)]">unfiltered access</span> to the global archive."
+             </h2>
+           </div>
+        </section>
+
         {/* Philanthropy Section */}
         <section className="bg-[#0d0d0d] border border-[var(--accent)]/20 p-12 lg:p-20 relative overflow-hidden rounded-sm shadow-2xl">
           <div className="absolute top-0 right-0 p-10 opacity-5 text-7xl font-serif italic text-[var(--accent)] select-none">Impact</div>
@@ -58,41 +157,6 @@ const Mission: React.FC = () => {
                 "We don't just amplify voices; we reclaim sovereignty. From family law skirmishes to the hero's journey back from the brink."
               </p>
            </div>
-        </section>
-
-        {/* The Core Aims */}
-        <section className="bg-[#0a0a0a] p-12 md:p-20 border border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-10 opacity-5 text-9xl font-serif italic select-none">Pillars</div>
-          <h3 className="text-2xl font-bold text-white mb-16 italic font-serif">The Three Pillars of Sovereignty</h3>
-          <ul className="space-y-16">
-            <li className="flex gap-8 group">
-              <span className="text-4xl font-serif text-[var(--accent)] italic opacity-40 group-hover:opacity-100 transition-opacity">01.</span>
-              <div>
-                <strong className="text-white block text-2xl mb-3 font-serif italic tracking-tight">Systemic Democratization</strong>
-                <p className="text-gray-500 leading-relaxed font-light max-w-2xl">
-                  Our **Sovereign Transcription** tools bridge the digital gap for those in low-tech environments or under high legal pressure. We turn raw testimony into global archives.
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-8 group">
-              <span className="text-4xl font-serif text-[var(--accent)] italic opacity-40 group-hover:opacity-100 transition-opacity">02.</span>
-              <div>
-                <strong className="text-white block text-2xl mb-3 font-serif italic tracking-tight">The Registry of Resilience</strong>
-                <p className="text-gray-500 leading-relaxed font-light max-w-2xl">
-                  We build permanent, immutable digital archives of human experience within the system. From custody battles to carceral survival, these stories cannot be erased.
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-8 group">
-              <span className="text-4xl font-serif text-[var(--accent)] italic opacity-40 group-hover:opacity-100 transition-opacity">03.</span>
-              <div>
-                <strong className="text-white block text-2xl mb-3 font-serif italic tracking-tight">Author Sovereignty</strong>
-                <p className="text-gray-500 leading-relaxed font-light max-w-2xl">
-                  A direct-to-reader model. We handle the tech; you keep the impact and the earnings. No middlemen sanitizing the grit of your lived experience.
-                </p>
-              </div>
-            </li>
-          </ul>
         </section>
 
         {/* Closing Thought */}
