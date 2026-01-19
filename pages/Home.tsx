@@ -7,16 +7,20 @@ const Home: React.FC = () => {
     <div className="bg-[#050505]">
       {/* Hero Section */}
       <section className="relative h-[90vh] flex items-center justify-center overflow-hidden px-6 text-center">
-        {/* Background Layer - Recalibrated for visibility */}
+        {/* Background Layer - Recalibrated for Visibility */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black/40 z-10"></div>
           <img 
             src="https://images.unsplash.com/photo-1589216534379-39c148804611?q=80&w=2500&auto=format&fit=crop" 
-            className="w-full h-full object-cover grayscale-[40%] opacity-50 scale-105 animate-subtle-drift" 
+            className="w-full h-full object-cover grayscale-[30%] brightness-[0.7] opacity-60 scale-105 animate-subtle-drift relative z-0" 
             alt="Scales of Justice" 
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505] z-10"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-orange-500/5 rounded-full blur-[200px] z-10"></div>
+          {/* Gradients that allow the image to breathe */}
+          <div className="absolute inset-0 bg-black/30 z-[1]"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505] z-[2]"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] z-[2]"></div>
+          
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-orange-500/5 rounded-full blur-[200px] z-[1]"></div>
         </div>
 
         <div className="relative z-20 max-w-6xl px-4">

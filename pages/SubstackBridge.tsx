@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -6,13 +7,13 @@ const SubstackBridge: React.FC = () => {
     <div className="bg-[#050505] min-h-screen text-white">
       {/* Hero Section */}
       <section className="relative h-[70vh] flex items-center justify-center overflow-hidden px-6 border-b border-white/5">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <div className="absolute inset-0 bg-gradient-to-b from-orange-500/20 via-transparent to-black"></div>
+        <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1516979187457-637abb4f9353?q=80&w=2000&auto=format&fit=crop" 
-            className="w-full h-full object-cover grayscale" 
+            className="w-full h-full object-cover grayscale brightness-[0.6] opacity-60" 
             alt="Old Books and Tech" 
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-orange-500/20 via-transparent to-black z-[1]"></div>
         </div>
         
         <div className="relative z-10 text-center max-w-4xl">
