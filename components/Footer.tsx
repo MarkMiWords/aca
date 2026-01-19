@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 
@@ -19,7 +18,7 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-bold mb-8 uppercase text-xs tracking-[0.3em]">The Platform</h3>
             <ul className="space-y-4 text-gray-500 text-xs font-bold uppercase tracking-widest">
               <li><Link to="/published-books" className="hover:text-white transition-colors">Published Books</Link></li>
-              <li><Link to="/virty-dating" className="hover:text-cyan-400 transition-colors text-cyan-500/80">VIRTY Virtual Dating</Link></li>
+              <li><Link to="/virty-dating" className="hover:text-cyan-400 transition-colors text-cyan-500/80 uppercase">VIRTY System Logic</Link></li>
               <li><Link to="/origin-story" className="hover:text-white transition-colors italic text-white/80">The Origin Story</Link></li>
               <li><Link to="/substack-bridge" className="hover:text-white transition-colors text-[var(--accent)]">Substack Bridge</Link></li>
               <li><Link to="/art-gallery" className="hover:text-white transition-colors">Art Gallery</Link></li>

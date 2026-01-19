@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { queryPartner, smartSoap, performOCR } from '../services/geminiService';
@@ -446,7 +446,7 @@ const AuthorBuilder: React.FC = () => {
       <aside className={`border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative h-full transition-all duration-500 ease-in-out ${isPartnerOpen ? '' : 'w-0 opacity-0 overflow-hidden'}`} style={{ width: isPartnerOpen ? `420px` : '0px' }}>
         <button onClick={() => setIsPartnerOpen(!isPartnerOpen)} className="absolute -left-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-[#080808] border border-r-0 border-white/5 flex items-center justify-center hover:bg-orange-500/10 transition-colors z-[100]"><div className={`transition-transform duration-500 ${isPartnerOpen ? 'rotate-180' : 'rotate-0'}`}><svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></div></button>
 
-        <div className="shrink-0 p-10 border-b border-white/5 flex flex-col gap-4 bg-[#0a0a0a] pt-40">
+        <div className="shrink-0 p-10 border-b border-white/5 flex flex-col gap-4 bg-[#0a0a0a] pt-6">
            <div className="flex items-start justify-between mb-4">
               <Link to="/wrapper-info" className="flex flex-col">
                 <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange mb-1">WRAP PARTNER</h3>
@@ -458,8 +458,8 @@ const AuthorBuilder: React.FC = () => {
               </button>
            </div>
 
-           {/* RESTORED STYLE AND LOCATION CONTROLS */}
-           <div className="grid grid-cols-2 gap-3 pb-4 border-b border-white/5 animate-fade-in">
+           {/* STYLE AND LOCATION CONTROLS - ALIGNED WITH HUB */}
+           <div className="grid grid-cols-2 gap-3 pb-2 animate-fade-in">
              <div className="space-y-1">
                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Story Style</label>
                <select 

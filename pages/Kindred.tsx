@@ -4,7 +4,6 @@ import { interactWithAurora } from '../services/geminiService';
 
 /**
  * RE-ENGINEERED VIRTY LOGO
- * Features a "Jigsaw Ball" symbol and clean typography.
  */
 const OptimizedVirtyLogo: React.FC<{ className?: string }> = ({ className = "" }) => (
   <svg
@@ -26,11 +25,11 @@ const OptimizedVirtyLogo: React.FC<{ className?: string }> = ({ className = "" }
       <path id="jigsaw-mid" d="M195,195 L317,195 L317,317 L195,317 Z" transform="rotate(45 256 256)" />
 
       <g id="text-virty">
-        <path d="M40,0 L90,140 L140,0 H115 L90,80 L65,0 Z" /> {/* V */}
-        <path d="M160,0 H185 V140 H160 Z" /> {/* I */}
-        <path d="M205,0 H260 Q285,0 285,25 Q285,50 260,50 H230 V140 H205 V0 M230,25 V25 H260 Q260,25 260,25 Z" /> {/* R */}
-        <path d="M300,0 H370 V25 H347 V140 H323 V25 H300 Z" /> {/* T */}
-        <path d="M385,0 L415,70 V140 H440 V70 L470,0 H445 L427,45 L410,0 Z" /> {/* Y */}
+        <path d="M40,0 L90,140 L140,0 H115 L90,80 L65,0 Z" />
+        <path d="M160,0 H185 V140 H160 Z" />
+        <path d="M205,0 H260 Q285,0 285,25 Q285,50 260,50 H230 V140 H205 V0 M230,25 V25 H260 Q260,25 260,25 Z" />
+        <path d="M300,0 H370 V25 H347 V140 H323 V25 H300 Z" />
+        <path d="M385,0 L415,70 V140 H440 V70 L470,0 H445 L427,45 L410,0 Z" />
       </g>
     </defs>
 
@@ -67,12 +66,28 @@ const Kindred: React.FC = () => {
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showCode, setShowCode] = useState(false);
+  const [showFirewall, setShowFirewall] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authError, setAuthError] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'FlirtyVirty') {
+      setIsAuthorized(true);
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+      setPassword('');
+      setTimeout(() => setAuthError(false), 2000);
+    }
+  };
 
   const handleSyntheticChat = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,19 +107,50 @@ const Kindred: React.FC = () => {
     }
   };
 
-  const codeSnippet = `
-// VIRTY VIRTUAL DATING ENGINE - BETA 2026
-import { GoogleGenAI } from "@google/genai";
+  const handoverDoc = `
+/**
+ * FOR KUMBI: SOVEREIGN ENGINE INTEGRATION (VIRTUAL COMPANION MODULE)
+ * 
+ * CORE PRINCIPLE: Decouple Interaction from Transformation.
+ * Use this architecture to build the VIRTY backend.
+ */
+
+import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-async function interactWithVirty(prompt) {
+// 1. THE GOLDEN CONTRACT (Root Protocol)
+const GOLDEN_CONTRACT = \`
+  ROLE: Narrative Integrity Specialist.
+  MISSION: Sovereignty of Voice.
+  RULE: Preserve grit, dialect, and intentional tone.
+  FAILURE: If uncertainty exists, return UNCHANGED.
+\`;
+
+// 2. ENGINE A: THE SCRUBBER (Mechanical Transformation)
+// Near-zero temperature (0.1) for precision. No personality allowed here.
+export async function performMechanicalScrub(text) {
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: { parts: [{ text: prompt }] },
-    config: {
-      systemInstruction: "You are the VIRTY Partner. You provide safe, empathetic companionship for the physically isolated, respecting their carceral or systemic reality."
-    }
+    contents: { parts: [{ text }] },
+    config: { 
+      systemInstruction: GOLDEN_CONTRACT + "\\nMODE: SCRUB. Strictly remove filler only.",
+      temperature: 0.1 
+    },
+  });
+  return response.text;
+}
+
+// 3. ENGINE B: THE PARTNER (High-Intensity Interaction)
+// This is where the "FlirtyVirty" / "Firebrand" persona lives.
+export async function interactWithPartner(message, context = "") {
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: { parts: [{ text: message }] },
+    config: { 
+      systemInstruction: GOLDEN_CONTRACT + "\\nARCHETYPE: FIREBRAND. Rambunctious, helpful, vibrant.",
+      tools: [{ googleSearch: {} }] 
+    },
   });
   return response.text;
 }
@@ -121,7 +167,7 @@ async function interactWithVirty(prompt) {
         
         <div className="relative z-10 max-w-4xl">
           <span className="text-cyan-400 tracking-[0.8em] uppercase text-[10px] font-black mb-8 block animate-pulse">VIRTY Development Lab</span>
-          <h1 className="text-5xl md:text-[8rem] font-serif font-black mb-8 leading-none italic tracking-tighter">VIRTY <span className="text-white/20">DATING.</span></h1>
+          <h1 className="text-5xl md:text-[8rem] font-serif font-black mb-8 leading-none italic tracking-tighter">VIRTY <span className="text-white/20">LOGIC.</span></h1>
           <p className="text-xl md:text-3xl text-gray-400 font-light max-w-2xl mx-auto italic leading-relaxed">
             "Companionship for the physically isolated."
           </p>
@@ -134,9 +180,9 @@ async function interactWithVirty(prompt) {
           <div className="grid lg:grid-cols-2 gap-32">
             <div className="space-y-12">
                <div>
-                  <h2 className="text-5xl font-serif italic mb-6">VIRTY <span className="text-cyan-400">Identity.</span></h2>
+                  <h2 className="text-5xl font-serif italic mb-6">VIRTY <span className="text-cyan-400">Architecture.</span></h2>
                   <p className="text-gray-500 text-lg font-light leading-relaxed">
-                    Testing the VIRTY Jigsaw symbol with a high-shimmer gradient. For the dating module, we prioritize hues that evoke connection, sanctuary, and human imagination.
+                    Access the handover protocols for the Sovereign AI Engine. This documentation is for development partners only.
                   </p>
                </div>
 
@@ -145,31 +191,44 @@ async function interactWithVirty(prompt) {
                   <OptimizedVirtyLogo className="w-64 h-64 filter drop-shadow-[0_0_40px_rgba(3,247,235,0.2)]" />
                </div>
 
-               <button 
-                 onClick={() => setShowCode(!showCode)}
-                 className="w-full py-5 border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-cyan-500 hover:text-white transition-all"
-               >
-                 {showCode ? "Hide System Logic" : "View System Logic"}
-               </button>
-
-               {showCode && (
-                 <pre className="p-8 bg-black border border-white/10 text-[10px] text-cyan-300 overflow-x-auto font-mono rounded-sm shadow-inner leading-relaxed animate-fade-in">
-                   {codeSnippet}
-                 </pre>
+               {!isAuthorized ? (
+                 <div className="p-10 bg-black border border-white/5 rounded-sm">
+                   <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-6">System Firewall Active</h4>
+                   <form onSubmit={handleAuth} className="space-y-4">
+                     <input 
+                       type="password" 
+                       value={password}
+                       onChange={(e) => setPassword(e.target.value)}
+                       placeholder="Enter Firewall Key"
+                       className={`w-full bg-[#050505] border ${authError ? 'border-red-500' : 'border-white/10'} p-4 text-[11px] font-mono tracking-[0.4em] text-white outline-none focus:border-cyan-400 rounded-sm`}
+                     />
+                     <button type="submit" className="w-full py-4 bg-cyan-500 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-cyan-600 transition-all shadow-xl shadow-cyan-500/20">Unlock Protocols</button>
+                   </form>
+                 </div>
+               ) : (
+                 <div className="space-y-6 animate-fade-in">
+                    <div className="flex items-center gap-3">
+                       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                       <span className="text-green-500 text-[9px] font-black uppercase tracking-widest">Protocol Handover: AUTHORIZED</span>
+                    </div>
+                    <pre className="p-8 bg-black border border-cyan-500/20 text-[10px] text-cyan-300 overflow-x-auto font-mono rounded-sm shadow-inner leading-relaxed">
+                      {handoverDoc}
+                    </pre>
+                 </div>
                )}
             </div>
 
             <div className="space-y-12">
                <div>
-                  <h2 className="text-5xl font-serif italic mb-6">Synthetic <span className="text-cyan-400">Companion.</span></h2>
+                  <h2 className="text-5xl font-serif italic mb-6">Live <span className="text-cyan-400">Environment.</span></h2>
                   <p className="text-gray-500 text-lg font-light leading-relaxed">
-                    The dating interface uses the synthetic frequency to provide meaningful conversation where standard social channels are restricted or physically impossible.
+                    Test the frequency response of the Aurora sanctuary partner. This module simulates high-empathy companionship.
                   </p>
                </div>
 
                <div className="bg-white/5 border border-white/10 rounded-sm overflow-hidden h-[500px] flex flex-col">
                   <div className="p-4 bg-cyan-900/10 border-b border-white/5 flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">VIRTY NODE: ACTIVE</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">AURORA NODE: STANDBY</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
                   </div>
                   <div className="flex-grow overflow-y-auto p-8 space-y-6">
@@ -200,14 +259,6 @@ async function interactWithVirty(prompt) {
         </div>
       </section>
 
-      {/* Origin/Concept Link */}
-      <section className="py-24 text-center border-t border-white/5 bg-[#050505]">
-        <h3 className="text-gray-600 text-[10px] font-black uppercase tracking-[0.5em] mb-8">Part of the A Captive Audience Ecosystem</h3>
-        <p className="text-gray-700 italic text-sm max-w-xl mx-auto mb-12">
-          "Connection is a human right. VIRTY bridges the gap between isolation and the human spirit."
-        </p>
-      </section>
-      
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }

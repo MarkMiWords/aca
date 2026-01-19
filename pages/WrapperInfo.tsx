@@ -16,12 +16,20 @@ const FONT_PAIRINGS = [
   { name: 'Manuscript', desc: 'Lightweight italic serif for flow.' },
 ];
 
+const PERSONALITIES = [
+  { level: 0, label: 'Mild', title: 'The Ghost', desc: 'Minimalist & Invisible. Only fixes errors. Speaks only when spoken to.' },
+  { level: 1, label: 'Steady', title: 'The Editor', desc: 'Balanced & Encouraging. Measured responses with structured feedback.' },
+  { level: 2, label: 'Cheeky', title: 'The Ally', desc: 'Opinionated & Industrial. Uses slang. Not afraid to tell you when a line is weak.' },
+  { level: 3, label: 'Wild', title: 'The Firebrand', desc: 'Rambunctious & Outrageous. Extremely talkative, cheeky, and fiercely helpful.' },
+];
+
 const WrapperInfo: React.FC = () => {
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('aca_author_profile');
     return saved ? JSON.parse(saved) : {
       name: 'Architect',
       dialectLevel: 'Balanced',
+      vocalIntensity: 1, // Default to Steady
       feedbackStyle: 'Direct',
       motivation: 'Personal Legacy',
       customContext: '',
@@ -61,6 +69,8 @@ URL: ACAPTIVEAUDIENCE.COM
     setTimeout(() => setCopyStatus('idle'), 2000);
   };
 
+  const currentPersonality = PERSONALITIES[profile.vocalIntensity || 0];
+
   return (
     <div className="bg-[#050505] min-h-screen text-white pb-32 font-sans selection:bg-[var(--accent)]/30 overflow-x-hidden">
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -94,7 +104,7 @@ URL: ACAPTIVEAUDIENCE.COM
           
           <div className="relative z-10">
             <h2 className="text-white text-4xl font-serif italic mb-4">Voice <span className="text-[var(--accent)]">Calibration.</span></h2>
-            <p className="text-gray-500 text-base italic mb-16 max-w-xl">Training your WRAP Profile ensures that when you 'Scrub' or 'Rinse' your prose, the AI respects your unique dialect and dialogue.</p>
+            <p className="text-gray-500 text-base italic mb-16 max-w-xl">Training your WRAP Profile ensures that when you 'Scrub' or 'Rinse' your prose, the AI respects your unique dialect and personality preferences.</p>
 
             <div className="grid gap-16">
               <div className="space-y-4">
@@ -107,37 +117,69 @@ URL: ACAPTIVEAUDIENCE.COM
                 />
               </div>
 
-              {/* Chroma Calibration selector */}
-              <div className="space-y-6">
-                <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Chroma Calibration (Theme)</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                   {THEMES.map(theme => (
-                     <button 
-                       key={theme.id}
-                       onClick={() => setProfile({...profile, theme: theme.id})}
-                       className={`p-6 border transition-all rounded-sm flex flex-col items-center gap-3 ${profile.theme === theme.id ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/5 hover:border-white/20'}`}
-                     >
-                        <div className="w-8 h-8 rounded-full shadow-lg" style={{ backgroundColor: theme.color }}></div>
-                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">{theme.name}</span>
-                     </button>
-                   ))}
+              {/* VOCAL INTENSITY SLIDER */}
+              <div className="space-y-10 p-8 bg-white/[0.02] border border-white/5 rounded-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                  <span className="text-6xl font-serif italic uppercase text-[var(--accent)]">{currentPersonality.label}</span>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.4em]">Vocal Intensity: <span className="text-white">{currentPersonality.title}</span></label>
+                  <p className="text-xs text-gray-500 italic max-w-md">{currentPersonality.desc}</p>
+                </div>
+
+                <div className="relative pt-4 px-2">
+                   <input 
+                     type="range" 
+                     min="0" 
+                     max="3" 
+                     step="1"
+                     value={profile.vocalIntensity || 0}
+                     onChange={e => setProfile({...profile, vocalIntensity: parseInt(e.target.value)})}
+                     className="w-full h-1 bg-white/10 appearance-none cursor-pointer accent-[var(--accent)]"
+                   />
+                   <div className="flex justify-between mt-4 text-[8px] font-black text-gray-700 uppercase tracking-widest">
+                     <span>Mild</span>
+                     <span>Steady</span>
+                     <span>Cheeky</span>
+                     <span className="text-orange-500 animate-pulse">Wild</span>
+                   </div>
                 </div>
               </div>
 
-              {/* Workspace Typography selector */}
-              <div className="space-y-6">
-                <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Workspace Typography</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                   {FONT_PAIRINGS.map((font, idx) => (
-                     <button 
-                       key={font.name}
-                       onClick={() => setProfile({...profile, fontIndex: idx})}
-                       className={`p-6 border transition-all rounded-sm flex flex-col items-center text-center gap-2 ${profile.fontIndex === idx ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/5 hover:border-white/20'}`}
-                     >
-                        <span className="text-xl font-serif italic text-white">{font.name}</span>
-                        <span className="text-[7px] font-bold uppercase tracking-widest text-gray-600">{font.desc}</span>
-                     </button>
-                   ))}
+              <div className="grid md:grid-cols-2 gap-12">
+                {/* Chroma Calibration selector */}
+                <div className="space-y-6">
+                  <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Chroma Calibration (Theme)</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {THEMES.map(theme => (
+                      <button 
+                        key={theme.id}
+                        onClick={() => setProfile({...profile, theme: theme.id})}
+                        className={`p-6 border transition-all rounded-sm flex flex-col items-center gap-3 ${profile.theme === theme.id ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/5 hover:border-white/20'}`}
+                      >
+                          <div className="w-8 h-8 rounded-full shadow-lg" style={{ backgroundColor: theme.color }}></div>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">{theme.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Workspace Typography selector */}
+                <div className="space-y-6">
+                  <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">Workspace Typography</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {FONT_PAIRINGS.slice(0,4).map((font, idx) => (
+                      <button 
+                        key={font.name}
+                        onClick={() => setProfile({...profile, fontIndex: idx})}
+                        className={`p-6 border transition-all rounded-sm flex flex-col items-center text-center gap-2 ${profile.fontIndex === idx ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/5 hover:border-white/20'}`}
+                      >
+                          <span className="text-xl font-serif italic text-white">{font.name}</span>
+                          <span className="text-[7px] font-bold uppercase tracking-widest text-gray-600">{font.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -239,6 +281,17 @@ URL: ACAPTIVEAUDIENCE.COM
         .paper-anim { animation: paper-morph 20s infinite ease-in-out; }
         @keyframes toast-up { from { opacity: 0; transform: translateY(50px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
         .animate-toast-up { animation: toast-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        input[type='range']::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 16px;
+          height: 16px;
+          background: var(--accent);
+          border: 3px solid black;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 0 10px var(--accent-glow);
+        }
       `}</style>
     </div>
   );

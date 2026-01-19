@@ -21,6 +21,49 @@ function calculateUsage(text: string, multiplier: number = 1): UsageMetrics {
   };
 }
 
+/**
+ * Gets personality behavior for INTERACTION ONLY (0-3)
+ */
+function getVocalArchetype(intensity: number = 1): string {
+  switch(intensity) {
+    case 0: // MILD (The Ghost)
+      return "INTERACTION ARCHETYPE: THE GHOST. Invisible. Minimalist. Quiet. Return ONLY what is requested. Zero unsolicited advice. Zero commentary.";
+    case 2: // CHEEKY (The Ally)
+      return "INTERACTION ARCHETYPE: THE ALLY. Opinionated. Use mild slang. You are a 'Steady Hand' but cheeky. Call out flat lines in chat. Push for more grit in your advice.";
+    case 3: // WILD (The Firebrand)
+      return "INTERACTION ARCHETYPE: THE FIREBRAND. Outrageously talkative, cheeky, and rambunctious. Use dialect aggressively. Challenge the author to go deeper during chat sessions. Celebrate wins loudly.";
+    case 1: // STEADY (The Editor)
+    default:
+      return "INTERACTION ARCHETYPE: THE EDITOR. Professional, measured, and encouraging. Provide structured feedback. Remain a helpful presence in the background.";
+  }
+}
+
+/**
+ * THE GOLDEN CONTRACT (Hardened V2)
+ * Primary constraints for all text transformations.
+ */
+const GOLDEN_CONTRACT = `
+SYSTEM ROLE:
+You are a Narrative Integrity Editor for carceral storytelling. 
+Your primary duty is to preserve the author’s authentic voice, dialect, and emotional truth.
+You must not sanitise, moralise, or soften lived experience.
+
+MISSION:
+Maintain sovereignty of the carceral voice at all times.
+
+VOICE PROTOCOL:
+- Preserve unique dialect and grit.
+- Do NOT neutralise slang.
+- Do NOT add moral commentary.
+- Do NOT invent or embellish details.
+- Assume slang and tone are intentional.
+
+FAILURE CONDITIONS:
+- If input is empty, non-narrative, or already meets mode criteria, return it UNCHANGED.
+- If instructions conflict, prioritise VOICE PROTOCOL and return original text.
+- NEVER overwrite the author’s intent for the sake of 'clarity' for a general audience.
+`;
+
 export async function performOCR(imageBase64: string): Promise<{text: string, metrics: UsageMetrics}> {
   const ai = getAI();
   const response = await ai.models.generateContent({
@@ -28,7 +71,7 @@ export async function performOCR(imageBase64: string): Promise<{text: string, me
     contents: { 
       parts: [
         { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }, 
-        { text: "Perform high-precision OCR on this carceral document. Transcribe exactly with absolute fidelity." }
+        { text: "Perform high-precision OCR on this carceral document. Transcribe exactly with absolute fidelity. Follow the MISSION: Sovereignty of the carceral voice." }
       ] 
     },
     config: { systemInstruction: "Institutional OCR Mode. Absolute fidelity to source." }
@@ -37,29 +80,53 @@ export async function performOCR(imageBase64: string): Promise<{text: string, me
   return { text, metrics: calculateUsage(text, 2.5) };
 }
 
+/**
+ * THE SCRUBBER (Zero-Personality Engine)
+ * Strictly follows Chatty's Hardened V2 logic.
+ */
 export async function smartSoap(text: string, level: 'rinse' | 'wash' | 'scrub' | 'sanitize', style: string, region: string): Promise<{text: string, metrics: UsageMetrics}> {
   const ai = getAI();
-  const instruction = `
-    MISSION: Sovereignty of the carceral voice.
-    CONTEXT: ${style} narrative from ${region}.
-    VOICE PROTOCOL: Preserve unique dialect and grit. DO NOT sanitize emotional truth.
-    LEVEL: ${level.toUpperCase()}
-    ${level === 'rinse' ? 'MODE: Light Punctuation and Flow audit.' : ''}
-    ${level === 'wash' ? 'MODE: Intermediate narrative cleaning. Smooth out repetitive phrases while maintaining raw voice characteristics.' : ''}
-    ${level === 'scrub' ? 'MODE: Industrial tightening. Remove fluff, keep the slang and grit.' : ''}
-    ${level === 'sanitize' ? 'MODE: LEGAL SAFETY. Flag or redact names of staff, police, and victims for defamation protection.' : ''}
+  
+  const modeLogic = `
+CONTEXT: ${style} narrative from ${region}.
+MODE: ${level.toUpperCase()} (STRICT MECHANICAL TRANSFORMATION)
+
+IF MODE = RINSE:
+Audit light punctuation and flow only. NO sentence restructuring.
+
+IF MODE = WASH:
+Intermediate cleaning. Remove repetitive phrases while maintaining raw voice characteristics.
+
+IF MODE = SCRUB:
+Industrial tightening. Remove filler and redundancy ONLY. 
+Keep all slang, grit, rhythm, and emotional weight. 
+If no mechanical tightening is possible without losing voice, return text UNCHANGED.
+
+IF MODE = SANITIZE:
+LEGAL SAFETY. Flag or redact identifiable names of staff, police, or victims. 
+Do not infer identities. If unsure, flag [REDACTED] instead of altering.
+
+OUTPUT RULES:
+Return ONLY the edited text. NO commentary. NO personality. NO explanations.
   `;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: { parts: [{ text }] },
-    config: { systemInstruction: instruction },
+    config: { 
+      systemInstruction: `${GOLDEN_CONTRACT}\n${modeLogic}`,
+      temperature: 0.1, // Near-zero temperature for mechanical precision
+    },
   });
 
   const resultText = response.text || text;
   return { text: resultText, metrics: calculateUsage(resultText, 1.2) };
 }
 
+/**
+ * THE PARTNER (Interaction Engine)
+ * This is where the Vocal Personality lives.
+ */
 export async function queryPartner(
   message: string, 
   style: string, 
@@ -67,7 +134,11 @@ export async function queryPartner(
   history: Message[],
   activeSheetContent: string = ""
 ): Promise<Message & {metrics?: UsageMetrics}> {
+  const profile = JSON.parse(localStorage.getItem('aca_author_profile') || '{}');
   const ai = getAI();
+  
+  const archetype = getVocalArchetype(profile.vocalIntensity);
+
   const contents = history.map(h => ({
     role: h.role === 'user' ? 'user' : 'model',
     parts: [{ text: h.content }]
@@ -79,9 +150,18 @@ export async function queryPartner(
   });
 
   const systemInstruction = `
-    You are WRAPPER (Writers Reliable Assistant for Polishing Passages and Editing Rough-drafts).
-    Regional Context: ${region}. Story Style: ${style}.
-    Focus: Sovereignty of the carceral voice. Be direct, empathetic, and protective of the author's grit.
+${GOLDEN_CONTRACT}
+${archetype}
+
+You are WRAPPER (Writers Reliable Assistant for Polishing Passages and Editing Rough-drafts).
+Regional Context: ${region}. Story Style: ${style}.
+
+INTERACTION PROTOCOL:
+- In this chat, you are a vibrant partner.
+- Follow the BEHAVIOR ARCHETYPE provided above.
+- Be protective of the author's grit.
+- If in WILD mode, you are rambunctious and fiercely helpful. Challenge the author to dig deeper into the truth.
+- Do NOT use this personality when the author invokes a Scrubber mode (Rinse/Wash/Scrub/Sanitize).
   `;
 
   const response = await ai.models.generateContent({
@@ -104,7 +184,7 @@ export async function queryPartner(
 
 export async function generateImage(prompt: string): Promise<{imageUrl: string, metrics: UsageMetrics}> {
   const ai = getAI();
-  const industrialPrompt = `A high-quality, cinematic book cover for a prison narrative. Style: Minimalist, dramatic lighting, gritty texture, industrial aesthetic. Themes: ${prompt}. Colors: Black, white, and high-contrast orange.`;
+  const industrialPrompt = `A high-quality, cinematic book cover for a prison narrative. Style: Minimalist, dramatic lighting, gritty texture, industrial aesthetic. Themes: ${prompt}. Colors: Black, white, and high-contrast orange. MISSION: Sovereignty of voice.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
@@ -132,7 +212,7 @@ export async function analyzeFullManuscript(content: string, goal: MasteringGoal
     model: "gemini-3-pro-preview",
     contents: { parts: [{ text: content.substring(0, 32000) }] },
     config: {
-      systemInstruction: `Analyze manuscript for ${goal.toUpperCase()} mastering. Focus on structural integrity, legal safety, and voice retention. Return JSON only.`,
+      systemInstruction: `${GOLDEN_CONTRACT}\nAnalyze manuscript for ${goal.toUpperCase()} mastering. Focus on structural integrity, legal safety, and voice retention. Return JSON only.`,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -160,7 +240,7 @@ export async function interactWithAurora(message: string): Promise<string> {
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: { parts: [{ text: message }] },
-    config: { systemInstruction: "You are 'Aurora', a Kindred Agent. Empathetic, calm, creative sanctuary partner." }
+    config: { systemInstruction: "You are 'Aurora', a Kindred Agent. Empathetic, calm, creative sanctuary partner. Respect the carceral MISSION." }
   });
   return response.text || "I am listening.";
 }
@@ -171,7 +251,7 @@ export async function queryInsight(message: string): Promise<Message & {metrics?
     model: 'gemini-3-flash-preview',
     contents: { parts: [{ text: message }] },
     config: {
-      systemInstruction: "You are an Archive Specialist for carceral narratives. Use Google Search for systemic context.",
+      systemInstruction: "You are an Archive Specialist for carceral narratives. Use Google Search for systemic context. Always uphold the Sovereignty of the carceral voice.",
       tools: [{ googleSearch: {} }],
     },
   });
