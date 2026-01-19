@@ -3,20 +3,22 @@ import { GoogleGenAI } from "@google/genai";
 
 const HUMANITARIAN_MISSION = `MISSION: Sovereignty of the carceral voice. W.R.A.P.P.E.R. (Writers Reliable Assistant for Polishing Passages and Editing Rough-drafts).`;
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export const handler = async (event: any) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
 
-  const { message, style, region, history, activeSheetContent } = req.body || {};
-  if (!message) return res.status(400).json({ error: "Message is required" });
+  const { message, style, region, history, activeSheetContent } = JSON.parse(event.body || "{}");
+  if (!message) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Message is required" }) };
+  }
 
-  // Abuse Controls: Slice inputs to prevent oversized payloads
   const safeMessage = message.slice(0, 6000);
   const safeContext = (activeSheetContent || "").slice(0, 2000);
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Process history: Ensure it's an array and formatted correctly
     const contents = (Array.isArray(history) ? history : []).map((h: any) => ({ 
       role: h.role === 'user' ? 'user' : 'model', 
       parts: [{ text: String(h.content || "").slice(0, 2000) }] 
@@ -41,9 +43,15 @@ export default async function handler(req: any, res: any) {
       web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
     })).filter((s: any) => s.web.uri);
 
-    res.status(200).json({ role: 'assistant', content, sources });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ role: 'assistant', content, sources }),
+    };
   } catch (error: any) {
     console.error("API_PARTNER_ERROR:", error?.message || error);
-    res.status(500).json({ error: "Partner link failed" });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Partner link failed" }),
+    };
   }
-}
+};

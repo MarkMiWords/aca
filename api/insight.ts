@@ -1,20 +1,23 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export const handler = async (event: any) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
 
-  const { message } = req.body || {};
-  if (!message) return res.status(400).json({ error: "Query is required" });
+  const { message } = JSON.parse(event.body || "{}");
+  if (!message) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Query is required" }) };
+  }
 
-  // Abuse Guard: Limit query length
   const safeQuery = message.slice(0, 1000);
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: safeQuery }] },
+      contents: [{ role: "user", parts: [{ text: safeQuery }] }],
       config: {
         systemInstruction: "You are an Archive Specialist for carceral narratives. Use Google Search for systemic context.",
         tools: [{ googleSearch: {} }],
@@ -27,9 +30,15 @@ export default async function handler(req: any, res: any) {
       web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
     })).filter((s: any) => s.web.uri);
 
-    res.status(200).json({ role: 'assistant', content, sources });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ role: 'assistant', content, sources }),
+    };
   } catch (error: any) {
     console.error("API_INSIGHT_ERROR:", error?.message || error);
-    res.status(500).json({ error: "Insight link failed" });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Insight link failed" }),
+    };
   }
-}
+};

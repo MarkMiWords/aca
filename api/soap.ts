@@ -16,13 +16,16 @@ const LEGAL_GUARDRAIL = `
   3. Ensure no PII (Personally Identifiable Information) is exposed.
 `;
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export const handler = async (event: any) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
 
-  const { text, level } = req.body || {};
-  if (!text) return res.status(400).json({ error: "Text is required" });
+  const { text, level } = JSON.parse(event.body || "{}");
+  if (!text) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Text is required" }) };
+  }
 
-  // Abuse Guard: Slice input to a reasonable manuscript length (approx 10k chars)
   const safeText = text.slice(0, 10000);
 
   try {
@@ -34,14 +37,20 @@ export default async function handler(req: any, res: any) {
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { parts: [{ text: safeText }] },
+      contents: [{ role: "user", parts: [{ text: safeText }] }],
       config: { systemInstruction: system },
     });
 
     const resultText = response.text || safeText;
-    res.status(200).json({ text: resultText });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ text: resultText }),
+    };
   } catch (error: any) {
     console.error("API_SOAP_ERROR:", error?.message || error);
-    res.status(500).json({ error: "Sovereign Link Interrupted" });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Sovereign Link Interrupted" }),
+    };
   }
-}
+};

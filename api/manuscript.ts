@@ -1,16 +1,18 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export const handler = async (event: any) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
 
-  const { content, goal } = req.body || {};
+  const { content, goal } = JSON.parse(event.body || "{}");
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: { parts: [{ text: content.substring(0, 32000) }] },
+      contents: [{ role: "user", parts: [{ text: content.substring(0, 32000) }] }],
       config: {
         systemInstruction: `Analyze manuscript for ${goal?.toUpperCase() || 'GENERAL'} mastering. Return JSON.`,
         responseMimeType: "application/json",
@@ -32,9 +34,15 @@ export default async function handler(req: any, res: any) {
     });
 
     const report = JSON.parse(response.text || "{}");
-    res.status(200).json(report);
-  } catch (error) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify(report),
+    };
+  } catch (error: any) {
     console.error("API_MANUSCRIPT_ERROR:", error);
-    res.status(500).json({ error: "Audit failed" });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Audit failed" }),
+    };
   }
-}
+};

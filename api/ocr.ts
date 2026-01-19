@@ -1,28 +1,39 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export const handler = async (event: any) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
 
-  const { imageBase64 } = req.body || {};
-  if (!imageBase64) return res.status(400).json({ error: "Image data required" });
+  const { imageBase64 } = JSON.parse(event.body || "{}");
+  if (!imageBase64) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Image data required" }) };
+  }
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: { 
+      contents: [{
+        role: "user",
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }, 
           { text: "Perform high-precision OCR on this carceral document. Transcribe exactly." }
         ] 
-      },
+      }],
       config: { systemInstruction: "Institutional OCR Mode. Absolute fidelity to source." }
     });
 
-    res.status(200).json({ text: response.text || "" });
-  } catch (error) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ text: response.text || "" }),
+    };
+  } catch (error: any) {
     console.error("API_OCR_ERROR:", error);
-    res.status(500).json({ error: "OCR processing failed" });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "OCR processing failed" }),
+    };
   }
-}
+};
