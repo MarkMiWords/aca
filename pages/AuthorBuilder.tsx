@@ -1,4 +1,5 @@
 
+// Added missing React import to resolve "Cannot find namespace 'React'" errors
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
@@ -87,6 +88,7 @@ const AuthorBuilder: React.FC = () => {
   const [isSoaping, setIsSoaping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPartnerMicActive, setIsPartnerMicActive] = useState(false);
+  const [isDictating, setIsDictating] = useState(false); // Track Standard Dictation
   const [isProducing, setIsProducing] = useState(false);
   const [isCloningVoice, setIsCloningVoice] = useState(false);
   const [hasClonedVoice, setHasClonedVoice] = useState(false);
@@ -320,17 +322,46 @@ const AuthorBuilder: React.FC = () => {
       alert("Sovereign Dictation requires a compatible browser.");
       return;
     }
+    
+    // CRITICAL: Force continuous mode to prevent "one sentence and stop" behavior
     const recognition = new SpeechRecognition();
-    recognition.onstart = () => setIsPartnerMicActive(true);
-    recognition.onend = () => setIsPartnerMicActive(false);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setChapters(prev => prev.map(c => 
-        c.id === activeChapterId 
-        ? { ...c, content: (c.content ? c.content + " " : "") + transcript } 
-        : c
-      ));
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-AU'; // Defaulting to the architect's region for better recognition
+
+    recognition.onstart = () => {
+      setIsDictating(true);
+      setIsPartnerMicActive(true);
     };
+    
+    recognition.onend = () => {
+      setIsDictating(false);
+      setIsPartnerMicActive(false);
+    };
+
+    recognition.onresult = (event: any) => {
+      // Logic for handling continuous transcription
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      
+      if (finalTranscript) {
+        setChapters(prev => prev.map(c => 
+          c.id === activeChapterId 
+          ? { ...c, content: (c.content ? c.content + " " : "") + finalTranscript } 
+          : c
+        ));
+      }
+    };
+    
+    recognition.onerror = (event: any) => {
+      devLog('error', `Dictation Error: ${event.error}`);
+      setIsDictating(false);
+    };
+
     recognition.start();
     setShowWriteMenu(false);
   };
@@ -380,20 +411,50 @@ const AuthorBuilder: React.FC = () => {
       </aside>
 
       <main className="flex-grow flex flex-col relative bg-[#020202]">
+        {/* VOICE ACTIVE INDICATOR */}
+        {(isLiveActive || isDictating) && (
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-red-500 z-50 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
+        )}
+
         <div ref={scrollContainerRef} className="flex-grow flex flex-col px-12 pt-6 pb-12 overflow-y-auto custom-scrollbar scroll-smooth">
            <div className="w-full h-full flex flex-col relative">
               <div className="space-y-4 mb-12">
                 <div className="grid grid-cols-4 gap-1 border-y border-white/[0.03] bg-white/[0.01]">
-                   {/* WRITE MENU */}
-                   <div className="relative h-full group">
-                     <button onClick={() => { const s = !showWriteMenu; closeAllMenus(); setShowWriteMenu(s); }} className="p-6 text-left hover:bg-white/5 transition-all border-r border-white/5 w-full h-full">
-                        <div className="inline-block border border-white/10 px-4 py-2 mb-2 group-hover:border-white transition-all shadow-lg"><div className="text-[12px] font-black text-gray-700 uppercase tracking-[0.4em] group-hover:text-white transition-colors"><span className="text-2xl">W</span>rite</div></div>
-                        <div className="text-[8px] text-gray-800 font-bold uppercase tracking-widest flex items-center gap-2">Draft Hub</div>
+                   {/* WRITE MENU (With Active Glow) */}
+                   <div className={`relative h-full group transition-all duration-700 ${isLiveActive || isDictating ? 'bg-orange-500/20 shadow-[0_0_40px_rgba(230,126,34,0.3)]' : ''}`}>
+                     <button 
+                       onClick={() => { 
+                         if (isDictating) {
+                            // If dictating, stop it
+                            (window as any).speechSynthesis?.cancel();
+                            setShowWriteMenu(false);
+                            return;
+                         }
+                         const s = !showWriteMenu; 
+                         closeAllMenus(); 
+                         setShowWriteMenu(s); 
+                       }} 
+                       className={`p-6 text-left hover:bg-white/5 transition-all border-r border-white/5 w-full h-full ${isLiveActive || isDictating ? 'animate-pulse' : ''}`}
+                     >
+                        <div className={`inline-block border px-4 py-2 mb-2 transition-all ${isLiveActive || isDictating ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/10 group-hover:border-white'}`}>
+                          <div className={`text-[12px] font-black uppercase tracking-[0.4em] transition-colors ${isLiveActive || isDictating ? 'text-red-500' : 'text-gray-700 group-hover:text-white'}`}>
+                            <span className="text-2xl">{isLiveActive || isDictating ? 'L' : 'W'}</span>
+                            {isLiveActive || isDictating ? 'istening' : 'rite'}
+                          </div>
+                        </div>
+                        <div className={`text-[8px] font-bold uppercase tracking-widest flex items-center gap-2 ${isLiveActive || isDictating ? 'text-red-500' : 'text-gray-800'}`}>
+                          {isLiveActive || isDictating ? (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-red-500 animate-ping"></span>
+                              Active Capture
+                            </>
+                          ) : 'Draft Hub'}
+                        </div>
                      </button>
                      {showWriteMenu && (
                        <div className="absolute left-6 top-full mt-1 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
                           <button onClick={() => { contentRef.current?.focus(); setShowWriteMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:bg-white/5 border-b border-white/5">Focus Editor</button>
-                          <button onClick={handleDictate} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Dictate</button>
+                          <button onClick={handleDictate} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Dictate (Continuous)</button>
                           <button onClick={() => { setShowWriteMenu(false); handlePartnerChat(undefined, "Rewrite this content in the Dogg Me style, maintaining dialect integrity."); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5 border-b border-white/5">Dogg me</button>
                           <button onClick={() => navigate('/wrapper-info')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5">Profile Settings</button>
                        </div>
