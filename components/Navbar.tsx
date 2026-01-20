@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
+import { readJson } from '../utils/safeStorage';
 
 interface NavbarProps {
   onReportBug: () => void;
@@ -10,11 +11,9 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Load tooltip preference
-  const showTooltips = (() => {
-    const profile = localStorage.getItem('aca_author_profile');
-    return profile ? JSON.parse(profile).showTooltips !== false : true;
-  })();
+  // Use namespaced readJson
+  const profile = readJson<any>('aca_author_profile', { showTooltips: true });
+  const showTooltips = profile.showTooltips !== false;
 
   const NavItem = ({ to, label, title, subtitle, variant = "default" }: { to: string, label: string, title: string, subtitle: string, variant?: "default" | "orange" }) => (
     <div className="relative group/tooltip">
@@ -22,7 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         to={to} 
         className={`px-2 py-2 text-[10px] font-black tracking-[0.3em] uppercase transition-all whitespace-nowrap
           ${variant === "orange" 
-            ? 'text-[var(--accent)] hover:glow-orange animate-living-amber' 
+            ? 'text-white animate-living-accent' 
             : 'text-gray-400 hover:text-white hover:glow-white'
           }`}
       >
@@ -61,10 +60,11 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           <div className="hidden xl:flex items-center self-end pb-8 ml-8">
              <Link 
                to="/mission"
-               className="text-[8px] font-black text-[var(--accent)]/60 uppercase tracking-[0.4em] flex items-center gap-2 hover:text-[var(--accent)] transition-all group"
+               className="text-[8px] font-black uppercase tracking-[0.4em] flex items-center gap-2 hover:opacity-100 transition-all group"
+               style={{ color: 'var(--accent)' }}
              >
-               <span className="w-1 h-1 rounded-full bg-[var(--accent)] animate-pulse animate-living-amber-bg"></span>
-               Protocol Beta 4.0
+               <span className="w-1 h-1 rounded-full animate-pulse animate-living-amber-bg"></span>
+               Protocol Beta 4.1
                <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">→</span>
              </Link>
           </div>
@@ -98,12 +98,11 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           />
 
           <div className="relative group/tooltip">
-            <Link to="/wrap-it-up" className="bg-[var(--accent)]/10 border border-[var(--accent)]/30 text-[var(--accent)] px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:bg-[var(--accent)] hover:text-white rounded-sm animate-living-amber">Mastering Suite</Link>
+            <Link to="/wrap-it-up" className="animate-living-amber-bg text-white px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:brightness-110 rounded-sm">Mastering Suite</Link>
             {showTooltips && (
               <div className="absolute top-full right-0 mt-4 opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none z-[100] w-64 translate-y-2 group-hover/tooltip:translate-y-0">
                 <div className="bg-black border border-[var(--accent)]/20 p-5 shadow-2xl rounded-sm backdrop-blur-3xl">
-                   <p className="text-[8px] font-black text-[var(--accent)] uppercase tracking-widest mb-1 leading-none">The Audit Desk</p>
-                   {/* FIXED: Removed undefined 'subtitle' variable reference and using direct text */}
+                   <p className="text-[8px] font-black uppercase tracking-widest mb-1 leading-none" style={{ color: 'var(--accent)' }}>The Audit Desk</p>
                    <p className="text-[10px] text-gray-500 italic leading-tight font-serif">Perform legal safety audits and format for Substack or print distribution.</p>
                 </div>
               </div>
@@ -137,9 +136,9 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         <div className="px-12 pt-12 pb-3 space-y-8 flex flex-col items-center">
           <Link to="/published-books" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
           <Link to="/narratives" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Narratives</Link>
-          <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-amber">MAKE A WRAP SHEET</Link>
+          <Link to="/author-builder" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-accent">MAKE A WRAP SHEET</Link>
           <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2">The Big House</Link>
-          <Link to="/wrap-it-up" onClick={() => setIsOpen(false)} className="text-[var(--accent)]/60 text-xl font-serif italic py-2 animate-living-amber">Mastering Suite</Link>
+          <Link to="/wrap-it-up" onClick={() => setIsOpen(false)} className="text-[var(--accent)]/60 text-xl font-serif italic py-2 animate-living-accent">Mastering Suite</Link>
           <Link to="/mission" onClick={() => setIsOpen(false)} className="text-gray-500 text-xl font-sans uppercase tracking-[0.3em] py-2">Mission</Link>
         </div>
       </div>

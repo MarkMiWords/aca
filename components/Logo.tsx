@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface LogoProps {
@@ -8,7 +9,7 @@ interface LogoProps {
 /**
  * A Captive Audience Logo
  * Standard ViewBox: 0 0 512 512
- * This version uses precise internal positioning to prevent clipping of the seal.
+ * Updated to use CSS Variables for theme consistency.
  */
 const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
   const primaryColor = variant === 'light' ? '#ffffff' : '#000000';
@@ -28,12 +29,8 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
           </clipPath>
           
           <linearGradient id="living-amber-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#e67e22">
-              <animate attributeName="stop-color" values="#e67e22;#d4af37;#f5e6be;#e67e22" dur="8s" repeatCount="indefinite" />
-            </stop>
-            <stop offset="100%" stopColor="#d35400">
-              <animate attributeName="stop-color" values="#d35400;#b8860b;#e5d3b3;#d35400" dur="8s" repeatCount="indefinite" />
-            </stop>
+            <stop offset="0%" stopColor="var(--accent)" className="logo-animate-1" />
+            <stop offset="100%" stopColor="var(--accent-dark)" className="logo-animate-2" />
           </linearGradient>
 
           <filter id="aca-logo-glow" x="-40%" y="-40%" width="180%" height="180%">
@@ -42,7 +39,6 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
           </filter>
         </defs>
         
-        {/* Matrix set to center the logo and drop it slightly within the 512x512 box */}
         <g transform="matrix(1 0 0 1 60 60)" filter="url(#aca-logo-glow)">
           {/* Typographic Foundation */}
           <g fill={primaryColor}>
@@ -93,7 +89,7 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
             </g>
           </g>
           
-          {/* Brand Seal (The Key) */}
+          {/* Brand Seal (The Key) - THEMED */}
           <g clipPath="url(#aca-icon-clip)">
             <path d="m190.23 39.703c8.9453 0 17.043 3.625 22.902 9.4766 5.8594 5.8516 9.4844 13.941 9.4844 22.879 0 4.1094-0.78516 8.0625-2.1992 11.711-1.4727 3.7891-3.6328 7.2188-6.3203 10.148-1.1562 1.2617-1.9414 2.6719-2.3242 4.1719-0.39063 1.4922-0.39063 3.1133 4e-3 4.7891l13.535 56.816c0.59375 2.4922 0.62109 4.9688 0.0937 7.3555-0.52344 2.3711-1.5938 4.6016-3.1992 6.625-1.6055 2.0312-3.5312 3.5898-5.7109 4.6445-2.1953 1.0625-4.6133 1.6133-7.1875 1.6133h-38.121c-2.5781 0-4.9961-0.55078-7.1875-1.6133-2.1797-1.0547-4.1094-2.6133-5.7148-4.6445-1.6055-2.0234-2.6758-4.2617-3.1992-6.625-0.52735-2.3867-0.5-4.8633 0.0937-7.3555l13.535-56.816c0.39844-1.6758 0.39844-3.293 8e-3 -4.7891-0.39063-1.5-1.1758-2.9102-2.3242-4.1719-2.6914-2.9297-4.8516-6.3594-6.3242-10.148-1.418-3.6484-2.1992-7.6016-2.1992-11.711 0-8.9375 3.625-17.027 9.4844-22.879 5.8594-5.8516 13.961-9.4766 22.902-9.4766z" fill="url(#living-amber-gradient)" fillRule="evenodd"/>
           </g>

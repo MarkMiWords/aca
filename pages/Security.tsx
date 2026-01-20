@@ -52,7 +52,6 @@ const Security: React.FC = () => {
                </p>
                <ul className="text-[10px] font-bold uppercase tracking-[0.3em] space-y-4 text-cyan-500">
                   <li className="flex items-center gap-3"><span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> AU-Sydney Residency Available</li>
-                  <li className="flex items-center gap-3"><span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> Institutional Compliance Ready</li>
                   <li className="flex items-center gap-3"><span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> Scalable to 100k+ Authors</li>
                </ul>
             </div>

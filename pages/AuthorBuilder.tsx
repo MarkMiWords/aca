@@ -296,7 +296,7 @@ const AuthorBuilder: React.FC = () => {
       {/* LHS Panel */}
       <aside style={{ width: `${navWidth}px` }} className="border-r border-white/10 bg-[#080808] flex flex-col shrink-0 transition-all relative pt-20">
         <div className="px-8 mb-6">
-           <button onClick={handleNewSheet} className="w-full py-3 bg-orange-500 text-white text-[9px] font-black uppercase tracking-[0.4em] hover:bg-orange-600 transition-all shadow-xl rounded-sm">
+           <button onClick={handleNewSheet} className="w-full py-3 animate-living-amber-bg text-white text-[9px] font-black uppercase tracking-[0.4em] hover:brightness-110 transition-all shadow-xl rounded-sm">
              + New Sheet
            </button>
         </div>
@@ -516,7 +516,7 @@ const AuthorBuilder: React.FC = () => {
               </button>
             </div>
             <div className="flex gap-2 relative">
-              <button type="submit" disabled={isPartnerLoading || !partnerInput.trim()} className="flex-grow py-4 bg-orange-500 text-white text-[10px] font-black uppercase tracking-[0.5em] rounded-sm hover:bg-orange-600 transition-all shadow-2xl disabled:opacity-30">
+              <button type="submit" disabled={isPartnerLoading || !partnerInput.trim()} className="flex-grow py-4 animate-living-amber-bg text-white text-[10px] font-black uppercase tracking-[0.5em] rounded-sm hover:brightness-110 transition-all shadow-2xl disabled:opacity-30">
                 {isPartnerLoading ? 'Engaging...' : 'Shoot it over'}
               </button>
               <button 
@@ -572,7 +572,7 @@ const AuthorBuilder: React.FC = () => {
                  </div>
               </div>
               {cloneProgress === 0 ? (
-                <button onClick={startVoiceClone} className="px-16 py-6 bg-blue-500 text-white text-[11px] font-black uppercase tracking-[0.6em] shadow-2xl hover:bg-blue-600 transition-all rounded-sm">Begin Capture</button>
+                <button onClick={startVoiceClone} className="px-16 py-6 animate-living-amber-bg text-white text-[11px] font-black uppercase tracking-[0.6em] shadow-2xl hover:brightness-110 transition-all rounded-sm">Begin Capture</button>
               ) : cloneProgress === 100 ? (
                 <div className="text-blue-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Signature Secured.</div>
               ) : (

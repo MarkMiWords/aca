@@ -24,6 +24,7 @@ import Blueprints from './pages/Blueprints';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BugReportModal from './components/BugReportModal';
+import { readJson } from './utils/safeStorage';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -36,6 +37,16 @@ const ScrollToTop = () => {
 
 const App: React.FC = () => {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
+
+  // Global Theme Initialization
+  useEffect(() => {
+    const profile = readJson<any>('aca_author_profile', { theme: 'amber' });
+    if (profile.theme && profile.theme !== 'amber') {
+      document.body.className = `theme-${profile.theme}`;
+    } else {
+      document.body.className = '';
+    }
+  }, []);
 
   return (
     <Router>

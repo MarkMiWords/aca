@@ -25,6 +25,9 @@ const Footer: React.FC = () => {
               <li><Link to="/art-gallery" className="hover:text-white transition-colors">Art Gallery</Link></li>
               <li><Link to="/security" className="hover:text-white transition-colors">Privacy Shield</Link></li>
               <li><Link to="/support" className="hover:text-white transition-colors">Support Hub</Link></li>
+              <li className="pt-4 border-t border-white/5">
+                <Link to="/blueprints" className="text-cyan-500/60 hover:text-cyan-400 transition-all uppercase tracking-[0.2em] font-black">Sovereign Blueprints</Link>
+              </li>
             </ul>
           </div>
           
@@ -46,10 +49,7 @@ const Footer: React.FC = () => {
            <div className="flex items-center gap-6">
               <p>© 2026 A Captive Audience.</p>
            </div>
-           <div className="flex items-center gap-8">
-              <Link to="/blueprints" className="text-[9px] text-gray-700 hover:text-cyan-500 transition-all uppercase tracking-[0.4em] font-black border-b border-transparent hover:border-cyan-500/30 pb-1">Sovereign Blueprints</Link>
-              <p className="italic">Mark Mi Words Studio</p>
-           </div>
+           <p className="mt-4 md:mt-0 italic">Mark Mi Words Studio</p>
         </div>
       </div>
     </footer>

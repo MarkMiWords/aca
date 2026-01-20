@@ -257,7 +257,7 @@ const PublishedBooks: React.FC = () => {
             <p className="text-xl md:text-2xl text-gray-400 font-light max-w-3xl leading-relaxed italic opacity-80">"Sovereign Vault V4.0 — High-Fidelity Text & Image Persistence."</p>
           </div>
           <div className="pb-12 flex flex-col md:flex-row gap-6">
-            <button onClick={() => setIsAddingBook(true)} className="bg-[var(--accent)] text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Register Master</button>
+            <button onClick={() => setIsAddingBook(true)} className="animate-living-amber-bg text-white px-10 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:brightness-110 transition-all rounded-sm">Register Master</button>
             <button onClick={factoryReset} className="text-[7px] text-red-900 font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Clean Slate Reset</button>
           </div>
         </div>
@@ -328,7 +328,7 @@ const PublishedBooks: React.FC = () => {
                     )}
                     <input type="file" ref={frontInputRef} onChange={handleFileUpload} className="hidden" accept="image/png,image/jpeg" />
                   </div>
-                  <button onClick={saveNewBook} disabled={!newBook.title || !newBook.coverUrl || isProcessing} className="w-full bg-orange-500 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all rounded-sm">Commit to Registry</button>
+                  <button onClick={saveNewBook} disabled={!newBook.title || !newBook.coverUrl || isProcessing} className="w-full animate-living-amber-bg text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl disabled:opacity-20 transition-all hover:brightness-110 rounded-sm">Commit to Registry</button>
                </div>
 
                <div className="lg:col-span-1 bg-white/[0.02] border border-white/5 p-8 rounded-sm">
@@ -369,7 +369,7 @@ const PublishedBooks: React.FC = () => {
                  <button onClick={() => setUseIndustrialCrop(false)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${!useIndustrialCrop ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Original</button>
                  <button onClick={() => setUseIndustrialCrop(true)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${useIndustrialCrop ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-white'}`}>Industrial (16:27)</button>
                </div>
-               <button onClick={commitMastering} className="bg-orange-500 text-white px-12 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 transition-all rounded-sm">Commit Master</button>
+               <button onClick={commitMastering} className="animate-living-amber-bg text-white px-12 py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:brightness-110 transition-all rounded-sm">Commit Master</button>
             </div>
           </div>
         </div>
