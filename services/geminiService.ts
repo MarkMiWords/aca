@@ -65,10 +65,12 @@ async function callSovereignAPI(endpoint: string, body: any) {
         return { text: response.text };
       }
       
-      // Fallback for endpoints not yet mirrored in client-side SDK logic
       devLog('info', `Endpoint ${endpoint} not mirrored in Direct Mode. Attempting Server Link...`);
     } catch (err: any) {
       devLog('error', `Direct Link Exception: ${err.message}`);
+      if (err.message.includes('API_KEY_INVALID')) {
+        devLog('error', "DIRECT LINK FAILED: The key selected in AI Studio is invalid or expired.");
+      }
       throw err;
     }
   }
@@ -87,10 +89,19 @@ async function callSovereignAPI(endpoint: string, body: any) {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Handshake Failure' }));
-      devLog('error', `[${response.status}] ${endpoint}: ${errorData.error}`);
       
-      if (response.status === 404 || response.status === 502) {
-        devLog('info', "Check your Vercel Deployment or SSL status in Namecheap.");
+      // DIAGNOSTIC MAPPING
+      if (response.status === 401) {
+        devLog('error', `[401] UNAUTHORIZED: The server rejected your API Key.`);
+        devLog('info', "ACTION: You must trigger a NEW DEPLOYMENT on Vercel for the new key to take effect.");
+      } else if (response.status === 403) {
+        devLog('error', `[403] FORBIDDEN: Access denied by Google Cloud.`);
+        devLog('info', "ACTION: Check 'API Restrictions' in Google Cloud Console. Ensure Vercel IPs aren't blocked.");
+      } else if (response.status === 429) {
+        devLog('error', `[429] RATE LIMIT: Too many requests.`);
+        devLog('info', "ACTION: Check if your new key is on a 'Free Tier' project with low limits.");
+      } else {
+        devLog('error', `[${response.status}] ${endpoint}: ${errorData.error}`);
       }
       
       throw new Error(errorData.error || `Sovereign Link Failure: ${endpoint}`);
@@ -100,10 +111,9 @@ async function callSovereignAPI(endpoint: string, body: any) {
     return response.json();
   } catch (err: any) {
     if (err.message.includes('Failed to fetch')) {
-      devLog('error', "NETWORK/SSL FAULT: The browser blocked the request. This usually happens during DNS propagation.");
-      devLog('info', "TIP: Toggle 'Direct AI Mode' in the Dev Console (CTRL+ALT+D) to bypass this SSL error.");
+      devLog('error', "NETWORK/SSL FAULT: This usually happens during DNS propagation or if your antivirus blocks the API route.");
+      devLog('info', "TIP: Toggle 'Direct AI Mode' in the Dev Console (CTRL+ALT+D) to bypass the server entirely.");
     }
-    devLog('error', `Link Exception [${endpoint}]: ${err.message}`);
     throw err;
   }
 }
