@@ -24,6 +24,7 @@ import Blueprints from './pages/Blueprints';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BugReportModal from './components/BugReportModal';
+import MicHandshake from './components/MicHandshake';
 import { readJson } from './utils/safeStorage';
 
 const ScrollToTop = () => {
@@ -52,6 +53,7 @@ const App: React.FC = () => {
     <Router>
       <div className="flex flex-col min-h-screen bg-[#050505]">
         <ScrollToTop />
+        <MicHandshake />
         <Navbar onReportBug={() => setIsBugModalOpen(true)} />
         <main className="flex-grow pt-24 relative">
           <Routes>

@@ -251,7 +251,13 @@ const AuthorBuilder: React.FC = () => {
       // CRITICAL: Resume context for browser compliance
       if (ctx.state === 'suspended') await ctx.resume();
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true
+        } 
+      });
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         callbacks: {
@@ -286,7 +292,7 @@ const AuthorBuilder: React.FC = () => {
           onerror: (e) => { console.error("Dictation Node Failure:", e); stopDictation(); }
         },
         config: {
-          responseModalities: [Modality.AUDIO],
+          responseModalalities: [Modality.AUDIO],
           inputAudioTranscription: {},
           systemInstruction: "You are an industrial scribe. Transcribe the author's words with 100% fidelity. Do not comment or respond, just output transcription via metadata."
         }
@@ -324,7 +330,7 @@ const AuthorBuilder: React.FC = () => {
         </div>
         <div className="px-8 py-5 bg-white/5 border-y border-white/10 flex flex-col gap-1" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)', borderColor: 'rgba(var(--accent-rgb), 0.2)' }}>
           <span className="text-[7px] font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Currently Editing</span>
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white truncate">{activeChapter.title || 'Untitled Draft'}</p>
+          <p className="text-11px font-black uppercase tracking-[0.2em] text-white truncate">{activeChapter.title || 'Untitled Draft'}</p>
         </div>
         <div className="flex-grow overflow-y-auto custom-scrollbar">
           {chapters.filter(c => c.id !== activeChapterId).map(c => (

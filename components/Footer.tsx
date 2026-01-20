@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 import Logo from './Logo';
 
 const Footer: React.FC = () => {
+  const triggerMicCheck = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.dispatchEvent(new CustomEvent('aca:open_mic_check'));
+  };
+
   return (
     <footer className="bg-[#050505] border-t border-white/5 pt-24 pb-12 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -25,13 +30,24 @@ const Footer: React.FC = () => {
               <li><Link to="/art-gallery" className="hover:text-white transition-colors">Art Gallery</Link></li>
               <li><Link to="/security" className="hover:text-white transition-colors">Privacy Shield</Link></li>
               <li><Link to="/support" className="hover:text-white transition-colors">Support Hub</Link></li>
-              <li className="pt-4 border-t border-white/5">
-                <Link to="/blueprints" className="text-cyan-500/60 hover:text-cyan-400 transition-all uppercase tracking-[0.2em] font-black">Sovereign Blueprints</Link>
-              </li>
             </ul>
           </div>
           
           <div className="z-20">
+            <h3 className="text-white font-bold mb-8 uppercase text-xs tracking-[0.3em]">System</h3>
+            <ul className="space-y-4 text-gray-500 text-xs font-bold uppercase tracking-widest mb-10">
+              <li>
+                <button 
+                  onClick={triggerMicCheck}
+                  className="hover:text-[var(--accent)] transition-colors text-left flex items-center gap-2"
+                >
+                  <div className="w-1 h-1 rounded-full bg-[var(--accent)] animate-pulse"></div>
+                  Mic Check & Calibration
+                </button>
+              </li>
+              <li><Link to="/blueprints" className="text-cyan-500/60 hover:text-cyan-400 transition-all uppercase tracking-[0.2em] font-black">Sovereign Blueprints</Link></li>
+            </ul>
+
             <h3 className="text-white font-bold mb-8 uppercase text-xs tracking-[0.3em]">Updates</h3>
             <p className="text-xs text-gray-500 mb-6 leading-relaxed">Join our mailing list for updates on our carceral and literary media projects.</p>
             <div className="flex border-b border-white/20 pb-2 group focus-within:border-[var(--accent)] transition-colors">
