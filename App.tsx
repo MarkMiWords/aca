@@ -25,34 +25,49 @@ import { DevConsole } from './components/DevConsole';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // 1. Force the browser to stop remembering scroll position
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    // 2. Recovery Function: Strip all possible scroll locks
+    const recoverLayout = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      
+      const elements = [document.body, document.documentElement];
+      elements.forEach(el => {
+        el.style.overflow = 'auto';
+        el.style.height = 'auto';
+        el.style.position = 'static';
+      });
+    };
+
+    recoverLayout();
+    
+    // Triple-check to overcome micro-task delays or third-party script overrides
+    const t1 = setTimeout(recoverLayout, 0);
+    const t2 = setTimeout(recoverLayout, 100);
+    
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [pathname]);
+  
   return null;
 };
 
 const App: React.FC = () => {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
 
-  useEffect(() => {
-    // Initial theme sync
-    const profile = JSON.parse(localStorage.getItem('aca_author_profile') || '{}');
-    if (profile.theme && profile.theme !== 'amber') {
-      document.body.className = `theme-${profile.theme}`;
-    }
-    
-    // Production Domain Console Log
-    if (window.location.hostname.includes('acaptiveaudience.net')) {
-      console.log("%c SOVEREIGN FORGE PRO LIVE ", "background: #e67e22; color: #fff; font-weight: bold; padding: 4px;");
-    }
-  }, []);
-
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-[#050505]">
         <ScrollToTop />
         <Navbar onReportBug={() => setIsBugModalOpen(true)} />
-        <main className="flex-grow pt-24">
+        <main className="flex-grow pt-24 relative overflow-visible">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/published-books" element={<PublishedBooks />} />

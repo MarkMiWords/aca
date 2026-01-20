@@ -1,5 +1,4 @@
 
-// Added missing React import to resolve "Cannot find namespace 'React'" errors
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
@@ -9,7 +8,6 @@ import { devLog } from '../components/DevConsole';
 
 const STYLES = ['Fiction', 'Non-Fiction', 'Prison Life', 'Crime Life', 'Love Story', 'Sad Story', 'Tragic Story', 'Life Story'];
 const REGIONS = ['Asia', 'Australia', 'North America', 'South America', 'United Kingdom', 'Europe'];
-const ACCENTS = ['Australian', 'American', 'British', 'European'];
 
 const FONT_PAIRINGS = [
   { name: 'Classic', title: 'font-serif font-black italic', body: 'font-serif text-xl' },
@@ -19,151 +17,70 @@ const FONT_PAIRINGS = [
 ];
 
 const MAX_WORDS = 1000;
-const LIVE_MOVEMENT_LIMIT = 500; 
+const DEFAULT_CHAPTER: Chapter = { id: '1', title: "", content: '', order: 0, media: [], subChapters: [] };
 
-// Audio Helper Functions
-function decode(base64: string) {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-  return bytes;
-}
-
-function encode(bytes: Uint8Array) {
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+// ROBUST PARSER: Guaranteed to return expected type or fallback
+const safeParse = (key: string, fallback: any) => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item || item === "undefined" || item === "null") return fallback;
+    const parsed = JSON.parse(item);
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback;
+    return parsed || fallback;
+  } catch (e) {
+    console.error(`Vault Guard [${key}]: Data corrupted. Using recovery template.`);
+    return fallback;
   }
-  return buffer;
-}
-
-const InfoBalloon: React.FC<{ 
-  text: string; 
-  active: boolean; 
-  children: React.ReactNode;
-  className?: string;
-}> = ({ text, active, children, className = "" }) => {
-  if (!active) return <div className={className}>{children}</div>;
-  return (
-    <div className={`relative group/balloon inline-block w-full h-full ${className}`}>
-      {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/balloon:opacity-100 transition-all duration-200 pointer-events-none z-[150] w-64 translate-y-2 group-hover/balloon:translate-y-0">
-        <div className="bg-[#0d0d0d] border border-orange-500/30 p-2.5 shadow-2xl rounded-sm backdrop-blur-xl relative overflow-hidden text-center">
-          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-orange-500/50"></div>
-          <p className="text-[9px] text-gray-300 italic leading-relaxed font-serif">{text}</p>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 const AuthorBuilder: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Hydrate with safety
   const [chapters, setChapters] = useState<Chapter[]>(() => {
-    const saved = localStorage.getItem('wrap_sheets_v4');
-    return saved ? JSON.parse(saved) : [{ id: '1', title: "", content: '', order: 0, media: [], subChapters: [] }];
+    const val = safeParse('wrap_sheets_v4', [DEFAULT_CHAPTER]);
+    return val.length > 0 ? val : [DEFAULT_CHAPTER];
   });
   
-  const [activeChapterId, setActiveChapterId] = useState('1');
+  // Ensure activeChapterId always points to something that exists
+  const [activeChapterId, setActiveChapterId] = useState(() => {
+    const initialId = chapters[0]?.id;
+    return initialId || '1';
+  });
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [partnerInput, setPartnerInput] = useState('');
   const [isPartnerLoading, setIsPartnerLoading] = useState(false);
-  
-  const [showWriteMenu, setShowWriteMenu] = useState(false);
-  const [showSoapMenu, setShowSoapMenu] = useState(false);
-  const [showSpeakMenu, setShowSpeakMenu] = useState(false);
-  const [showProduceMenu, setShowProduceMenu] = useState(false);
-  const [showProtocolMenu, setShowProtocolMenu] = useState(false);
   const [isPartnerOpen, setIsPartnerOpen] = useState(true);
-  
   const [isSoaping, setIsSoaping] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPartnerMicActive, setIsPartnerMicActive] = useState(false);
-  const [isDictating, setIsDictating] = useState(false); // Track Standard Dictation
-  const [isProducing, setIsProducing] = useState(false);
-  const [isCloningVoice, setIsCloningVoice] = useState(false);
-  const [hasClonedVoice, setHasClonedVoice] = useState(false);
-  
-  // Sovereign Link / API Status
-  const [apiStatus, setApiStatus] = useState<'checking' | 'active' | 'direct' | 'unauthorized'>('checking');
+  const [apiStatus, setApiStatus] = useState<'checking' | 'active' | 'unauthorized'>('checking');
 
-  // Voice Calibration States
-  const [speakGender, setSpeakGender] = useState<'Male' | 'Female'>('Female');
-  const [speakAccent, setSpeakAccent] = useState('Australian');
-  const [speakSpeed, setSpeakSpeed] = useState(1);
-
-  // Live State
-  const [isLiveActive, setIsLiveActive] = useState(false);
-  const [showLiveDisclaimer, setShowLiveDisclaimer] = useState(false);
-  const [liveTranscription, setLiveTranscription] = useState("");
-  const [liveSpokenWords, setLiveSpokenWords] = useState(0);
-  const liveSessionRef = useRef<any>(null);
-
-  const authorProfile = (() => {
-    const profile = localStorage.getItem('aca_author_profile');
-    return profile ? JSON.parse(profile) : { showTooltips: true, fontIndex: 0 };
-  })();
-
-  const showTooltips = authorProfile.showTooltips !== false;
-  const currentFont = FONT_PAIRINGS[authorProfile.fontIndex || 0];
-
-  const [style, setStyle] = useState(() => authorProfile.motivation || STYLES[2]); 
-  const [region, setRegion] = useState(() => authorProfile.region || REGIONS[1]);
-
-  const ocrInputRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef<HTMLTextAreaElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0];
-  const wordCount = activeChapter.content ? activeChapter.content.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+  // CRITICAL: Guaranteed Object Access
+  const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0] || DEFAULT_CHAPTER;
+  const wordCount = (activeChapter.content || "").trim().split(/\s+/).filter(w => w.length > 0).length;
   const isLimitReached = wordCount >= MAX_WORDS;
+
+  const profile = safeParse('aca_author_profile', { fontIndex: 0 });
+  const currentFont = FONT_PAIRINGS[profile.fontIndex] || FONT_PAIRINGS[0];
+  const [style] = useState(() => profile.motivation || STYLES[2]); 
+  const [region] = useState(() => profile.region || REGIONS[1]);
 
   useEffect(() => {
     checkApiStatus();
   }, []);
 
   const checkApiStatus = async () => {
-    const isDirect = localStorage.getItem('aca_dev_direct') === 'true';
-    if (isDirect) {
-      setApiStatus('direct');
-      return;
-    }
-
-    devLog('info', 'Checking Sovereign Link authorization status...');
     try {
       if (typeof (window as any).aistudio !== 'undefined') {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         setApiStatus(hasKey ? 'active' : 'unauthorized');
       } else {
-        setApiStatus('active'); // Assume env-based on production
+        setApiStatus('active'); 
       }
-    } catch (e: any) {
-      setApiStatus('unauthorized');
-    }
+    } catch (e) { setApiStatus('unauthorized'); }
   };
-
-  const handleSelectApiKey = async () => {
-    if (typeof (window as any).aistudio !== 'undefined') {
-      devLog('info', 'Opening AI Studio Key Selection Dialog...');
-      await (window as any).aistudio.openSelectKey();
-      setApiStatus('active'); 
-    }
-  };
-
-  useEffect(() => {
-    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
-    window.scrollTo(0, 0);
-  }, [activeChapterId]);
 
   useEffect(() => {
     localStorage.setItem('wrap_sheets_v4', JSON.stringify(chapters));
@@ -175,219 +92,21 @@ const AuthorBuilder: React.FC = () => {
     }
   }, [messages, isPartnerLoading]);
 
-  const startLiveLink = async () => {
-    setShowLiveDisclaimer(false);
-    setIsLiveActive(true);
-    setLiveTranscription("Establishing Sovereign Link...");
-    setLiveSpokenWords(0);
-    
-    devLog('request', 'Initiating Gemini Live Native Audio Session');
-
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      let nextStartTime = 0;
-      const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      const outputNode = outputAudioContext.createGain();
-      outputNode.connect(outputAudioContext.destination);
-      const sources = new Set<AudioBufferSourceNode>();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
-        callbacks: {
-          onopen: () => {
-            devLog('response', 'Sovereign Live Session OPENED');
-            setLiveTranscription("Listening to your truth...");
-            const source = inputAudioContext.createMediaStreamSource(stream);
-            const scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
-            scriptProcessor.onaudioprocess = (event) => {
-              const inputData = event.inputBuffer.getChannelData(0);
-              const int16 = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) int16[i] = inputData[i] * 32768;
-              const pcmBlob = { data: encode(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' };
-              sessionPromise.then((session) => session.sendRealtimeInput({ media: pcmBlob }));
-            };
-            source.connect(scriptProcessor);
-            scriptProcessor.connect(inputAudioContext.destination);
-          },
-          onmessage: async (message: LiveServerMessage) => {
-            if (message.serverContent?.modelTurn?.parts) {
-              for (const part of message.serverContent.modelTurn.parts) {
-                if (part.inlineData?.data) {
-                  const base64 = part.inlineData.data;
-                  nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
-                  const audioBuffer = await decodeAudioData(decode(base64), outputAudioContext, 24000, 1);
-                  const source = outputAudioContext.createBufferSource();
-                  source.buffer = audioBuffer;
-                  source.connect(outputNode);
-                  source.start(nextStartTime);
-                  nextStartTime += audioBuffer.duration;
-                }
-              }
-            }
-            if (message.serverContent?.inputTranscription) {
-              const newText = message.serverContent.inputTranscription.text;
-              setLiveTranscription(newText);
-              setLiveSpokenWords(prev => prev + newText.trim().split(/\s+/).length);
-              setChapters(prev => prev.map(c => 
-                c.id === activeChapterId 
-                ? { ...c, content: (c.content ? c.content + " " : "") + newText } 
-                : c
-              ));
-            }
-          },
-          onerror: (e) => { 
-            devLog('error', `Live Link Error: ${e.message}`);
-            setIsLiveActive(false); 
-          },
-          onclose: () => {
-            devLog('info', 'Live Link CLOSED');
-            setIsLiveActive(false);
-          },
-        },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-          systemInstruction: 'You are the WRAP Partner in Live Mode. Assist with story extraction. Help the author find the heart of their narrative. Responses must be brief and professional.',
-          inputAudioTranscription: {},
-        },
-      });
-
-      liveSessionRef.current = { 
-        close: () => { 
-          stream.getTracks().forEach(t => t.stop()); 
-          inputAudioContext.close(); 
-          outputAudioContext.close();
-          sessionPromise.then(s => s.close());
-        } 
-      };
-    } catch (err: any) { 
-      devLog('error', `Live Link Initialization failed: ${err.message}`);
-      setIsLiveActive(false); 
-    }
-  };
-
-  const stopLiveLink = () => {
-    if (liveSessionRef.current) liveSessionRef.current.close();
-    setIsLiveActive(false);
-  };
-
-  const handleSoap = async (level: 'rinse' | 'wash' | 'scrub' | 'sanitize') => {
-    if (!activeChapter.content.trim()) return;
-    setIsSoaping(true); 
-    setShowSoapMenu(false);
-    try {
-      const result = await smartSoap(activeChapter.content, level, style, region);
-      setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
-    } catch (err: any) {
-      console.error("Soap Failure:", err);
-    } finally { setIsSoaping(false); }
-  };
-
   const handleNewSheet = () => {
     const newId = Date.now().toString(); 
-    setChapters([...chapters, { id: newId, title: "", content: '', order: 0, media: [], subChapters: [] }]); 
+    setChapters([{ ...DEFAULT_CHAPTER, id: newId }, ...chapters]); 
     setActiveChapterId(newId);
   };
 
-  const handlePartnerChat = async (e?: React.FormEvent, customMsg?: string) => {
-    if (e) e.preventDefault();
-    const msg = customMsg || partnerInput;
-    if (!msg.trim()) return;
-    setPartnerInput('');
-    setMessages(prev => [...prev, { role: 'user', content: msg }]);
-    setIsPartnerLoading(true);
-    setShowProtocolMenu(false);
+  const handleSoap = async (level: 'rinse' | 'wash' | 'scrub' | 'sanitize') => {
+    if (!activeChapter.content?.trim()) return;
+    setIsSoaping(true); 
     try {
-      const response = await queryPartner(msg, style, region, messages, activeChapter.content);
-      setMessages(prev => [...prev, response]);
+      const result = await smartSoap(activeChapter.content, level, style, region);
+      setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sovereign Link Interrupted. This often happens due to SSL mismatches during site moves. Try toggling 'Direct AI Mode' in the Dev Console (CTRL+ALT+D)." }]);
-    } finally { setIsPartnerLoading(false); }
-  };
-
-  const handleVoiceClone = () => {
-    setIsCloningVoice(true);
-    setTimeout(() => {
-      setIsCloningVoice(false);
-      setHasClonedVoice(true);
-      setSpeakAccent('My Voice');
-    }, 2000);
-  };
-
-  const handleDictate = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Sovereign Dictation requires a compatible browser.");
-      return;
-    }
-    
-    // CRITICAL: Force continuous mode to prevent "one sentence and stop" behavior
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-AU'; // Defaulting to the architect's region for better recognition
-
-    recognition.onstart = () => {
-      setIsDictating(true);
-      setIsPartnerMicActive(true);
-    };
-    
-    recognition.onend = () => {
-      setIsDictating(false);
-      setIsPartnerMicActive(false);
-    };
-
-    recognition.onresult = (event: any) => {
-      // Logic for handling continuous transcription
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-      }
-      
-      if (finalTranscript) {
-        setChapters(prev => prev.map(c => 
-          c.id === activeChapterId 
-          ? { ...c, content: (c.content ? c.content + " " : "") + finalTranscript } 
-          : c
-        ));
-      }
-    };
-    
-    recognition.onerror = (event: any) => {
-      devLog('error', `Dictation Error: ${event.error}`);
-      setIsDictating(false);
-    };
-
-    recognition.start();
-    setShowWriteMenu(false);
-  };
-
-  const closeAllMenus = () => {
-    setShowWriteMenu(false);
-    setShowSoapMenu(false);
-    setShowSpeakMenu(false);
-    setShowProduceMenu(false);
-  };
-
-  const handleOCR = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsProducing(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
-        const result = await performOCR(base64);
-        setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: (c.content || "") + "\n\n" + result.text } : c));
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-       console.error("OCR Failure:", err);
-    } finally { setIsProducing(false); }
+      devLog('error', 'Soap Link Failed.');
+    } finally { setIsSoaping(false); }
   };
 
   return (
@@ -401,313 +120,52 @@ const AuthorBuilder: React.FC = () => {
           ))}
         </div>
         <div className="px-6 py-6 border-t border-white/5 bg-black/40 space-y-4">
-          <InfoBalloon active={showTooltips} text="Establish a fresh drafting sheet in your local registry.">
-            <button onClick={handleNewSheet} className="w-full p-4 bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all rounded-sm">CREATE NEW SHEET</button>
-          </InfoBalloon>
-          <InfoBalloon active={showTooltips} text="Perform final legal audits or return to your vault.">
-            <button onClick={() => navigate('/sovereign-vault')} className="w-full p-4 border border-dashed border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-700 hover:text-orange-500 transition-all rounded-sm">Vault Command</button>
-          </InfoBalloon>
+          <button onClick={handleNewSheet} className="w-full p-4 bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all rounded-sm shadow-xl">CREATE NEW SHEET</button>
+          <button onClick={() => navigate('/sovereign-vault')} className="w-full p-4 border border-dashed border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-700 hover:text-orange-500 transition-all rounded-sm">Vault Access</button>
         </div>
       </aside>
 
       <main className="flex-grow flex flex-col relative bg-[#020202]">
-        {/* VOICE ACTIVE INDICATOR */}
-        {(isLiveActive || isDictating) && (
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-red-500 z-50 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
-        )}
-
-        <div ref={scrollContainerRef} className="flex-grow flex flex-col px-12 pt-6 pb-12 overflow-y-auto custom-scrollbar scroll-smooth">
-           <div className="w-full h-full flex flex-col relative">
-              <div className="space-y-4 mb-12">
-                <div className="grid grid-cols-4 gap-1 border-y border-white/[0.03] bg-white/[0.01]">
-                   {/* WRITE MENU (With Active Glow) */}
-                   <div className={`relative h-full group transition-all duration-700 ${isLiveActive || isDictating ? 'bg-orange-500/20 shadow-[0_0_40px_rgba(230,126,34,0.3)]' : ''}`}>
-                     <button 
-                       onClick={() => { 
-                         if (isDictating) {
-                            // If dictating, stop it
-                            (window as any).speechSynthesis?.cancel();
-                            setShowWriteMenu(false);
-                            return;
-                         }
-                         const s = !showWriteMenu; 
-                         closeAllMenus(); 
-                         setShowWriteMenu(s); 
-                       }} 
-                       className={`p-6 text-left hover:bg-white/5 transition-all border-r border-white/5 w-full h-full ${isLiveActive || isDictating ? 'animate-pulse' : ''}`}
-                     >
-                        <div className={`inline-block border px-4 py-2 mb-2 transition-all ${isLiveActive || isDictating ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/10 group-hover:border-white'}`}>
-                          <div className={`text-[12px] font-black uppercase tracking-[0.4em] transition-colors ${isLiveActive || isDictating ? 'text-red-500' : 'text-gray-700 group-hover:text-white'}`}>
-                            <span className="text-2xl">{isLiveActive || isDictating ? 'L' : 'W'}</span>
-                            {isLiveActive || isDictating ? 'istening' : 'rite'}
-                          </div>
-                        </div>
-                        <div className={`text-[8px] font-bold uppercase tracking-widest flex items-center gap-2 ${isLiveActive || isDictating ? 'text-red-500' : 'text-gray-800'}`}>
-                          {isLiveActive || isDictating ? (
-                            <>
-                              <span className="w-1 h-1 rounded-full bg-red-500 animate-ping"></span>
-                              Active Capture
-                            </>
-                          ) : 'Draft Hub'}
-                        </div>
-                     </button>
-                     {showWriteMenu && (
-                       <div className="absolute left-6 top-full mt-1 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
-                          <button onClick={() => { contentRef.current?.focus(); setShowWriteMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:bg-white/5 border-b border-white/5">Focus Editor</button>
-                          <button onClick={handleDictate} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Dictate (Continuous)</button>
-                          <button onClick={() => { setShowWriteMenu(false); handlePartnerChat(undefined, "Rewrite this content in the Dogg Me style, maintaining dialect integrity."); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5 border-b border-white/5">Dogg me</button>
-                          <button onClick={() => navigate('/wrapper-info')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5">Profile Settings</button>
-                       </div>
-                     )}
-                   </div>
-
-                   {/* REFINE MENU */}
-                   <div className="relative h-full group">
-                     <button onClick={() => { const s = !showSoapMenu; closeAllMenus(); setShowSoapMenu(s); }} disabled={isSoaping} className={`p-6 text-left hover:bg-white/5 transition-all border-r border-white/5 w-full h-full ${isSoaping ? 'animate-pulse' : ''}`}>
-                        <div className={`inline-block border px-4 py-2 mb-2 transition-all ${isSoaping ? 'border-orange-500 shadow-orange-500/20' : 'border-white/10 group-hover:border-orange-500'}`}><div className={`text-[12px] font-black uppercase tracking-[0.4em] transition-colors ${isSoaping ? 'text-orange-500' : 'text-gray-700 group-hover:text-orange-500'}`}><span className="text-2xl">R</span>efine</div></div>
-                        <div className="text-[8px] text-gray-800 font-bold uppercase tracking-widest">Soap Protocols</div>
-                     </button>
-                     {showSoapMenu && (
-                        <div className="absolute left-6 top-full mt-1 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
-                          <button onClick={() => handleSoap('rinse')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:bg-white/5 border-b border-white/5">Rinse</button>
-                          <button onClick={() => handleSoap('wash')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 hover:bg-white/5 border-b border-white/5">Wash</button>
-                          <button onClick={() => handleSoap('scrub')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Scrub</button>
-                          <button onClick={() => handleSoap('sanitize')} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-red-500 hover:bg-white/5">Sanitize</button>
-                        </div>
-                      )}
-                   </div>
-
-                   {/* ARTICULATE MENU */}
-                   <div className="relative h-full group">
-                     <button onClick={() => { const s = !showSpeakMenu; closeAllMenus(); setShowSpeakMenu(s); }} className="p-6 text-left hover:bg-white/5 transition-all border-r border-white/5 w-full h-full">
-                        <div className={`inline-block border px-4 py-2 mb-2 transition-all ${isSpeaking ? 'border-cyan-400 shadow-cyan-400/20' : 'border-white/10 group-hover:border-cyan-400'}`}><div className={`text-[12px] font-black uppercase tracking-[0.4em] transition-colors ${isSpeaking ? 'text-cyan-400' : 'text-gray-700 group-hover:text-cyan-400'}`}><span className="text-2xl">A</span>rticulate</div></div>
-                        <div className="text-[8px] text-gray-800 font-bold uppercase tracking-widest">Vocal Mode</div>
-                     </button>
-                     {showSpeakMenu && (
-                        <div className="absolute left-6 top-full mt-1 w-64 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] p-6 space-y-6 rounded-sm animate-fade-in">
-                          <button onClick={handleVoiceClone} disabled={isCloningVoice} className={`w-full py-4 border-2 border-dashed ${hasClonedVoice ? 'border-green-500 text-green-500' : 'border-orange-500 text-orange-500'} text-[10px] font-black uppercase tracking-widest hover:bg-orange-500/10 transition-all`}>
-                            {isCloningVoice ? 'Cloning...' : hasClonedVoice ? 'Voice Synced' : 'Clone Voice'}
-                          </button>
-                          
-                          <div className="space-y-4 pt-4 border-t border-white/5">
-                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Gender</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                   <button onClick={() => setSpeakGender('Male')} className={`py-2 text-[9px] font-bold uppercase border transition-all ${speakGender === 'Male' ? 'border-cyan-400 text-cyan-400 bg-cyan-400/5' : 'border-white/10 text-gray-700 hover:text-gray-400'}`}>Male</button>
-                                   <button onClick={() => setSpeakGender('Female')} className={`py-2 text-[9px] font-bold uppercase border transition-all ${speakGender === 'Female' ? 'border-cyan-400 text-cyan-400 bg-cyan-400/5' : 'border-white/10 text-gray-700 hover:text-gray-400'}`}>Female</button>
-                                </div>
-                             </div>
-
-                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Accent Panel</label>
-                                <select value={speakAccent} onChange={(e) => setSpeakAccent(e.target.value)} className="w-full bg-black border border-white/10 p-2 text-[9px] text-gray-400 focus:border-cyan-400 outline-none uppercase font-bold">
-                                   {hasClonedVoice && <option value="My Voice">My Voice</option>}
-                                   {ACCENTS.map(a => <option key={a} value={a}>{a}</option>)}
-                                </select>
-                             </div>
-
-                             <div className="space-y-2">
-                                <div className="flex justify-between items-center text-[8px] font-black text-gray-600 uppercase">
-                                   <span>Articulation Speed</span>
-                                   <span>{speakSpeed}x</span>
-                                </div>
-                                <input type="range" min="0.5" max="2" step="0.1" value={speakSpeed} onChange={(e) => setSpeakSpeed(parseFloat(e.target.value))} className="w-full accent-cyan-400" />
-                             </div>
-                          </div>
-
-                          <button onClick={() => { if(isSpeaking) { window.speechSynthesis.cancel(); setIsSpeaking(false); return; } const u = new SpeechSynthesisUtterance(activeChapter.content); u.rate = speakSpeed; u.onstart=()=>setIsSpeaking(true); u.onend=()=>setIsSpeaking(false); window.speechSynthesis.speak(u); }} className="w-full py-4 bg-cyan-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-cyan-600 shadow-xl shadow-cyan-500/20">{isSpeaking ? 'Mute Console' : 'Start Articulation'}</button>
-                        </div>
-                      )}
-                   </div>
-
-                   {/* PRODUCE MENU */}
-                   <div className="relative h-full group">
-                     <button onClick={() => { const s = !showProduceMenu; closeAllMenus(); setShowProduceMenu(s); }} disabled={isProducing} className={`p-6 text-left hover:bg-white/5 transition-all w-full h-full ${isProducing ? 'animate-pulse' : ''}`}>
-                        <div className={`inline-block border px-4 py-2 mb-2 transition-all ${isProducing ? 'border-green-500 shadow-green-500/20' : 'border-white/10 group-hover:border-green-500'}`}><div className={`text-[12px] font-black uppercase tracking-[0.4em] transition-colors ${isProducing ? 'text-green-500' : 'text-gray-700 group-hover:text-green-500'}`}><span className="text-2xl">P</span>roduce</div></div>
-                        <div className="text-[8px] text-gray-800 font-bold uppercase tracking-widest">Finalization</div>
-                     </button>
-                     {showProduceMenu && (
-                        <div className="absolute right-6 top-full mt-1 w-48 bg-[#0d0d0d] border border-white/10 shadow-2xl z-[100] overflow-hidden rounded-sm animate-fade-in">
-                          <button onClick={() => { ocrInputRef.current?.click(); setShowProduceMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-orange-500 hover:bg-white/5 border-b border-white/5">Ink to Text Converter</button>
-                          <button onClick={() => { const b = new Blob([activeChapter.content], { type: 'text/plain' }); const u = URL.createObjectURL(b); const l = document.createElement('a'); l.href = u; l.download = "sheet.docs"; l.click(); setShowProduceMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-500 hover:bg-white/5 border-b border-white/5">Export .docs</button>
-                          <button onClick={() => { alert("Generating high-fidelity .Wav export..."); setShowProduceMenu(false); }} className="w-full p-4 text-left text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-white/5">.Wav Export</button>
-                        </div>
-                      )}
-                   </div>
-                </div>
+        <div className="flex-grow flex flex-col px-12 pt-6 pb-12 overflow-y-auto custom-scrollbar">
+           <div className="w-full h-full flex flex-col">
+              <div className="grid grid-cols-2 gap-1 border-y border-white/[0.03] bg-white/[0.01] mb-12">
+                   <button onClick={() => handleSoap('rinse')} className="p-6 text-left hover:bg-white/5 transition-all border-r border-white/5 group">
+                      <div className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-orange-500">Rinse</div>
+                   </button>
+                   <button onClick={() => handleSoap('scrub')} className="p-6 text-left hover:bg-white/5 transition-all group">
+                      <div className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-orange-500">Scrub</div>
+                   </button>
               </div>
 
-              <div className="mb-8">
-                <textarea rows={1} value={activeChapter.title} onChange={(e) => { const val = e.target.value; setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, title: val } : c)); }} className={`w-full bg-transparent border-none outline-none focus:ring-0 text-3xl md:text-5xl leading-tight tracking-tighter resize-none overflow-hidden placeholder:text-gray-600 min-h-[1.5em] h-auto ${currentFont.title}`} placeholder="Heading..." />
-              </div>
-
-              <div className="flex-grow flex flex-col relative group pb-24">
-                <textarea ref={contentRef} value={activeChapter.content} onChange={(e) => { if (isLimitReached) return; setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: e.target.value } : c)); }} className={`w-full flex-grow bg-transparent border-none outline-none focus:ring-0 resize-none text-gray-400 text-xl font-serif leading-[2.2] transition-all min-h-[400px] ${currentFont.body} ${isLimitReached ? 'opacity-50' : ''}`} placeholder="Begin the narrative..." />
-                
-                <div className="absolute bottom-4 right-0 flex items-center gap-6 no-print">
-                   <div className="flex flex-col items-end">
-                      <div className="flex items-center gap-3 mb-1">
-                        {isLimitReached && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest animate-pulse">Sheet Limit</span>}
-                        <span className={`text-[10px] font-black tracking-[0.3em] uppercase ${isLimitReached ? 'text-red-500' : 'text-gray-600'}`}>{wordCount} / {MAX_WORDS} WORDS</span>
-                      </div>
-                      <div className="w-40 h-0.5 bg-white/5 rounded-full overflow-hidden">
-                         <div className={`h-full transition-all duration-700 ${wordCount > MAX_WORDS * 0.9 ? 'bg-red-500' : 'bg-orange-500'}`} style={{ width: `${Math.min(100, (wordCount / MAX_WORDS) * 100)}%` }}></div>
-                      </div>
-                   </div>
-                </div>
-              </div>
+              <textarea 
+                rows={1} 
+                value={activeChapter.title} 
+                onChange={(e) => { const val = e.target.value; setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, title: val } : c)); }} 
+                className={`w-full bg-transparent border-none outline-none focus:ring-0 text-5xl mb-8 font-serif italic text-white ${currentFont.title}`} 
+                placeholder="Heading..." 
+              />
+              <textarea 
+                value={activeChapter.content} 
+                onChange={(e) => { if(!isLimitReached) setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: e.target.value } : c)); }} 
+                className={`w-full flex-grow bg-transparent border-none outline-none focus:ring-0 resize-none text-gray-400 text-xl font-serif leading-[2.2] ${currentFont.body}`} 
+                placeholder="Begin the narrative..." 
+              />
            </div>
         </div>
       </main>
 
-      <input type="file" ref={ocrInputRef} onChange={handleOCR} className="hidden" accept="image/*" />
-
-      <aside className={`border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative h-full transition-all duration-500 ease-in-out ${isPartnerOpen ? '' : 'w-0 opacity-0 overflow-hidden'}`} style={{ width: isPartnerOpen ? `420px` : '0px' }}>
-        <button onClick={() => setIsPartnerOpen(!isPartnerOpen)} className="absolute -left-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-[#080808] border border-r-0 border-white/5 flex items-center justify-center hover:bg-orange-500/10 transition-colors z-[100]"><div className={`transition-transform duration-500 ${isPartnerOpen ? 'rotate-180' : 'rotate-0'}`}><svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></div></button>
-
-        <div className="shrink-0 p-10 border-b border-white/5 flex flex-col gap-4 bg-[#0a0a0a] pt-6">
-           <div className="flex items-start justify-between mb-4">
-              <Link to="/wrapper-info" className="flex flex-col">
-                <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange mb-1">WRAP PARTNER</h3>
-                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest">Unified Intelligence Node</span>
-              </Link>
-              <button 
-                onClick={() => {
-                   if (apiStatus === 'unauthorized') handleSelectApiKey();
-                   else setShowLiveDisclaimer(true);
-                }} 
-                className={`group relative ${apiStatus === 'unauthorized' ? 'bg-red-500/10 border-red-500/30' : 'bg-orange-500/10 border-orange-500/30'} border px-3 py-1.5 rounded-full hover:bg-orange-500 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(230,126,34,0.15)]`}
-              >
-                 <div className={`w-1.5 h-1.5 rounded-full ${apiStatus === 'unauthorized' ? 'bg-red-500' : 'bg-orange-500'} group-hover:bg-white animate-pulse`}></div>
-                 <span className={`text-[8px] font-black ${apiStatus === 'unauthorized' ? 'text-red-500' : 'text-orange-500'} group-hover:text-white uppercase tracking-[0.2em]`}>
-                    {apiStatus === 'unauthorized' ? 'LINK COLD' : 'GO LIVE'}
-                 </span>
-              </button>
-           </div>
-
-           {/* Sovereign Link Status Diagnostic */}
-           <div className="flex items-center gap-4 bg-black/40 p-4 rounded-sm border border-white/5 group/diag relative">
-              <div className={`w-2 h-2 rounded-full ${apiStatus === 'active' ? 'bg-blue-500' : apiStatus === 'direct' ? 'bg-green-500' : 'bg-red-500'} ${apiStatus !== 'unauthorized' ? 'animate-pulse' : ''}`}></div>
-              <div className="flex-grow">
-                 <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Sovereign Link Status</p>
-                 <p className={`text-[9px] font-bold ${apiStatus === 'active' ? 'text-blue-500' : apiStatus === 'direct' ? 'text-green-500' : 'text-red-500'} uppercase`}>
-                    {apiStatus === 'active' ? 'Server Connected' : apiStatus === 'direct' ? 'Direct AI Active' : 'Unauthorized'}
-                 </p>
-              </div>
-              
-              <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/diag:opacity-100 transition-opacity w-full bg-black border border-white/10 p-4 rounded-sm shadow-2xl z-50 pointer-events-none">
-                 <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Diagnostic Details:</p>
-                 <p className="text-[9px] text-gray-300 italic">
-                    {apiStatus === 'active' ? 'Link established via production server.' : 
-                     apiStatus === 'direct' ? 'Bypassing server via local SDK link.' : 
-                     'SSL or API Key handshake required. Open Dev Console (CTRL+ALT+D).'}
-                 </p>
-              </div>
-           </div>
-
-           {/* STYLE AND LOCATION CONTROLS - ALIGNED WITH HUB */}
-           <div className="grid grid-cols-2 gap-3 pb-2 animate-fade-in">
-             <div className="space-y-1">
-               <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Story Style</label>
-               <select 
-                 value={style} 
-                 onChange={(e) => setStyle(e.target.value)}
-                 className="w-full bg-black border border-white/10 text-[9px] font-bold text-gray-400 p-2 focus:border-orange-500 outline-none appearance-none uppercase transition-all"
-               >
-                 {STYLES.map(s => <option key={s} value={s}>{s}</option>)}
-               </select>
-             </div>
-             <div className="space-y-1">
-               <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Regional Context</label>
-               <select 
-                 value={region} 
-                 onChange={(e) => setRegion(e.target.value)}
-                 className="w-full bg-black border border-white/10 text-[9px] font-bold text-gray-400 p-2 focus:border-orange-500 outline-none appearance-none uppercase transition-all"
-               >
-                 {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-               </select>
-             </div>
-           </div>
+      <aside className={`border-l border-white/5 bg-[#080808] flex flex-col shrink-0 relative transition-all duration-500 ease-in-out ${isPartnerOpen ? 'w-[420px]' : 'w-0 opacity-0 overflow-hidden'}`}>
+        <div className="shrink-0 p-10 border-b border-white/5 bg-[#0a0a0a] pt-40">
+           <h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.5em] glow-orange">WRAP PARTNER</h3>
         </div>
-
         <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-10 space-y-8 custom-scrollbar bg-black/10">
            {messages.map((m, i) => (
-             <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start animate-fade-in'}`}>
-                <div className={`max-w-[90%] p-6 rounded-sm text-sm font-serif italic leading-relaxed ${m.role === 'user' ? 'bg-white/5 border border-white/10 text-gray-500' : 'bg-orange-500/5 border border-orange-500/20 text-gray-300'}`}>{m.content}</div>
-                {m.sources && m.sources.length > 0 && (
-                   <div className="mt-4 px-4 space-y-1">
-                      {m.sources.map((s, idx) => (
-                         <a key={idx} href={s.web?.uri} target="_blank" rel="noopener noreferrer" className="block text-[8px] text-gray-700 hover:text-orange-500 uppercase tracking-widest truncate max-w-[200px]">Link: {s.web?.title || 'Source'}</a>
-                      ))}
-                   </div>
-                )}
+             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start animate-fade-in'}`}>
+                <div className={`max-w-[90%] p-6 rounded-sm text-sm font-serif italic leading-relaxed ${m.role === 'user' ? 'bg-white/5 text-gray-500 border border-white/10' : 'bg-orange-500/5 text-gray-300 border border-orange-500/20'}`}>{m.content}</div>
              </div>
            ))}
-           {isPartnerLoading && <div className="text-[9px] text-orange-500 animate-pulse uppercase tracking-widest px-2">Consulting...</div>}
         </div>
-
-        <form onSubmit={handlePartnerChat} className="p-10 bg-[#0a0a0a] border-t border-white/5 flex flex-col gap-4 relative">
-           <div className="relative">
-              <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handlePartnerChat())} className="w-full bg-[#030303] border border-white/10 p-4 pr-12 text-base font-serif italic text-white outline-none h-24 rounded-sm shadow-inner resize-none" placeholder="Talk to WRAP..." />
-              <button type="button" onClick={() => { const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition; if (!SpeechRecognition) return; const r = new SpeechRecognition(); r.onstart = () => setIsPartnerMicActive(true); r.onend = () => setIsPartnerMicActive(false); r.onresult = (e: any) => setPartnerInput(prev => (prev ? prev + ' ' : '') + e.results[0][0].transcript); r.start(); }} className={`absolute right-4 bottom-4 transition-colors ${isPartnerMicActive ? 'text-red-500 animate-pulse' : 'text-gray-700 hover:text-white'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" strokeWidth="2" strokeLinecap="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="23" x2="16" y2="23" strokeWidth="2" strokeLinecap="round"/></svg>
-              </button>
-           </div>
-           
-           <div className="grid grid-cols-5 gap-2 h-14">
-             <button type="button" onClick={() => setShowProtocolMenu(!showProtocolMenu)} className="col-span-1 h-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all rounded-sm flex items-center justify-center group"><span className={`text-lg font-black ${showProtocolMenu ? 'text-orange-500' : 'group-hover:text-white'}`}>?</span></button>
-             <button type="submit" className="col-span-4 h-full bg-orange-500 text-white text-[10px] font-black uppercase tracking-[0.4em] rounded-sm hover:bg-orange-600 transition-all shadow-xl shadow-orange-500/20 glow-orange">SHOOT IT OVER</button>
-           </div>
-        </form>
       </aside>
-
-      {/* LIVE OVERLAY */}
-      {isLiveActive && (
-        <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in p-12">
-           <div className="absolute top-12 left-12"><h3 className="text-orange-500 text-[12px] font-black uppercase tracking-[0.8em] animate-living-amber">Sovereign Live Link</h3></div>
-           <button onClick={stopLiveLink} className="absolute top-12 right-12 text-gray-600 hover:text-white text-[10px] font-black uppercase tracking-[0.4em] border border-white/10 px-8 py-4 rounded-sm transition-all hover:bg-white/5">End Session</button>
-           <div className="flex flex-col items-center gap-12 max-w-4xl w-full">
-              <div className="w-40 h-40 rounded-full border-4 border-orange-500/20 flex items-center justify-center relative">
-                 <div className="absolute inset-0 rounded-full border-4 border-orange-500 animate-ping opacity-20"></div>
-                 <div className="w-32 h-32 rounded-full bg-orange-500/10 flex items-center justify-center animate-living-amber-bg">
-                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" strokeWidth="1" strokeLinecap="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" strokeWidth="1" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" strokeWidth="1" strokeLinecap="round"/></svg>
-                 </div>
-              </div>
-              <div className="w-full max-w-md space-y-4">
-                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em]">
-                    <span className="text-gray-600 italic">Movement Usage</span>
-                    <span className={liveSpokenWords > LIVE_MOVEMENT_LIMIT * 0.9 ? 'text-red-500 animate-pulse' : 'text-orange-500'}>
-                       {liveSpokenWords > LIVE_MOVEMENT_LIMIT * 0.9 ? 'WRAP IT UP' : `${liveSpokenWords} words captured`}
-                    </span>
-                 </div>
-                 <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden"><div className={`h-full transition-all duration-300 ${liveSpokenWords > LIVE_MOVEMENT_LIMIT * 0.9 ? 'bg-red-500' : 'bg-orange-500'}`} style={{ width: `${Math.min(100, (liveSpokenWords / LIVE_MOVEMENT_LIMIT) * 100)}%` }}></div></div>
-              </div>
-              <div className="text-center space-y-8">
-                 <p className="text-3xl font-serif italic text-white leading-relaxed max-h-64 overflow-y-auto custom-scrollbar px-12">{liveTranscription}</p>
-                 <div className="flex justify-center gap-4"><div className="w-1 h-1 rounded-full bg-orange-500 animate-bounce"></div><div className="w-1 h-1 rounded-full bg-orange-500 animate-bounce [animation-delay:0.2s]"></div><div className="w-1 h-1 rounded-full bg-orange-500 animate-bounce [animation-delay:0.4s]"></div></div>
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* LIVE DISCLAIMER MODAL */}
-      {showLiveDisclaimer && (
-        <div className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-fade-in">
-           <div className="max-w-xl w-full bg-[#0d0d0d] border border-orange-500/20 p-12 text-center rounded-sm shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-[2px] bg-orange-500 animate-living-amber-bg"></div>
-              <h3 className="text-3xl font-serif italic text-white mb-8">Sovereign <span className="text-orange-500">Boundaries.</span></h3>
-              <div className="space-y-6 text-sm text-gray-500 italic leading-relaxed mb-12 text-left bg-black/40 p-8 rounded-sm">
-                 <p>1. <span className="text-white font-bold">BETA MODE:</span> This link is experimental. Maintain narrative focus. Expletives are permitted when they serve the truth of your narrative.</p>
-                 <p>2. <span className="text-white font-bold">PROFESSIONAL PARTNERSHIP:</span> WRAP is a sovereign writing partner, not a social channel. No boundary-crossing is permitted.</p>
-                 <p>3. <span className="text-white font-bold">INJECTION MODE:</span> Spoken words are injected into your active sheet in real-time.</p>
-              </div>
-              <div className="flex flex-col gap-4">
-                 <button onClick={startLiveLink} className="w-full bg-orange-500 text-white py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-orange-600 rounded-sm">Initiate Link</button>
-                 <button onClick={() => setShowLiveDisclaimer(false)} className="py-4 text-[9px] font-black uppercase tracking-widest text-gray-700 hover:text-white transition-colors">Abort Initialization</button>
-              </div>
-           </div>
-        </div>
-      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; }
