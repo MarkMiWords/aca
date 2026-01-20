@@ -42,7 +42,7 @@ const App: React.FC = () => {
     }
     
     // Production Domain Console Log
-    if (window.location.hostname.includes('acaptiveaudience.com')) {
+    if (window.location.hostname.includes('acaptiveaudience.net')) {
       console.log("%c SOVEREIGN FORGE PRO LIVE ", "background: #e67e22; color: #fff; font-weight: bold; padding: 4px;");
     }
   }, []);

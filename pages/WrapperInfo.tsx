@@ -65,14 +65,12 @@ A CAPTIVE AUDIENCE | SOVEREIGN ARCHIVE
 --------------------------------------------------
 REF: PROTOCOL BETA 4.0
 DISPATCH_KEY: AT-SYNC-ACTIVE
-URL: ACAPTIVEAUDIENCE.COM
+URL: ACAPTIVEAUDIENCE.NET
 --------------------------------------------------
       `.trim();
       navigator.clipboard.writeText(sig);
     } else {
       // For visual signatures, we'll suggest manual copy-paste for best results in Outlook/Gmail
-      // Modern browsers allow selecting and copying rich text, but direct "copying HTML to clipboard" is complex.
-      // We will provide a button that highlights the area to make copying easier.
       if (visualSigRef.current) {
         const range = document.createRange();
         range.selectNode(visualSigRef.current);
@@ -242,7 +240,7 @@ A CAPTIVE AUDIENCE | SOVEREIGN ARCHIVE
 --------------------------------------------------
 REF: PROTOCOL BETA 4.0
 DISPATCH_KEY: AT-SYNC-ACTIVE
-URL: ACAPTIVEAUDIENCE.COM
+URL: ACAPTIVEAUDIENCE.NET
 --------------------------------------------------`}
                  </pre>
                ) : (
@@ -257,7 +255,7 @@ URL: ACAPTIVEAUDIENCE.COM
                     <div className="space-y-1">
                        <h4 className="text-2xl font-black italic tracking-tighter" style={{ color: '#ffffff' }}>{profile.name}</h4>
                        <p className="text-[8px] font-bold uppercase tracking-[0.4em]" style={{ color: '#e67e22', fontFamily: "Inter, sans-serif" }}>Author // Sovereign Archive</p>
-                       <p className="text-[10px] text-gray-500 font-serif italic" style={{ fontFamily: "serif" }}>www.acaptiveaudience.com</p>
+                       <p className="text-[10px] text-gray-500 font-serif italic" style={{ fontFamily: "serif" }}>www.acaptiveaudience.net</p>
                     </div>
                  </div>
                )}
