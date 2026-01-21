@@ -11,32 +11,11 @@ declare const mammoth: any;
 const STYLES = ['Fiction', 'Non-Fiction', 'Prison Life', 'Crime Life', 'Love Story', 'Sad Story', 'Tragic Story', 'Life Story'];
 const REGIONS = ['Asia', 'Australia', 'North America', 'South America', 'United Kingdom', 'Europe'];
 
-const INSPIRATIONAL_QUOTES = [
-  "Everything is hard before it is easy. - Goethe",
-  "The only way to deal with an unfree world is to become so absolutely free that your very existence is an act of rebellion. - Camus",
-  "I can be changed by what happens to me. But I refuse to be reduced by it. - Maya Angelou",
-  "The sun does not realize how wonderful it is until after a room is made visible. - Louis Kahn",
-  "Your voice is your legacy. Reclaim the narrative and build the bridge between the system and the world."
-];
-
-const PREMADE_PROMPTS = [
-  "Tell Wrap more about myself",
-  "Understand how to use Wrap",
-  "Summarise my sheet",
-  "Suggest a title",
-  "Get through a writers block",
-  "Brainstorm ideas",
-  "Research a subject",
-  "Reach for support",
-  "Access Support"
-];
-
 const DEFAULT_CHAPTER: Chapter = { id: '1', title: "", content: '', order: 0, media: [], subChapters: [] };
 
 function encode(bytes: Uint8Array) {
   let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
@@ -63,31 +42,21 @@ const AuthorBuilder: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [partnerInput, setPartnerInput] = useState('');
   const [isPartnerLoading, setIsPartnerLoading] = useState(false);
-  const [showPrompts, setShowPrompts] = useState(false);
   
   const [isProcessingWrite, setIsProcessingWrite] = useState(false);
   const [isProcessingRevise, setIsProcessingRevise] = useState(false);
   const [isProcessingArticulate, setIsProcessingArticulate] = useState(false);
   const [isProcessingPolish, setIsProcessingPolish] = useState(false);
 
-  const [isCloning, setIsCloning] = useState(false);
-  const [cloneProgress, setCloneProgress] = useState(0);
-  const [hasClonedVoice, setHasClonedVoice] = useState(() => localStorage.getItem('aca_voice_cloned') === 'true');
-  const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
-
   const [gender, setGender] = useState('Neutral');
-  const [vocalStyle, setVocalStyle] = useState('Normal');
-  const [accent, setAccent] = useState('Australian');
-  const [speed, setSpeed] = useState('1.0');
-
   const [isDictating, setIsDictating] = useState(false);
   const [dictationTarget, setDictationTarget] = useState<'sheet' | 'partner' | null>(null);
   const sessionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const profile = readJson<any>('aca_author_profile', { fontIndex: 0, motivation: 'Prison Life', region: 'Australia' });
-  const [style, setStyle] = useState(profile.motivation || STYLES[2]); 
-  const [region, setRegion] = useState(profile.region || REGIONS[1]);
+  const [style] = useState(profile.motivation || STYLES[2]); 
+  const [region] = useState(profile.region || REGIONS[1]);
 
   const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0] || DEFAULT_CHAPTER;
   const wordCount = activeChapter.content.split(/\s+/).filter(Boolean).length;
@@ -135,14 +104,13 @@ const AuthorBuilder: React.FC = () => {
     }));
     vault.sheets = [...newVaultSheets, ...(vault.sheets || [])];
     writeJson('sovereign_vault', vault);
-    alert("Saved: All navigation sheets moved to Vault.");
+    alert("Saved to Vault.");
   };
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsProcessingWrite(true);
-    
     try {
       if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -152,39 +120,26 @@ const AuthorBuilder: React.FC = () => {
         const doc = parser.parseFromString(html, 'text/html');
         const h1 = doc.querySelector('h1')?.textContent || doc.querySelector('h2')?.textContent || "";
         const plainText = doc.body.innerText || doc.body.textContent || "";
-        
-        setChapters(prev => prev.map(c => c.id === activeChapterId ? { 
-          ...c, 
-          title: h1 || c.title || file.name.replace('.docx', ''),
-          content: plainText 
-        } : c));
+        setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, title: h1 || file.name.replace('.docx', ''), content: plainText } : c));
       } else {
         const text = await file.text();
         setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: text } : c));
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsProcessingWrite(false);
-    }
+    } catch (err) { console.error(err); } finally { setIsProcessingWrite(false); }
   };
 
   const handlePartnerChat = async (e?: React.FormEvent, customMsg?: string) => {
     if (e) e.preventDefault();
     const finalMsg = (customMsg || partnerInput).trim();
     if (!finalMsg || isPartnerLoading) return;
-    
     setPartnerInput('');
-    setShowPrompts(false);
     setMessages(prev => [...prev, { role: 'user', content: finalMsg }]);
     setIsPartnerLoading(true);
-    
     try {
       const response = await queryPartner(finalMsg, style, region, messages, activeChapter.content);
       setMessages(prev => [...prev, response]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Link Interrupted." }]);
-    } finally { 
+    } catch (err) { setMessages(prev => [...prev, { role: 'assistant', content: "Link Interrupted." }]); } 
+    finally { 
       setIsPartnerLoading(false); 
       setTimeout(() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' }), 100);
     }
@@ -194,40 +149,10 @@ const AuthorBuilder: React.FC = () => {
     if (!activeChapter.content?.trim()) return;
     if (block === 'revise') setIsProcessingRevise(true);
     else setIsProcessingPolish(true);
-    
     try {
       const result = await smartSoap(activeChapter.content, level, style, region);
       setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
-    } finally { 
-      setIsProcessingRevise(false); 
-      setIsProcessingPolish(false);
-    }
-  };
-
-  const handleSaveSheet = () => {
-    setIsProcessingPolish(true);
-    setTimeout(() => {
-      setIsProcessingPolish(false);
-      alert("Registry Synchronized.");
-    }, 1500);
-  };
-
-  const startVoiceClone = () => {
-    setIsCloning(true);
-    setCloneProgress(0);
-    const interval = setInterval(() => {
-      setCloneProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setHasClonedVoice(true);
-          localStorage.setItem('aca_voice_cloned', 'true');
-          setAccent('Cloned');
-          setTimeout(() => setIsCloning(false), 1000);
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 300); 
+    } finally { setIsProcessingRevise(false); setIsProcessingPolish(false); }
   };
 
   const startDictation = async (target: 'sheet' | 'partner') => {
@@ -239,9 +164,7 @@ const AuthorBuilder: React.FC = () => {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       audioContextRef.current = ctx;
       if (ctx.state === 'suspended') await ctx.resume();
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true } 
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true } });
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         callbacks: {
@@ -275,9 +198,7 @@ const AuthorBuilder: React.FC = () => {
         }
       });
       sessionRef.current = await sessionPromise;
-    } catch (err) {
-      setIsDictating(false);
-    }
+    } catch (err) { setIsDictating(false); }
   };
 
   const stopDictation = () => {
@@ -295,7 +216,7 @@ const AuthorBuilder: React.FC = () => {
              + New Sheet
            </button>
         </div>
-        <div className="px-8 py-5 bg-white/5 border-y border-white/10 flex flex-col gap-1" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)', borderColor: 'rgba(var(--accent-rgb), 0.2)' }}>
+        <div className="px-8 py-5 bg-white/5 border-y border-white/10 flex flex-col gap-1" style={{ borderLeft: '4px solid var(--accent)' }}>
           <span className="text-[7px] font-black uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Currently Editing</span>
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white truncate">{activeChapter.title || 'Untitled Draft'}</p>
         </div>
@@ -316,15 +237,16 @@ const AuthorBuilder: React.FC = () => {
       <div onMouseDown={() => { isResizingNav.current = true; document.body.style.cursor = 'ew-resize'; }} className="w-1 bg-white/5 hover:bg-[var(--accent)] cursor-ew-resize z-50 transition-colors"></div>
 
       <main className="flex-grow flex flex-col relative overflow-hidden bg-[#020202]">
-        <div className="shrink-0 h-24 border-b border-white/10 bg-black flex items-stretch">
-            {/* Write */}
-            <div className="flex-1 group/write relative border-r border-white/5 cursor-pointer hover:bg-[var(--accent)]/5 transition-all">
-               <div className="h-full flex flex-col items-center justify-center">
-                  <span className={`text-[14px] font-black text-gray-700 tracking-[0.3em] uppercase transition-all duration-300 group-hover/write:text-[var(--accent)] ${isProcessingWrite ? 'animate-industrial-pulse text-[var(--accent)]' : ''}`}>
-                    <span className="text-2xl">W</span>rite
+        <div className="shrink-0 h-24 bg-black flex items-stretch border-b border-white/10 relative z-50">
+            {/* Write - AMBER */}
+            <div className={`flex-1 group/write relative cursor-pointer transition-all border-r border-white/5 ${isProcessingWrite ? 'bg-amber-500/10' : 'hover:bg-white/[0.02]'}`}>
+               <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingWrite ? 'border-2 border-[var(--accent)] shadow-[inset_0_0_25px_var(--accent)]' : 'border border-transparent group-hover/write:border-[var(--accent)]/40'}`}></div>
+               <div className="h-full flex flex-col items-center justify-center relative z-10">
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingWrite ? 'text-[var(--accent)] animate-industrial-pulse drop-shadow-[0_0_8px_var(--accent)]' : 'text-gray-700 group-hover/write:text-[var(--accent)] group-hover/write:drop-shadow-[0_0_12px_var(--accent)]'}`}>
+                    <span className="text-xl">W</span>rite
                   </span>
                </div>
-               <div className="absolute top-full left-0 w-64 bg-black border border-[var(--accent)] shadow-2xl z-[100] opacity-0 invisible group-hover/write:opacity-100 group-hover/write:visible translate-y-2 group-hover/write:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
+               <div className="absolute top-full left-0 w-64 bg-black border border-[var(--accent)] shadow-[0_25px_60px_rgba(0,0,0,1)] z-[100] opacity-0 invisible group-hover/write:opacity-100 group-hover/write:visible translate-y-2 group-hover/write:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
                   <button onClick={() => fileInputRef.current?.click()} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-[var(--accent)] hover:bg-white/5 border-b border-white/5 transition-colors">Import Docs</button>
                   <button onClick={() => startDictation('sheet')} className={`w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest border-b border-white/5 transition-colors ${dictationTarget === 'sheet' ? 'animate-pulse text-[var(--accent)]' : 'text-white/40 hover:text-[var(--accent)]'}`}>
                     {dictationTarget === 'sheet' ? 'Recording...' : 'Dictation'}
@@ -333,14 +255,15 @@ const AuthorBuilder: React.FC = () => {
                </div>
             </div>
 
-            {/* Revise */}
-            <div className="flex-1 group/revise relative border-r border-white/5 cursor-pointer hover:bg-red-500/5 transition-all">
-               <div className="h-full flex flex-col items-center justify-center">
-                  <span className={`text-[14px] font-black text-gray-700 tracking-[0.3em] uppercase transition-all duration-300 group-hover/revise:text-red-500 ${isProcessingRevise ? 'animate-industrial-pulse text-red-500' : ''}`}>
-                    <span className="text-2xl">R</span>evise
+            {/* Revise - RED */}
+            <div className={`flex-1 group/revise relative cursor-pointer transition-all border-r border-white/5 ${isProcessingRevise ? 'bg-red-900/10' : 'hover:bg-white/[0.02]'}`}>
+               <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingRevise ? 'border-2 border-red-600 shadow-[inset_0_0_25px_rgba(220,38,38,0.6)]' : 'border border-transparent group-hover/revise:border-red-600/40'}`}></div>
+               <div className="h-full flex flex-col items-center justify-center relative z-10">
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingRevise ? 'text-red-500 animate-industrial-pulse drop-shadow-[0_0_8px_#dc2626]' : 'text-gray-700 group-hover/revise:text-red-500 group-hover/revise:drop-shadow-[0_0_12px_#dc2626]'}`}>
+                    <span className="text-xl">R</span>evise
                   </span>
                </div>
-               <div className="absolute top-full left-0 w-64 bg-black border border-red-600 shadow-2xl z-[100] opacity-0 invisible group-hover/revise:opacity-100 group-hover/revise:visible translate-y-2 group-hover/revise:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
+               <div className="absolute top-full left-0 w-64 bg-black border border-red-600 shadow-[0_25px_60px_rgba(0,0,0,1)] z-[100] opacity-0 invisible group-hover/revise:opacity-100 group-hover/revise:visible translate-y-2 group-hover/revise:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
                   <button onClick={() => handleSoap('rinse', 'revise')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-green-500 hover:bg-green-500/10 border-b border-white/5 transition-colors">Rinse</button>
                   <button onClick={() => handleSoap('wash', 'revise')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-amber-500 hover:bg-amber-500/10 border-b border-white/5 transition-colors">Wash</button>
                   <button onClick={() => handleSoap('scrub', 'revise')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 border-b border-white/5 transition-colors">Scrub</button>
@@ -348,21 +271,22 @@ const AuthorBuilder: React.FC = () => {
                </div>
             </div>
 
-            {/* Articulate */}
-            <div className="flex-1 group/articulate relative border-r border-white/5 cursor-pointer hover:bg-blue-500/5 transition-all">
-               <div className="h-full flex flex-col items-center justify-center">
-                  <span className={`text-[14px] font-black text-gray-700 tracking-[0.3em] uppercase transition-all duration-300 group-hover/articulate:text-blue-500 ${isProcessingArticulate ? 'animate-industrial-pulse text-blue-500' : ''}`}>
-                    <span className="text-2xl">A</span>rticulate
+            {/* Articulate - BLUE */}
+            <div className={`flex-1 group/articulate relative cursor-pointer transition-all border-r border-white/5 ${isProcessingArticulate ? 'bg-blue-900/10' : 'hover:bg-white/[0.02]'}`}>
+               <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingArticulate ? 'border-2 border-blue-500 shadow-[inset_0_0_25px_rgba(59,130,246,0.6)]' : 'border border-transparent group-hover/articulate:border-blue-500/40'}`}></div>
+               <div className="h-full flex flex-col items-center justify-center relative z-10">
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingArticulate ? 'text-blue-500 animate-industrial-pulse drop-shadow-[0_0_8px_#3b82f6]' : 'text-gray-700 group-hover/articulate:text-blue-500 group-hover/articulate:drop-shadow-[0_0_12px_#3b82f6]'}`}>
+                    <span className="text-xl">A</span>rticulate
                   </span>
                </div>
-               <div className="absolute top-full left-0 w-72 bg-black border border-blue-500 shadow-2xl z-[100] opacity-0 invisible group-hover/articulate:opacity-100 group-hover/articulate:visible translate-y-2 group-hover/articulate:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
-                  <button onClick={startVoiceClone} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-400/10 border-b border-white/5 transition-colors">Clone Voice</button>
-                  <div className="p-6 space-y-6 border-b border-white/5 bg-black/40">
+               <div className="absolute top-full left-0 w-72 bg-black border border-blue-500 shadow-[0_25px_60px_rgba(0,0,0,1)] z-[100] opacity-0 invisible group-hover/articulate:opacity-100 group-hover/articulate:visible translate-y-2 group-hover/articulate:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
+                  <button className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-400/10 border-b border-white/5 transition-colors">Clone Voice</button>
+                  <div className="p-6 space-y-6 bg-black/40">
                      <div className="space-y-3">
                         <p className="text-[7px] text-gray-600 uppercase font-black tracking-widest">Gender Matrix</p>
                         <div className="flex gap-2">
-                           <button onClick={() => setGender('Male')} className={`flex-1 py-2 text-[8px] font-black uppercase rounded-sm border transition-all ${gender === 'Male' ? 'bg-[#3498db] border-[#3498db] text-white' : 'border-white/10 text-gray-600'}`}>M</button>
-                           <button onClick={() => setGender('Female')} className={`flex-1 py-2 text-[8px] font-black uppercase rounded-sm border transition-all ${gender === 'Female' ? 'bg-[#f95bf6] border-[#f95bf6] text-white' : 'border-white/10 text-gray-600'}`}>F</button>
+                           <button onClick={() => setGender('Male')} className={`flex-1 py-2 text-[8px] font-black uppercase rounded-sm border transition-all ${gender === 'Male' ? 'bg-[#3498db] border-[#3498db] text-white shadow-[0_0_10px_#3498db]' : 'border-white/10 text-gray-600'}`}>M</button>
+                           <button onClick={() => setGender('Female')} className={`flex-1 py-2 text-[8px] font-black uppercase rounded-sm border transition-all ${gender === 'Female' ? 'bg-[#f95bf6] border-[#f95bf6] text-white shadow-[0_0_10px_#f95bf6]' : 'border-white/10 text-gray-600'}`}>F</button>
                            <button onClick={() => setGender('Neutral')} className={`flex-1 py-2 text-[8px] font-black uppercase rounded-sm border transition-all ${gender === 'Neutral' ? 'bg-white border-white text-black' : 'border-white/10 text-gray-600'}`}>N</button>
                         </div>
                      </div>
@@ -370,18 +294,19 @@ const AuthorBuilder: React.FC = () => {
                </div>
             </div>
 
-            {/* Polish */}
-            <div className="flex-1 group/polish relative cursor-pointer hover:bg-green-500/5 transition-all">
-               <div className="h-full flex flex-col items-center justify-center">
-                  <span className={`text-[14px] font-black text-gray-700 tracking-[0.3em] uppercase transition-all duration-300 group-hover/polish:text-green-500 ${isProcessingPolish ? 'animate-industrial-pulse text-green-500' : ''}`}>
-                    <span className="text-2xl">P</span>olish
+            {/* Polish - GREEN */}
+            <div className={`flex-1 group/polish relative cursor-pointer transition-all ${isProcessingPolish ? 'bg-green-900/10' : 'hover:bg-white/[0.02]'}`}>
+               <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingPolish ? 'border-2 border-green-500 shadow-[inset_0_0_25px_rgba(34,197,94,0.6)]' : 'border border-transparent group-hover/polish:border-green-500/40'}`}></div>
+               <div className="h-full flex flex-col items-center justify-center relative z-10">
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingPolish ? 'text-green-500 animate-industrial-pulse drop-shadow-[0_0_8px_#22c55e]' : 'text-gray-700 group-hover/polish:text-green-500 group-hover/polish:drop-shadow-[0_0_12px_#22c55e]'}`}>
+                    <span className="text-xl">P</span>olish
                   </span>
                </div>
-               <div className="absolute top-full left-0 w-64 bg-black border border-green-500 shadow-2xl z-[100] opacity-0 invisible group-hover/polish:opacity-100 group-hover/polish:visible translate-y-2 group-hover/polish:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
+               <div className="absolute top-full right-0 w-64 bg-black border border-green-500 shadow-[0_25px_60px_rgba(0,0,0,1)] z-[100] opacity-0 invisible group-hover/polish:opacity-100 group-hover/polish:visible translate-y-2 group-hover/polish:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
                   <button onClick={() => handleSoap('polish_story', 'polish')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-green-500 hover:bg-white/5 border-b border-white/5 transition-colors">Polish story</button>
                   <button onClick={() => handleSoap('polish_poetry', 'polish')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-green-500 hover:bg-white/5 border-b border-white/5 transition-colors">Polish poetry</button>
                   <button onClick={() => handleSoap('sanitise', 'polish')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 border-b border-white/5 transition-colors">Sanitise</button>
-                  <button onClick={handleSaveSheet} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-green-500 hover:bg-green-500/10 transition-colors">Save Sheet</button>
+                  <button onClick={() => alert("Registry Synchronized.")} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-green-500 hover:bg-green-500/10 transition-colors">Save Sheet</button>
                </div>
             </div>
         </div>
@@ -389,7 +314,6 @@ const AuthorBuilder: React.FC = () => {
         <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar bg-[#020202]">
           <div className="py-4 bg-[#030303]/40 border-b border-white/5">
              <div className="max-w-4xl px-12">
-               <h2 className="text-[8px] font-black uppercase tracking-[0.8em] text-gray-900 mb-2">Registry Identifier</h2>
                <input 
                  ref={titleInputRef}
                  type="text" 
@@ -397,7 +321,7 @@ const AuthorBuilder: React.FC = () => {
                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), contentInputRef.current?.focus())}
                  onChange={(e) => setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, title: e.target.value } : c))} 
                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-white text-3xl md:text-5xl font-serif italic placeholder:text-white/10 tracking-tighter"
-                 placeholder="Tell us a yarn..."
+                 placeholder="Untitled Draft..."
                />
              </div>
           </div>
@@ -440,9 +364,9 @@ const AuthorBuilder: React.FC = () => {
         </div>
 
         <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-12 space-y-12 custom-scrollbar bg-black/40">
-           {messages.length === 0 && <div className="h-full flex flex-col items-center justify-center text-center opacity-10 italic font-serif px-12 text-3xl">"Tell us a yarn."</div>}
+           {messages.length === 0 && <div className="h-full flex flex-col items-center justify-center text-center opacity-10 italic font-serif px-12 text-3xl">"Listening."</div>}
            {messages.map((m, i) => (
-             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start animate-fade-in'}`}>
+             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[95%] p-10 rounded-sm text-[16px] font-serif italic leading-[1.8] ${m.role === 'user' ? 'bg-white/5 text-gray-600 border border-white/10' : 'bg-white/5 text-gray-300 border border-white/10'}`} style={m.role !== 'user' ? { backgroundColor: 'rgba(var(--accent-rgb), 0.05)', borderColor: 'rgba(var(--accent-rgb), 0.1)' } : {}}>
                   {m.content}
                 </div>
@@ -453,25 +377,18 @@ const AuthorBuilder: React.FC = () => {
 
         <form onSubmit={handlePartnerChat} className="p-10 bg-black border-t border-white/10 space-y-4">
             <div className="relative group">
-              <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} placeholder="Message Partner..." className="w-full bg-[#030303] border border-white/10 p-6 pr-14 text-[14px] font-serif italic text-white focus:border-[var(--accent)] outline-none h-32 rounded-sm resize-none transition-all shadow-inner" />
+              <textarea value={partnerInput} onChange={(e) => setPartnerInput(e.target.value)} placeholder="Message Partner..." className="w-full bg-[#030303] border border-white/10 p-6 pr-14 text-[14px] font-serif italic text-white focus:border-[var(--accent)] outline-none h-32 rounded-sm resize-none transition-all" />
               <button type="button" onClick={() => startDictation('partner')} className={`absolute right-4 bottom-4 w-9 h-9 rounded-full flex items-center justify-center transition-all ${dictationTarget === 'partner' ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-white/5 text-gray-600'}`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
               </button>
             </div>
-            <button type="submit" disabled={isPartnerLoading || !partnerInput.trim()} className="w-full py-4 animate-living-amber-bg text-white text-[10px] font-black uppercase tracking-[0.5em] rounded-sm shadow-2xl disabled:opacity-30">
+            <button type="submit" disabled={isPartnerLoading || !partnerInput.trim()} className="w-full py-4 animate-living-amber-bg text-white text-[10px] font-black uppercase tracking-[0.5em] rounded-sm disabled:opacity-30">
               Shoot it over
             </button>
          </form>
       </aside>
 
       <input type="file" ref={fileInputRef} className="hidden" accept=".docx,.txt" onChange={handleFileImport} />
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; } 
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-      `}</style>
     </div>
   );
 };
