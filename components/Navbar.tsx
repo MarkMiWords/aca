@@ -64,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
                style={{ color: 'var(--accent)' }}
              >
                <span className="w-1 h-1 rounded-full animate-pulse animate-living-amber-bg"></span>
-               Protocol Beta 4.1
+               Protocol Beta 4.2
                <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">→</span>
              </Link>
           </div>
