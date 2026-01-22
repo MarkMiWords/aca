@@ -34,6 +34,16 @@ function encode(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+// Added createBlob to fix "Cannot find name 'createBlob'" error.
+const createBlob = (data: Float32Array) => {
+  const int16 = new Int16Array(data.length);
+  for (let i = 0; i < data.length; i++) int16[i] = data[i] * 32768;
+  return {
+    data: encode(new Uint8Array(int16.buffer)),
+    mimeType: 'audio/pcm;rate=16000',
+  };
+};
+
 const AuthorBuilder: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -302,14 +312,13 @@ const AuthorBuilder: React.FC = () => {
       
       const sessionPromise = connectLive({
           onopen: () => {
+            // Removed undefined setIsActive, setIsConnecting, and setStatus to fix errors.
             const source = ctx.createMediaStreamSource(stream);
             const scriptProcessor = ctx.createScriptProcessor(4096, 1, 1);
             scriptProcessor.onaudioprocess = (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
-              const int16 = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) int16[i] = inputData[i] * 32768;
-              const base64 = encode(new Uint8Array(int16.buffer));
-              sessionPromise.then(s => s.sendRealtimeInput({ media: { data: base64, mimeType: 'audio/pcm;rate=16000' } }));
+              const pcmBlob = createBlob(inputData);
+              sessionPromise.then(s => s.sendRealtimeInput({ media: pcmBlob }));
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(ctx.destination);
@@ -582,15 +591,13 @@ const AuthorBuilder: React.FC = () => {
                   <div className="p-10 bg-black/60 border border-blue-500/10 rounded-sm italic font-serif text-xl text-blue-100 leading-relaxed shadow-inner min-h-[160px] flex items-center justify-center">
                     "{CALIBRATION_SCRIPTS[activeScriptIndex].text}"
                   </div>
-                  {calibrationProgress === 0 && (
-                    <button 
-                      onClick={flipScript}
-                      className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#111] border border-blue-500/40 text-blue-500 text-[8px] font-black uppercase tracking-widest rounded-full hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Flip the Script
-                    </button>
-                  )}
+                  <button 
+                    onClick={flipScript}
+                    className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#111] border border-blue-500/40 text-blue-500 text-[8px] font-black uppercase tracking-widest rounded-full hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Flip the Script
+                  </button>
                 </div>
 
                 <div className="space-y-6 pt-4">
