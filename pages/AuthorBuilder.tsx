@@ -10,13 +10,11 @@ declare const mammoth: any;
 
 // Define AIStudio interface globally to satisfy TypeScript and match existing declarations
 declare global {
-  interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-  }
-
   interface Window {
-    aistudio: AIStudio;
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
   }
 }
 
@@ -35,6 +33,16 @@ const CALIBRATION_SCRIPTS = [
     id: 'architect',
     title: 'The Architect\'s Script',
     text: "They build walls to contain bodies, but they haven't built a wall yet that can contain a story. I am the architect of my own legacy, forging meaning from the friction of the system."
+  },
+  {
+    id: 'presence',
+    title: 'The Ghost Protocol',
+    text: "We are the echoes in the concrete, the persistent rhythm of lives that refuse to be forgotten. Every word I speak is a bridge across the wire, a testament to the resilience of the human spirit."
+  },
+  {
+    id: 'identity',
+    title: 'The Declaration Protocol',
+    text: "Identity is the first thing they try to take, and the last thing we will ever give up. I reclaim my name, my voice, and my history. This is not just a record; it is a declaration of presence."
   }
 ];
 
@@ -631,12 +639,15 @@ const AuthorBuilder: React.FC = () => {
                 </div>
 
                 <div className="relative group">
+                  <div className="absolute top-4 left-4 text-[8px] font-black text-blue-500/40 uppercase tracking-widest bg-black/40 px-2 py-1 border border-blue-500/10 rounded-sm">
+                    Script [ {activeScriptIndex + 1} / {CALIBRATION_SCRIPTS.length} ]
+                  </div>
                   <div className="p-10 bg-black/60 border border-blue-500/10 rounded-sm italic font-serif text-xl text-blue-100 leading-relaxed shadow-inner min-h-[160px] flex items-center justify-center">
                     "{CALIBRATION_SCRIPTS[activeScriptIndex].text}"
                   </div>
                   <button 
                     onClick={flipScript}
-                    className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#111] border border-blue-500/40 text-blue-500 text-[8px] font-black uppercase tracking-widest rounded-full hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2"
+                    className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#111] border border-blue-500/40 text-blue-500 text-[8px] font-black uppercase tracking-widest rounded-full hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2 shadow-xl"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Flip the Script
