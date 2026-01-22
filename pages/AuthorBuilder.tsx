@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { queryPartner, smartSoap, articulateText, connectLive } from '../services/geminiService';
@@ -26,6 +27,7 @@ const AuthorBuilder: React.FC = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
   
   const [navWidth, setNavWidth] = useState(320);
   const [partnerWidth, setPartnerWidth] = useState(400);
@@ -41,6 +43,7 @@ const AuthorBuilder: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [partnerInput, setPartnerInput] = useState('');
   const [isPartnerLoading, setIsPartnerLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [isProcessingWrite, setIsProcessingWrite] = useState(false);
   const [isProcessingRevise, setIsProcessingRevise] = useState(false);
@@ -65,7 +68,18 @@ const AuthorBuilder: React.FC = () => {
   const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0] || DEFAULT_CHAPTER;
   const wordCount = activeChapter.content.split(/\s+/).filter(Boolean).length;
 
-  useEffect(() => { writeJson('wrap_sheets_v4', chapters); }, [chapters]);
+  // DEBOUNCED PERSISTENCE ENGINE
+  useEffect(() => {
+    if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+    
+    setIsSaving(true);
+    saveTimeoutRef.current = window.setTimeout(() => {
+      writeJson('wrap_sheets_v4', chapters);
+      setIsSaving(false);
+    }, 1000); // 1 Second debounce
+
+    return () => { if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current); };
+  }, [chapters]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -400,10 +414,14 @@ const AuthorBuilder: React.FC = () => {
         </div>
 
         <div className="h-10 px-12 bg-black border-t border-white/10 flex justify-between items-center text-[8px] font-black uppercase tracking-[0.4em] text-gray-800">
-           <div className="flex gap-12">
+           <div className="flex gap-12 items-center">
               <span>Words: {wordCount}</span>
               <span>Context: {region}</span>
               <span>Style: {style}</span>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isSaving ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : 'bg-cyan-500 shadow-[0_0_8px_#06b6d4]'}`}></div>
+                <span className={`text-[7px] font-bold ${isSaving ? 'text-amber-500' : 'text-cyan-500'}`}>{isSaving ? 'SYNCING...' : 'VAULT SECURED'}</span>
+              </div>
            </div>
            <span>Forge v7.5 Alchemist</span>
         </div>
