@@ -21,19 +21,27 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { text, level } = req.body;
+  const { text, level, style, region } = req.body;
   if (!text) {
     return res.status(400).json({ error: "Text is required" });
+  }
+
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "Sovereign Link Cold: API Key Missing" });
   }
 
   const safeText = text.slice(0, 10000);
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     let system = HUMANITARIAN_MISSION;
-    if (level === 'rinse') system += "\nMODE: Light Grammar ONLY.";
-    else if (level === 'scrub') system += "\nMODE: Literary Polish.";
-    else system += `\nMODE: SANITIZE. ${LEGAL_GUARDRAIL}`;
+    
+    if (level === 'rinse') system += "\nMODE: Light Grammar and Punctuation ONLY. Maintain raw grit.";
+    else if (level === 'scrub') system += `\nMODE: Literary Polish. Elevate structure for ${style} in ${region}.`;
+    else if (level === 'fact_check') system += "\nMODE: Fact Check. Analyze for legal and factual claims.";
+    else if (level === 'sanitise') system += `\nMODE: SANITIZE. ${LEGAL_GUARDRAIL}`;
+    else system += `\nMODE: General Refinement for ${style}.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -44,7 +52,7 @@ export default async function handler(req: any, res: any) {
     const resultText = response.text || safeText;
     return res.status(200).json({ text: resultText });
   } catch (error: any) {
-    console.error("API_SOAP_ERROR:", error?.message || error);
-    return res.status(500).json({ error: "Sovereign Link Interrupted" });
+    console.error("API_SOAP_ERROR:", error);
+    return res.status(500).json({ error: `Polishing Failure: ${error.message || "Unknown error"}` });
   }
 }

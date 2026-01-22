@@ -68,16 +68,13 @@ const AuthorBuilder: React.FC = () => {
   const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0] || DEFAULT_CHAPTER;
   const wordCount = activeChapter.content.split(/\s+/).filter(Boolean).length;
 
-  // DEBOUNCED PERSISTENCE ENGINE
   useEffect(() => {
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
-    
     setIsSaving(true);
     saveTimeoutRef.current = window.setTimeout(() => {
       writeJson('wrap_sheets_v4', chapters);
       setIsSaving(false);
-    }, 1000); // 1 Second debounce
-
+    }, 1000);
     return () => { if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current); };
   }, [chapters]);
 
@@ -143,7 +140,10 @@ const AuthorBuilder: React.FC = () => {
         const text = await file.text();
         setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: text } : c));
       }
-    } catch (err) { console.error(err); } finally { setIsProcessingWrite(false); }
+    } catch (err) { 
+       console.error(err); 
+       alert("Import Link Failure. The file may be corrupt.");
+    } finally { setIsProcessingWrite(false); }
   };
 
   const handlePartnerChat = async (e?: React.FormEvent, customMsg?: string) => {
@@ -158,10 +158,7 @@ const AuthorBuilder: React.FC = () => {
       setMessages(prev => [...prev, response]);
     } catch (err: any) { 
       console.error("Partner Chat Failure:", err);
-      const errorMessage = err.message?.includes("API_KEY_MISSING") 
-        ? "Partner Link Cold: Missing API Key. Check your 'Sovereign Vault' Technical Brief."
-        : "Partner Link Interrupted. Checking Sovereign Registry for connection issues...";
-      setMessages(prev => [...prev, { role: 'assistant', content: errorMessage }]); 
+      setMessages(prev => [...prev, { role: 'assistant', content: `Link Interrupted. Diagnostic: ${err.message}` }]); 
     } 
     finally { 
       setIsPartnerLoading(false); 
@@ -176,9 +173,13 @@ const AuthorBuilder: React.FC = () => {
     try {
       const result = await smartSoap(activeChapter.content, level, style, region);
       setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-    } finally { setIsProcessingRevise(false); setIsProcessingPolish(false); }
+      setMessages(prev => [...prev, { role: 'assistant', content: `Forge Failure during ${level.toUpperCase()}. Protocol Error: ${err.message}` }]);
+    } finally { 
+       setIsProcessingRevise(false); 
+       setIsProcessingPolish(false); 
+    }
   };
 
   const handleArticulate = async () => {
@@ -187,8 +188,9 @@ const AuthorBuilder: React.FC = () => {
     try {
       const result = await articulateText(activeChapter.content, { gender, tone, accent, speed }, style, region);
       setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Acoustic Transformation Failure. Protocol Error: ${err.message}` }]);
     } finally {
       setIsProcessingArticulate(false);
     }
@@ -222,8 +224,11 @@ const AuthorBuilder: React.FC = () => {
           onmessage: (msg: LiveServerMessage) => {
             const text = msg.serverContent?.inputTranscription?.text;
             if (text) {
-              if (target === 'sheet') setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: c.content + ' ' + text } : c));
-              else setPartnerInput(prev => prev + ' ' + text);
+              if (target === 'sheet') {
+                setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: c.content + ' ' + text } : c));
+              } else {
+                setPartnerInput(prev => prev + ' ' + text);
+              }
             }
           },
           onclose: () => setIsDictating(false),
@@ -231,12 +236,13 @@ const AuthorBuilder: React.FC = () => {
              console.error("Dictation Error", e);
              stopDictation();
           }
-        }, "Transcribe the author's spoken carceral narrative precisely. Do not sanitize slang.");
+        }, "Transcribe precisely. Maintain carceral grit.");
       
       sessionRef.current = await sessionPromise;
     } catch (err) { 
       console.error(err);
       setIsDictating(false); 
+      alert("Microphone Access Denied. Check browser permissions.");
     }
   };
 
@@ -277,11 +283,11 @@ const AuthorBuilder: React.FC = () => {
 
       <main className="flex-grow flex flex-col relative overflow-hidden bg-[#020202]">
         <div className="shrink-0 h-24 bg-black flex items-stretch border-b border-white/10 relative z-50">
-            {/* Write - AMBER */}
+            {/* Write */}
             <div className={`flex-1 group/write relative cursor-pointer transition-all border-r border-white/5 ${isProcessingWrite ? 'bg-amber-500/10' : 'hover:bg-white/[0.02]'}`}>
                <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingWrite ? 'neon-border-amber' : 'border border-transparent group-hover/write:border-[var(--accent)]/40'}`}></div>
                <div className="h-full flex flex-col items-center justify-center relative z-10">
-                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingWrite ? 'text-[var(--accent)] animate-industrial-pulse drop-shadow-[0_0_8px_var(--accent)]' : 'text-gray-700 group-hover/write:text-[var(--accent)] group-hover/write:drop-shadow-[0_0_12px_var(--accent)]'}`}>
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingWrite ? 'text-[var(--accent)] animate-industrial-pulse' : 'text-gray-700 group-hover/write:text-[var(--accent)]'}`}>
                     <span className="text-xl">W</span>rite
                   </span>
                </div>
@@ -294,11 +300,11 @@ const AuthorBuilder: React.FC = () => {
                </div>
             </div>
 
-            {/* Revise - RED */}
+            {/* Revise */}
             <div className={`flex-1 group/revise relative cursor-pointer transition-all border-r border-white/5 ${isProcessingRevise ? 'bg-red-900/10' : 'hover:bg-white/[0.02]'}`}>
                <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingRevise ? 'neon-border-red' : 'border border-transparent group-hover/revise:border-red-600/40'}`}></div>
                <div className="h-full flex flex-col items-center justify-center relative z-10">
-                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingRevise ? 'text-red-500 animate-industrial-pulse drop-shadow-[0_0_8px_#dc2626]' : 'text-gray-700 group-hover/revise:text-red-500 group-hover/revise:drop-shadow-[0_0_12px_#dc2626]'}`}>
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingRevise ? 'text-red-500 animate-industrial-pulse' : 'text-gray-700 group-hover/revise:text-red-500'}`}>
                     <span className="text-xl">R</span>evise
                   </span>
                </div>
@@ -310,19 +316,17 @@ const AuthorBuilder: React.FC = () => {
                </div>
             </div>
 
-            {/* Articulate - BLUE */}
+            {/* Articulate */}
             <div className={`flex-1 group/articulate relative cursor-pointer transition-all border-r border-white/5 ${isProcessingArticulate ? 'bg-blue-900/10' : 'hover:bg-white/[0.02]'}`}>
                <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingArticulate ? 'neon-border-blue' : 'border border-transparent group-hover/articulate:border-blue-500/40'}`}></div>
                <div className="h-full flex flex-col items-center justify-center relative z-10">
-                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingArticulate ? 'text-blue-500 animate-industrial-pulse drop-shadow-[0_0_8px_#3b82f6]' : 'text-gray-700 group-hover/articulate:text-blue-500 group-hover/articulate:drop-shadow-[0_0_12px_#3b82f6]'}`}>
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingArticulate ? 'text-blue-500 animate-industrial-pulse' : 'text-gray-700 group-hover/articulate:text-blue-500'}`}>
                     <span className="text-xl">A</span>rticulate
                   </span>
                </div>
                <div className="absolute top-full left-0 w-80 bg-black border border-blue-500 shadow-[0_25px_60px_rgba(0,0,0,1)] z-[100] opacity-0 invisible group-hover/articulate:opacity-100 group-hover/articulate:visible translate-y-2 group-hover/articulate:translate-y-0 transition-all duration-200 rounded-sm overflow-hidden">
                   <div className="p-6 space-y-6 bg-black/90">
                      <button className="w-full text-center py-3 bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all rounded-sm">My Own Clone</button>
-                     
-                     {/* Gender Matrix */}
                      <div className="space-y-3">
                         <p className="text-[7px] text-gray-600 uppercase font-black tracking-widest">Gender Matrix</p>
                         <div className="flex gap-2">
@@ -331,8 +335,6 @@ const AuthorBuilder: React.FC = () => {
                            ))}
                         </div>
                      </div>
-
-                     {/* Tone Matrix */}
                      <div className="space-y-3">
                         <p className="text-[7px] text-gray-600 uppercase font-black tracking-widest">Calibration Tone</p>
                         <div className="flex gap-2">
@@ -341,8 +343,6 @@ const AuthorBuilder: React.FC = () => {
                            ))}
                         </div>
                      </div>
-
-                     {/* Regional Accents */}
                      <div className="space-y-3">
                         <p className="text-[7px] text-gray-600 uppercase font-black tracking-widest">Regional Accent</p>
                         <div className="flex gap-2">
@@ -351,8 +351,6 @@ const AuthorBuilder: React.FC = () => {
                            ))}
                         </div>
                      </div>
-
-                     {/* Temporal Speed */}
                      <div className="space-y-3 border-b border-white/5 pb-6">
                         <p className="text-[7px] text-gray-600 uppercase font-black tracking-widest">Temporal Scale</p>
                         <div className="flex gap-2">
@@ -361,22 +359,16 @@ const AuthorBuilder: React.FC = () => {
                            ))}
                         </div>
                      </div>
-
-                     <button 
-                       onClick={handleArticulate}
-                       className="w-full py-4 bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-blue-600 transition-all rounded-sm shadow-xl"
-                     >
-                       Apply Transformation
-                     </button>
+                     <button onClick={handleArticulate} className="w-full py-4 bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-blue-600 transition-all rounded-sm shadow-xl">Apply Transformation</button>
                   </div>
                </div>
             </div>
 
-            {/* Polish - GREEN */}
+            {/* Polish */}
             <div className={`flex-1 group/polish relative cursor-pointer transition-all ${isProcessingPolish ? 'bg-green-900/10' : 'hover:bg-white/[0.02]'}`}>
                <div className={`absolute inset-0 transition-all duration-300 pointer-events-none ${isProcessingPolish ? 'neon-border-green' : 'border border-transparent group-hover/polish:border-green-500/40'}`}></div>
                <div className="h-full flex flex-col items-center justify-center relative z-10">
-                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingPolish ? 'text-green-500 animate-industrial-pulse drop-shadow-[0_0_8px_#22c55e]' : 'text-gray-700 group-hover/polish:text-green-500 group-hover/polish:drop-shadow-[0_0_12px_#22c55e]'}`}>
+                  <span className={`text-[13px] font-black tracking-[0.4em] uppercase transition-all duration-300 ${isProcessingPolish ? 'text-green-500 animate-industrial-pulse' : 'text-gray-700 group-hover/polish:text-green-500'}`}>
                     <span className="text-xl">P</span>olish
                   </span>
                </div>
@@ -384,7 +376,6 @@ const AuthorBuilder: React.FC = () => {
                   <button onClick={() => handleSoap('polish_story', 'polish')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-green-500 hover:bg-white/5 border-b border-white/5 transition-colors">Polish story</button>
                   <button onClick={() => handleSoap('polish_poetry', 'polish')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-green-500 hover:bg-white/5 border-b border-white/5 transition-colors">Polish poetry</button>
                   <button onClick={() => handleSoap('sanitise', 'polish')} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 border-b border-white/5 transition-colors">Sanitise</button>
-                  <button onClick={() => alert("Registry Synchronized.")} className="w-full text-left px-6 py-4 text-[9px] font-black uppercase tracking-widest text-green-500 hover:bg-green-500/10 transition-colors">Save Sheet</button>
                </div>
             </div>
         </div>
