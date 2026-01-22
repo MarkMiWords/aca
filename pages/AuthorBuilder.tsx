@@ -8,13 +8,17 @@ import { LiveServerMessage } from '@google/genai';
 
 declare const mammoth: any;
 
-// Define AIStudio interface globally to satisfy TypeScript and match existing declarations
+// Strictly align with required window.aistudio interface
+// Define the interface that window.aistudio uses
+interface AIStudio {
+  hasSelectedApiKey: () => Promise<boolean>;
+  openSelectKey: () => Promise<void>;
+}
+
 declare global {
   interface Window {
-    aistudio: {
-      hasSelectedApiKey: () => Promise<boolean>;
-      openSelectKey: () => Promise<void>;
-    };
+    // Use the AIStudio type and ensure modifiers match (readonly is common for this property)
+    readonly aistudio: AIStudio;
   }
 }
 
@@ -122,8 +126,12 @@ const AuthorBuilder: React.FC = () => {
   useEffect(() => {
     const checkKey = async () => {
       if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setEngineLinked(hasKey);
+        try {
+          const hasKey = await window.aistudio.hasSelectedApiKey();
+          setEngineLinked(hasKey);
+        } catch (e) {
+          setEngineLinked(false);
+        }
       }
     };
     checkKey();
@@ -165,8 +173,13 @@ const AuthorBuilder: React.FC = () => {
 
   const handleSyncEngine = async () => {
     if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      setEngineLinked(true);
+      try {
+        await window.aistudio.openSelectKey();
+        // Assume success to mitigate race condition
+        setEngineLinked(true);
+      } catch (e) {
+        console.error("Key selection failed", e);
+      }
     }
   };
 
@@ -214,6 +227,14 @@ const AuthorBuilder: React.FC = () => {
     } finally { setIsProcessingWrite(false); }
   };
 
+  const handleError = (err: any) => {
+    if (err.message === "SOVEREIGN_LINK_COLD" || err.message?.includes("entity was not found")) {
+      setEngineLinked(false);
+      return `Critical Link Failure. Establish the Sovereign Engine Link in the sidebar.`;
+    }
+    return err.message || "Engine Error";
+  };
+
   const handlePartnerChat = async (e?: React.FormEvent, customMsg?: string) => {
     if (e) e.preventDefault();
     const finalMsg = (customMsg || partnerInput).trim();
@@ -225,8 +246,8 @@ const AuthorBuilder: React.FC = () => {
       const response = await queryPartner(finalMsg, style, region, messages, activeChapter.content);
       setMessages(prev => [...prev, response]);
     } catch (err: any) { 
-      console.error("Partner Chat Failure:", err);
-      setMessages(prev => [...prev, { role: 'assistant', content: `Partner Link Failure. Diagnostic: ${err.message || 'Catastrophic Engine Delay'}` }]); 
+      const msg = handleError(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }]); 
     } 
     finally { 
       setIsPartnerLoading(false); 
@@ -242,8 +263,8 @@ const AuthorBuilder: React.FC = () => {
       const result = await smartSoap(activeChapter.content, level, style, region);
       setChapters(prev => prev.map(c => c.id === activeChapterId ? { ...c, content: result.text } : c));
     } catch (err: any) {
-      console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: `Forge Failure during ${level.toUpperCase()}. Diagnostic: ${err.message}` }]);
+      const msg = handleError(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
     } finally { 
        setIsProcessingRevise(false); 
        setIsProcessingPolish(false); 
@@ -291,8 +312,8 @@ const AuthorBuilder: React.FC = () => {
       const audioBase64 = await generateSpeech(result.text.substring(0, 600), voice);
       await playSpeech(audioBase64);
     } catch (err: any) {
-      console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: `Acoustic Transformation Failure. Diagnostic: ${err.message}` }]);
+      const msg = handleError(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
     } finally {
       setIsProcessingArticulate(false);
     }
@@ -378,10 +399,10 @@ const AuthorBuilder: React.FC = () => {
         }, "Transcribe precisely. Maintain carceral grit.");
       
       sessionRef.current = await sessionPromise;
-    } catch (err) { 
-      console.error(err);
+    } catch (err: any) { 
+      handleError(err);
       setIsDictating(false); 
-      alert("Microphone Access Denied.");
+      alert("Microphone Access or Engine link Denied.");
     }
   };
 

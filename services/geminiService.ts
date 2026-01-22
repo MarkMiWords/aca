@@ -4,12 +4,14 @@ import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 /**
  * SOVEREIGN AI BRIDGE v8.9 - MIRROR PROTOCOL
+ * Optimized for Industrial Frame Injection
  */
 
 const getAI = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("SOVEREIGN_LINK_COLD: Use 'Sync Engine' in the workspace sidebar to establish the industrial link.");
+    // This specific error string is caught by the UI to trigger the Sync Dialog
+    throw new Error("SOVEREIGN_LINK_COLD");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -25,17 +27,13 @@ export const checkSystemHeartbeat = async (): Promise<{ status: 'online' | 'offl
     if (response.text) return { status: 'online', message: "Sovereign Link Established." };
     return { status: 'error', message: "Empty response from engine." };
   } catch (err: any) {
-    console.error("Heartbeat Failure:", err);
-    if (err.message.includes("SOVEREIGN_LINK_COLD")) {
+    if (err.message === "SOVEREIGN_LINK_COLD") {
        return { status: 'offline', message: "Handshake Required." };
     }
     return { status: 'error', message: err.message || "Engine link severed." };
   }
 };
 
-/**
- * GENERATE SPEECH (TTS)
- */
 export const generateSpeech = async (text: string, voiceName: string = 'Kore'): Promise<string> => {
   const ai = getAI();
   try {
@@ -55,9 +53,9 @@ export const generateSpeech = async (text: string, voiceName: string = 'Kore'): 
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (!base64Audio) throw new Error("Acoustic synthesis returned no data.");
     return base64Audio;
-  } catch (err) {
+  } catch (err: any) {
     console.error("TTS Failure:", err);
-    throw new Error("Vocal Forge Interrupted.");
+    throw err;
   }
 };
 
@@ -65,7 +63,7 @@ export const articulateText = async (text: string, settings: { gender: string, t
   const ai = getAI();
   const { gender, tone, accent, speed, isClone } = settings;
   
-  const cloneProtocol = isClone ? "PROTOCOL: AUTHOR CLONE. Emulate the calibrated signature: high grit, personalized cadence, and raw emotional resonance from the 30-second calibration data." : "";
+  const cloneProtocol = isClone ? "PROTOCOL: AUTHOR CLONE. Emulate the calibrated signature: high grit, personalized cadence, and raw emotional resonance." : "";
   const instruction = `${cloneProtocol}
     Transform the provided carceral narrative for oral storytelling. 
     PROFILE: ${gender}, TONE: ${tone}, ACCENT: ${accent}, SPEED: ${speed}. 
