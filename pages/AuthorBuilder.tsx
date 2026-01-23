@@ -79,13 +79,13 @@ const AuthorBuilder: React.FC = () => {
   const [sound, setSound] = useState('Normal'); 
   const [accent, setAccent] = useState('AU');
   const [speed, setSpeed] = useState('1x'); 
-  const [isCloneActive, setIsCloneActive] = useState(false);
   
   // Vault-Integrated Calibration
   const [isCloneCalibrated, setIsCloneCalibrated] = useState(() => {
-    const vault = readJson<VaultStorage>('sovereign_vault', { sheets: [], books: [], ai: [], audits: [] });
-    return !!(vault as any).voiceSignature;
+    const vault = readJson<any>('sovereign_vault', { sheets: [], books: [], ai: [], audits: [] });
+    return !!vault.voiceSignature;
   });
+  const [isCloneActive, setIsCloneActive] = useState(isCloneCalibrated);
 
   const [showCalibrationModal, setShowCalibrationModal] = useState(false);
   const [calibrationProgress, setCalibrationProgress] = useState(0);
@@ -272,7 +272,7 @@ const AuthorBuilder: React.FC = () => {
 
     let textToSpeak = activeChapter.content;
 
-    // Sequential Trigger: Rinse if not already done
+    // Sequential Strobe Logic: Rinse first if not done
     if (!hasBeenRinsed) {
         textToSpeak = await handleSoap('rinse', 'revise');
     }
@@ -298,7 +298,7 @@ const AuthorBuilder: React.FC = () => {
     setCalibrationProgress(1);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const totalDuration = 10000; 
+      const totalDuration = 6000; 
       const intervalTime = 100;
       const step = (intervalTime / totalDuration) * 100;
       const interval = setInterval(() => {
