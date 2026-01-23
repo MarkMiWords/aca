@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Storefront from './pages/Storefront';
 import BookDetails from './pages/BookDetails';
@@ -40,13 +40,18 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
 
-  // Global Theme Initialization
   useEffect(() => {
-    const profile = readJson<any>('aca_author_profile', { theme: 'amber' });
-    if (profile.theme && profile.theme !== 'amber') {
-      document.body.className = `theme-${profile.theme}`;
-    } else {
-      document.body.className = '';
+    try {
+      const profile = readJson<any>('aca_author_profile', { theme: 'amber' });
+      if (profile && profile.theme && profile.theme !== 'amber') {
+        document.body.className = `theme-${profile.theme}`;
+        document.documentElement.className = `theme-${profile.theme}`;
+      } else {
+        document.body.className = '';
+        document.documentElement.className = '';
+      }
+    } catch (e) {
+      console.warn("Theme initialization failed", e);
     }
   }, []);
 
@@ -79,6 +84,7 @@ const App: React.FC = () => {
             <Route path="/live-protocol" element={<LiveRules />} />
             <Route path="/live-link" element={<LiveSession />} />
             <Route path="/blueprints" element={<Blueprints />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
         <Footer />

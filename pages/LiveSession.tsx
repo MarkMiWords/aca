@@ -4,15 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { connectLive } from '../services/geminiService';
 import { writeJson, readJson } from '../utils/safeStorage';
 import { Chapter } from '../types';
-// Import LiveServerMessage from the SDK
 import { LiveServerMessage } from '@google/genai';
 
-// PCM Encoding Utility
 function encode(bytes: Uint8Array) {
   let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
 
@@ -28,6 +24,7 @@ const LiveSession: React.FC = () => {
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const transcriptionBufferRef = useRef('');
 
   useEffect(() => {
     setWordCount(transcription.split(/\s+/).filter(Boolean).length);
@@ -73,7 +70,6 @@ const LiveSession: React.FC = () => {
       audioContextRef.current = inputCtx;
       outputAudioContextRef.current = outputCtx;
 
-      // CRITICAL: Resume context for browser compliance
       if (inputCtx.state === 'suspended') await inputCtx.resume();
       if (outputCtx.state === 'suspended') await outputCtx.resume();
 
@@ -95,33 +91,52 @@ const LiveSession: React.FC = () => {
             scriptProcessor.onaudioprocess = (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               const pcmBlob = createBlob(inputData);
-              sessionPromise.then(s => s.sendRealtimeInput({ media: pcmBlob }));
+              sessionPromise.then(s => {
+                try { s.sendRealtimeInput({ media: pcmBlob }); } catch(err) { 
+                  console.error("Realtime input failure:", err);
+                  // Stability: Close and notify if network snaps
+                  if (String(err).includes('Network')) stopSession();
+                }
+              });
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputCtx.destination);
           },
-          // Fixed: LiveServerMessage type is now imported from @google/genai
           onmessage: async (msg: LiveServerMessage) => {
-            const base64Audio = msg.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-            if (base64Audio) {
-              const start = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
-              const buffer = await decodeAudioData(decode(base64Audio), outputCtx, 24000, 1);
-              const source = outputCtx.createBufferSource();
-              source.buffer = buffer;
-              source.connect(outputCtx.destination);
-              source.addEventListener('ended', () => sourcesRef.current.delete(source));
-              source.start(start);
-              nextStartTimeRef.current = start + buffer.duration;
-              sourcesRef.current.add(source);
+            // Process chunks immediately
+            if (msg.serverContent?.modelTurn?.parts) {
+               for (const part of msg.serverContent.modelTurn.parts) {
+                 if (part.inlineData?.data) {
+                    const start = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
+                    const buffer = await decodeAudioData(decode(part.inlineData.data), outputCtx, 24000, 1);
+                    const source = outputCtx.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(outputCtx.destination);
+                    source.addEventListener('ended', () => sourcesRef.current.delete(source));
+                    source.start(start);
+                    nextStartTimeRef.current = start + buffer.duration;
+                    sourcesRef.current.add(source);
+                 }
+               }
             }
 
+            // High-speed transcription capture
             if (msg.serverContent?.inputTranscription) {
-              setTranscription(prev => prev + ' ' + msg.serverContent!.inputTranscription!.text);
+              const newText = msg.serverContent.inputTranscription.text;
+              transcriptionBufferRef.current += ' ' + newText;
+              setTranscription(transcriptionBufferRef.current.trim());
+            }
+
+            if (msg.serverContent?.interrupted) {
+              sourcesRef.current.forEach(s => { try { s.stop(); } catch(e) {} });
+              sourcesRef.current.clear();
+              nextStartTimeRef.current = 0;
             }
           },
-          onclose: () => {
+          onclose: (e: any) => {
             setIsActive(false);
             setStatus('Link Severed');
+            console.warn("Session Closed:", e);
           },
           onerror: (e: any) => {
             console.error('Live Link Error:', e);
@@ -139,20 +154,16 @@ const LiveSession: React.FC = () => {
   };
 
   const stopSession = () => {
-    if (sessionRef.current) {
-      try { sessionRef.current.close(); } catch (e) {}
-    }
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch (e) {}
-    }
-    if (outputAudioContextRef.current) {
-      try { outputAudioContextRef.current.close(); } catch (e) {}
-    }
+    if (sessionRef.current) try { sessionRef.current.close(); } catch (e) {}
+    if (audioContextRef.current) try { audioContextRef.current.close(); } catch (e) {}
+    if (outputAudioContextRef.current) try { outputAudioContextRef.current.close(); } catch (e) {}
     setIsActive(false);
     setStatus('Standby');
     sessionRef.current = null;
     audioContextRef.current = null;
     outputAudioContextRef.current = null;
+    sourcesRef.current.clear();
+    nextStartTimeRef.current = 0;
   };
 
   const handleExport = () => {

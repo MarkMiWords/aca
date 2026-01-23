@@ -2,42 +2,19 @@
 import { Message, ManuscriptReport, MasteringGoal } from "../types";
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-/**
- * SOVEREIGN ENGINE CORE (v5.5.2)
- * Optimized for Tablet/Mobile Frequency Response.
- * Strictly adheres to the 'Grit Sovereignty' and 'Personality Matrix' protocols.
- */
-
-// Root Mission Directive: The "Spine" of the engine's personality.
 const SOVEREIGN_MISSION = (style: string, region: string, personality: string = 'Natural') => `
   MISSION: Sovereignty of the carceral and impacted voice.
-  ROLE: You are the Sovereign Forge Engine (v5.5).
-  
-  CONTEXT: 
-  - Author Region: ${region.toUpperCase()}
-  - Story Style: ${style.toUpperCase()}
-  - ENGINE TEMPERAMENT: ${personality.toUpperCase()}
-  
-  TEMPERAMENT LOGIC:
-  - TIMID: Be extremely cautious. Only suggest obvious fixes.
-  - COOL: Be clinical, detached, and focus on legal precision.
-  - MILD: Gentle encouragement and light advice.
-  - NATURAL: Balanced writing partner.
-  - WILD: Experimental and push boundaries.
-  - FIREBRAND: Provocative, intense, and challenge harsh truths.
-
-  CORE PROTOCOLS:
-  1. DIALECT INTEGRITY: Strictly preserve regional grit from ${region}.
-  2. EMOTIONAL TRUTH: Never sanitize unless 'Timid'.
-  3. LEGAL SAFETY: Flag real names/PII.
-  4. LITERARY SOVEREIGNTY: Author is the final authority.
+  CONTEXT: Author Region: ${region.toUpperCase()}, Style: ${style.toUpperCase()}.
+  TEMPERAMENT: ${personality.toUpperCase()}. 
+  RULES: 
+  - If Timid: Be gentle, prioritize safety, make minimal changes.
+  - If Firebrand: Be aggressive, challenge the prose, push for high emotional intensity.
+  - If Natural: Be a balanced partner, mirror the author's cadence.
 `;
 
-// Helper to initialize the AI instance. 
-// Instructions: obtain API_KEY exclusively from process.env.API_KEY.
 const getAI = () => {
   const key = process.env.API_KEY;
-  if (!key) throw new Error("Sovereign Link Failure: API Key Missing from Environment.");
+  if (!key) throw new Error("Sovereign Link Failure: API Key Missing.");
   return new GoogleGenAI({ apiKey: key });
 };
 
@@ -46,51 +23,30 @@ export const checkSystemHeartbeat = async (): Promise<{ status: 'online' | 'offl
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ role: 'user', parts: [{ text: 'system_ping' }] }],
-      config: { 
-        maxOutputTokens: 20, 
-        thinkingConfig: { thinkingBudget: 0 } 
-      }
+      contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
     });
-    return response.text ? { status: 'online', message: "Acoustic & Logic Link Active." } : { status: 'error', message: "Engine silent. Response empty." };
+    return response.text
+      ? { status: 'online', message: "Link active." }
+      : { status: 'error', message: "Empty response." };
   } catch (err: any) {
-    console.error("HEARTBEAT_FAILURE:", err);
-    return { status: 'offline', message: `Sovereign Link Cold: ${err.message}` };
-  }
-};
-
-export const generateSpeech = async (text: string, voiceName: string = 'Kore'): Promise<string> => {
-  const ai = getAI();
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Read with grounded authenticity: ${text.substring(0, 800)}` }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName },
-          },
-        },
-      },
-    });
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("Acoustic synthesis failed.");
-    return base64Audio;
-  } catch (err: any) {
-    console.error("TTS Failure:", err);
-    throw err;
+    return { status: 'offline', message: err.message || "Unknown link error." };
   }
 };
 
 export const articulateText = async (text: string, settings: any, style: string, region: string, personality: string) => {
   const ai = getAI();
-  const { gender, tone, accent, speed } = settings;
+  const { gender, sound, accent, speed, isClone } = settings;
   const instruction = `
     ${SOVEREIGN_MISSION(style, region, personality)}
-    MODE: ARTICULATE (Acoustic Matrix)
-    TARGET: [GENDER: ${gender}, TONE: ${tone}, ACCENT: ${accent}, SPEED: ${speed}]
-    TASK: Rewrite for oral delivery while maintaining ${personality} temperament.
+    MODE: ARTICULATE
+    ACOUSTIC MATRIX: 
+    - GENDER: ${gender}
+    - SOUND_LEVEL (RESONANCE): ${sound} 
+    - REGIONAL_ACCENT: ${accent}
+    - TEMPORAL_SPEED: ${speed} 
+    - CLONE_MODE: ${isClone ? 'ACTIVE' : 'OFF'}
+    
+    GOAL: Refine sentence length, mouth-feel, and oral rhythm for the selected Sound (${sound}) and Speed (${speed}) while keeping carceral dialect grit 100% intact.
   `;
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -102,27 +58,45 @@ export const articulateText = async (text: string, settings: any, style: string,
 
 export const smartSoap = async (text: string, level: string, style: string, region: string, personality: string) => {
   const ai = getAI();
-  let modeSpecific = "";
+  let modeSpecific = `General Mastering for ${style}.`;
   let useSearch = false;
 
   switch (level) {
-    case 'rinse': modeSpecific = "LEVEL L1: RINSE. Fix typos ONLY."; break;
-    case 'wash': modeSpecific = "LEVEL L2: WASH. Smooth flow."; break;
-    case 'scrub': modeSpecific = `LEVEL L3: SCRUB. Structural forging for ${style}. Maintain ${region} grit.`; break;
-    case 'polish_story':
-    case 'polish_poetry': modeSpecific = "LEVEL L4: POLISH. Mastering."; break;
-    case 'fact_check': modeSpecific = "MODE: FACT CHECK."; useSearch = true; break;
-    case 'sanitise': modeSpecific = "MODE: SANITISE. Redaction."; break;
-    case 'dogg_me': modeSpecific = "LEVEL L5: DOGG ME. Alchemy."; break;
-    case 'polish_turd': modeSpecific = "LEVEL L5: POLISH A TURD. Deep Reconstruction."; break;
-    default: modeSpecific = `General Mastering for ${style}.`;
+    case 'rinse': 
+      modeSpecific = "LEVEL L1: RINSE. Fix typos and punctuation ONLY. Do not change a single word of slang or syntax."; 
+      break;
+    case 'wash': 
+      modeSpecific = "LEVEL L2: WASH. Smooth awkward transitions and ensure tense consistency. Preserve 100% of dialect."; 
+      break;
+    case 'scrub': 
+      modeSpecific = "LEVEL L3: SCRUB. Structural forging. Tighten prose, remove redundant fillers, and move paragraphs for impact."; 
+      break;
+    case 'fact_check': 
+      modeSpecific = "MODE: FACT CHECK. Audit for legal safety, verify place names, and check systemic context."; 
+      useSearch = true; 
+      break;
+    case 'dogg_me': 
+      modeSpecific = "MODE: DOGG ME. Alchemical transformation from prose to verse. Use carceral yard cadence."; 
+      break;
+    case 'polish_story': 
+      modeSpecific = "MODE: POLISH STORY. Enhance narrative arcs and character beats for a professional reader."; 
+      break;
+    case 'polish_poetry': 
+      modeSpecific = "MODE: POLISH POETRY. Enhance meter, imagery, and sensory resonance of the verse."; 
+      break;
+    case 'sanitise': 
+      modeSpecific = "MODE: SANITISE. Strictly redact PII (Real names, ID numbers, facilities). Use realistic pseudonyms."; 
+      break;
+    case 'polish_turd': 
+      modeSpecific = "MODE: POLISH A TURD. Deep tissue reconstruction. Rebuild the logic from the soul out while keeping the truth."; 
+      break;
   }
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text }] }],
     config: {
-      systemInstruction: `${SOVEREIGN_MISSION(style, region, personality)}\n${modeSpecific}\nOUTPUT: Return ONLY text.`,
+      systemInstruction: `${SOVEREIGN_MISSION(style, region, personality)}\n${modeSpecific}`,
       tools: useSearch ? [{ googleSearch: {} }] : []
     }
   });
@@ -135,50 +109,21 @@ export const queryPartner = async (message: string, style: string, region: strin
     role: h.role === 'user' ? 'user' : 'model',
     parts: [{ text: String(h.content || "") }]
   }));
-  contents.push({ role: 'user', parts: [{ text: `[DRAFT]\n${activeSheetContent.substring(0, 4000)}\n\nQUERY: ${message}` }] });
-
+  contents.push({ role: 'user', parts: [{ text: `[DRAFT CONTENT]\n${activeSheetContent.substring(0, 4000)}\n\n[USER QUERY]\n${message}` }] });
+  
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents,
     config: {
-      systemInstruction: `You are WRAPPER. ${SOVEREIGN_MISSION(style, region, personality)} Respond according to temperament.`,
+      systemInstruction: `You are WRAPPER. ${SOVEREIGN_MISSION(style, region, personality)} Respond as a collaborative, insightful partner.`,
       tools: [{ googleSearch: {} }]
     }
   });
-
   const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
   const sources = groundingChunks.map((chunk: any) => ({
     web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
   })).filter((s: any) => s.web.uri);
-
-  return { role: 'assistant', content: response.text || "Standing by.", sources };
-};
-
-export const queryInsight = async (message: string): Promise<Message> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: [{ role: "user", parts: [{ text: message }] }],
-    config: {
-      systemInstruction: "You are an Archive Specialist. Use Google Search for systemic context.",
-      tools: [{ googleSearch: {} }],
-    },
-  });
-  const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-  const sources = groundingChunks.map((chunk: any) => ({
-    web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
-  })).filter((s: any) => s.web.uri);
-  return { role: 'assistant', content: response.text || "No data.", sources };
-};
-
-export const interactWithAurora = async (message: string): Promise<string> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: [{ role: "user", parts: [{ text: message }] }],
-    config: { systemInstruction: "You are 'Aurora', an empathetic sanctuary companion." }
-  });
-  return response.text || "I'm listening.";
+  return { role: 'assistant', content: response.text || "Standing by at the Forge.", sources };
 };
 
 export const analyzeFullManuscript = async (content: string, goal: MasteringGoal): Promise<ManuscriptReport> => {
@@ -187,7 +132,7 @@ export const analyzeFullManuscript = async (content: string, goal: MasteringGoal
     model: 'gemini-3-pro-preview',
     contents: [{ role: "user", parts: [{ text: content.substring(0, 30000) }] }],
     config: {
-      systemInstruction: `Perform professional Mastering Audit for ${goal.toUpperCase()}. Return JSON report.`,
+      systemInstruction: `Perform a Sovereign Audit for ${goal.toUpperCase()} mastering. Return precise JSON.`,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -208,34 +153,110 @@ export const analyzeFullManuscript = async (content: string, goal: MasteringGoal
   return JSON.parse(response.text || "{}");
 };
 
+export const generateSpeech = async (text: string, voiceName: string = 'Puck') => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-preview-tts",
+    contents: [{ parts: [{ text }] }],
+    config: {
+      responseModalities: [Modality.AUDIO],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName },
+        },
+      },
+    },
+  });
+  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  if (!base64Audio) throw new Error("No acoustic data returned.");
+  return base64Audio;
+};
+
+export const queryInsight = async (message: string): Promise<Message> => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [{ role: 'user', parts: [{ text: message }] }],
+    config: {
+      systemInstruction: "You are an Archive Specialist for carceral narratives. Use Google Search for systemic context.",
+      tools: [{ googleSearch: {} }],
+    },
+  });
+
+  const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+  const sources = groundingChunks.map((chunk: any) => ({
+    web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
+  })).filter((s: any) => s.web.uri);
+
+  return { role: 'assistant', content: response.text || "Archive link interrupted.", sources };
+};
+
+export const interactWithAurora = async (message: string): Promise<string> => {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [{ role: 'user', parts: [{ text: message }] }],
+    config: {
+      systemInstruction: "You are 'Aurora', a Kindred Agent. Empathetic, calm, creative sanctuary partner for the isolated.",
+    }
+  });
+  return response.text || "I am here, listening.";
+};
+
+export const generateImage = async (description: string): Promise<{ imageUrl: string }> => {
+  const ai = getAI();
+  const industrialPrompt = `A high-quality, cinematic book cover for a prison narrative. Style: Minimalist, dramatic lighting, gritty texture, industrial aesthetic. Themes: ${description}. Aspect Ratio 16:9. Colors: Black, white, and high-contrast orange.`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image',
+    contents: {
+      parts: [{ text: industrialPrompt }],
+    },
+    config: {
+      imageConfig: {
+        aspectRatio: "16:9"
+      }
+    }
+  });
+
+  let base64Image = "";
+  if (response.candidates?.[0]?.content?.parts) {
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        base64Image = part.inlineData.data;
+        break;
+      }
+    }
+  }
+
+  if (!base64Image) throw new Error("Visual synthesis failed.");
+  return { imageUrl: `data:image/png;base64,${base64Image}` };
+};
+
 export const connectLive = (callbacks: any, systemInstruction: string) => {
   const ai = getAI();
   return ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-preview-12-2025',
-    callbacks,
+    callbacks: {
+      onopen: callbacks.onopen,
+      onmessage: callbacks.onmessage,
+      onerror: (e) => {
+        console.error("Live session error:", e);
+        if (callbacks.onerror) callbacks.onerror(e);
+      },
+      onclose: (e) => {
+        console.warn("Live session closed:", e);
+        if (callbacks.onclose) callbacks.onclose(e);
+      },
+    },
     config: {
       responseModalities: [Modality.AUDIO],
-      systemInstruction: systemInstruction,
-      speechConfig: { 
-        voiceConfig: { 
-          prebuiltVoiceConfig: { voiceName: 'Zephyr' } 
-        } 
+      systemInstruction,
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
       }
-    }
+    },
   });
-};
-
-export const generateImage = async (prompt: string): Promise<{ imageUrl: string }> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: { parts: [{ text: `Industrial book cover: ${prompt}. Gritty, high-contrast, black and neon orange aesthetic.` }] },
-    config: { imageConfig: { aspectRatio: "16:9" } }
-  });
-  let base64Image = "";
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) { base64Image = part.inlineData.data; break; }
-  }
-  if (!base64Image) throw new Error("Image failed.");
-  return { imageUrl: `data:image/png;base64,${base64Image}` };
 };
