@@ -9,7 +9,7 @@ interface LogoProps {
 /**
  * A Captive Audience Logo
  * Standard ViewBox: 0 0 512 512
- * Updated to use CSS Variables for theme consistency.
+ * Optimized for maximum sharpness and geometric precision.
  */
 const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
   const primaryColor = variant === 'light' ? '#ffffff' : '#000000';
@@ -22,6 +22,7 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
         className="w-full h-full overflow-visible" 
         xmlns="http://www.w3.org/2000/svg"
         xmlSpace="preserve"
+        shapeRendering="geometricPrecision"
       >
         <defs>
           <clipPath id="aca-icon-clip">
@@ -29,12 +30,13 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
           </clipPath>
           
           <linearGradient id="living-amber-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="var(--accent)" className="logo-animate-1" />
-            <stop offset="100%" stopColor="var(--accent-dark)" className="logo-animate-2" />
+            <stop offset="0%" stopColor="var(--accent)" />
+            <stop offset="100%" stopColor="var(--accent-dark)" />
           </linearGradient>
 
-          <filter id="aca-logo-glow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="10" result="blur" />
+          {/* Reduced deviation to 1 for extreme edge sharpness */}
+          <filter id="aca-logo-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
         </defs>
