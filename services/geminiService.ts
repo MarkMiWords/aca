@@ -45,13 +45,13 @@ export const articulateText = async (text: string, settings: any, style: string,
     MODE: ARTICULATE (Oral Storytelling Optimization)
     
     ACOUSTIC MATRIX DIRECTIVES:
-    1. REGIONAL ACCENT [${accent}]: Integrate carceral dialect specific to this region (e.g., AU uses 'The Yard', 'Wallies'; US uses 'The Feds', 'The County').
-    2. TEMPORAL PACE [${speed}]: If speed > 1x, shorten sentence length for rapid delivery.
-    3. SOUND LEVEL [${sound}]: If 'Loud', favor hard plosive consonants. If 'Soft', favor reflective tones.
-    4. GENDER [${gender}]: Weight vocabulary to suit this identity.
+    1. REGIONAL ACCENT [${accent}]: Integrate carceral dialect specific to this region.
+    2. TEMPORAL PACE [${speed}]: Adjust rhythm for delivery.
+    3. SOUND LEVEL [${sound}]: Favors tone intensity.
+    4. GENDER [${gender}]: Identity-weighted vocabulary.
     5. CLONE_MODE: ${isClone ? 'ACTIVE' : 'OFF'}
 
-    GOAL: Refine oral rhythm for performance while keeping carceral grit 100% intact.
+    GOAL: Refine oral rhythm for performance while keeping grit 100% intact.
   `;
   
   const response = await ai.models.generateContent({
@@ -68,34 +68,15 @@ export const smartSoap = async (text: string, level: string, style: string, regi
   let useSearch = false;
 
   switch (level) {
-    case 'rinse': 
-      modeSpecific = "MODE: RINSE AND WIPE. Fix typos and punctuation ONLY. Preserve 100% of carceral slang and grit."; 
-      break;
-    case 'wash': 
-      modeSpecific = "LEVEL L2: WASH. Smooth transitions, preserve 100% of regional dialect."; 
-      break;
-    case 'scrub': 
-      modeSpecific = "LEVEL L3: SCRUB. Structural forging. Tighten prose for impact."; 
-      break;
-    case 'fact_check': 
-      modeSpecific = "MODE: FACT CHECK. Audit for legal safety and verify systemic context."; 
-      useSearch = true; 
-      break;
-    case 'dogg_me': 
-      modeSpecific = "MODE: DOGG ME. Alchemical transformation to irregular verse. Yard cadence."; 
-      break;
-    case 'polish_story': 
-      modeSpecific = "MODE: POLISH STORY. Enhance narrative beats for storytelling."; 
-      break;
-    case 'polish_poetry': 
-      modeSpecific = "MODE: POLISH POETRY. Enhance meter and resonance."; 
-      break;
-    case 'sanitise': 
-      modeSpecific = "MODE: SANITISE. Strictly redact PII (Names, ID numbers). Suggest pseudonyms."; 
-      break;
-    case 'polish_turd': 
-      modeSpecific = "MODE: POLISH A TURD. Deep tissue reconstruction from the soul out."; 
-      break;
+    case 'rinse': modeSpecific = "MODE: RINSE. Fix typos ONLY. Preserve grit."; break;
+    case 'wash': modeSpecific = "LEVEL L2: WASH. Smooth transitions."; break;
+    case 'scrub': modeSpecific = "LEVEL L3: SCRUB. Structural tightening."; break;
+    case 'fact_check': modeSpecific = "MODE: FACT CHECK."; useSearch = true; break;
+    case 'dogg_me': modeSpecific = "MODE: DOGG ME. Alchemical poetry."; break;
+    case 'polish_story': modeSpecific = "MODE: POLISH STORY."; break;
+    case 'polish_poetry': modeSpecific = "MODE: POLISH POETRY."; break;
+    case 'sanitise': modeSpecific = "MODE: SANITISE. Redact PII."; break;
+    case 'polish_turd': modeSpecific = "MODE: POLISH A TURD. Deep reconstruction."; break;
   }
 
   const response = await ai.models.generateContent({
@@ -186,7 +167,6 @@ export const connectLive = (callbacks: any, systemInstruction: string) => {
       onopen: callbacks.onopen,
       onmessage: callbacks.onmessage,
       onerror: (e) => {
-        console.error("Live link failed:", e);
         if (callbacks.onerror) callbacks.onerror(e);
       },
       onclose: (e) => {
@@ -194,8 +174,8 @@ export const connectLive = (callbacks: any, systemInstruction: string) => {
       },
     },
     config: {
-      responseModalities: [Modality.AUDIO],
-      systemInstruction,
+      responseModalities: [Modality.AUDIO], // Strictly using Modality enum
+      systemInstruction: systemInstruction.substring(0, 10000), // Safety cap
       inputAudioTranscription: {},
       outputAudioTranscription: {}, 
       speechConfig: {
@@ -239,11 +219,9 @@ export const interactWithAurora = async (message: string): Promise<string> => {
 
 export const generateImage = async (description: string, isScene: boolean = false): Promise<{ imageUrl: string }> => {
   const ai = getAI();
-  
-  // Adjusted prompt for scene visualization vs book covers
   const industrialPrompt = isScene 
-    ? `A high-quality cinematic scene. Cinematic noir photography. Extremely detailed. High contrast. Industrial carceral aesthetic. Focus on: ${description}. Lighting: Low-key, dramatic, shadows. Atmosphere: Heavy, emotional, raw. Color palette: Monochromatic with subtle orange or blue highlights.`
-    : `A high-quality, cinematic book cover for a prison narrative. Style: Minimalist, dramatic lighting, gritty texture, industrial aesthetic. Themes: ${description}. Aspect Ratio 16:9. Colors: Black, white, and high-contrast orange.`;
+    ? `Cinematic noir photography. Focus on: ${description}. Dramatic shadows. Industrial carceral aesthetic.`
+    : `Minimalist, dramatic book cover. Themes: ${description}. Colors: Black, white, orange.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',

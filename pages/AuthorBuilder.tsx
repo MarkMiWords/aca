@@ -67,7 +67,7 @@ const AuthorBuilder: React.FC = () => {
   const strobeTimeoutRef = useRef<number | null>(null);
   const triggeredCues = useRef<Set<string>>(new Set());
 
-  // SCRIBE ENGINE (Ref-based to prevent render loops)
+  // SCRIBE ENGINE
   const fullTranscriptRef = useRef<string>('');
   const typedTitleLenRef = useRef(0);
   const typedBodyLenRef = useRef(0);
@@ -112,16 +112,17 @@ const AuthorBuilder: React.FC = () => {
     }
   }, []);
 
-  // Sync turn transcript and monitor triggers
+  // RESILIENT CUE DETECTION
   useEffect(() => {
     if (!wrapTranscription) {
-        triggeredCues.current.clear();
+        if (!isOrientation) triggeredCues.current.clear();
         return;
     }
+    
     fullTranscriptRef.current = wrapTranscription;
     const text = wrapTranscription.toLowerCase();
     
-    // Lighting Trigger Logic - Sequential Cue Mapping
+    // Lighting Trigger Logic - Resilient check
     const cues = [
       { key: 'write block', trigger: 'amber' },
       { key: 'revise block', trigger: 'red' },
@@ -141,13 +142,15 @@ const AuthorBuilder: React.FC = () => {
       }
     });
 
-    // Completion / Handover Trigger
-    if (isOrientation && (text.includes("orientation complete") || text.includes("anvil is yours"))) {
-      setIsAnvilHandedOver(true);
+    // Final handover detection - must only fire once at the end of the tour
+    if (isOrientation && !isAnvilHandedOver) {
+      if (text.includes("orientation complete") || text.includes("anvil is yours")) {
+        setIsAnvilHandedOver(true);
+      }
     }
-  }, [wrapTranscription, isOrientation]);
+  }, [wrapTranscription, isOrientation, isAnvilHandedOver]);
 
-  // SCRIBE SCRIBE ENGINE: Typing Effect
+  // SCRIBE ENGINE: Human-cadence typing
   useEffect(() => {
     if (!isOrientation) return;
 
@@ -157,7 +160,7 @@ const AuthorBuilder: React.FC = () => {
 
         const greeting = "Author, the link is solid.";
         
-        // PHASE 1: Heading
+        // PHASE 1: Typographic Heading
         if (!isHeadingComplete) {
             if (typedTitleLenRef.current < greeting.length) {
                 const nextLen = typedTitleLenRef.current + 1;
@@ -172,7 +175,7 @@ const AuthorBuilder: React.FC = () => {
                 }
             }
         } 
-        // PHASE 2: Body
+        // PHASE 2: Typographic Body
         else {
             const lowText = fullText.toLowerCase();
             const gPos = lowText.indexOf(greeting.toLowerCase());
@@ -226,7 +229,7 @@ const AuthorBuilder: React.FC = () => {
   const handleNewSheet = (e?: React.MouseEvent) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     
-    // 1. Archive tour to vault if finishing orientation
+    // 1. Archive the tour transcript to the vault if we are finishing the intro
     if (isOrientation) {
       const vault = readJson<VaultStorage>('sovereign_vault', { sheets: [], books: [], ai: [], audits: [] });
       const tourSheet: VaultSheet = {
@@ -240,12 +243,12 @@ const AuthorBuilder: React.FC = () => {
       endOrientation();
     }
 
-    // 2. Create the fresh sheet
+    // 2. Start a fresh, clean sheet for the actual user story
     const newId = Date.now().toString(); 
     setChapters(prev => [{ ...DEFAULT_CHAPTER, id: newId, title: "" }, ...prev]); 
     setActiveChapterId(newId);
     
-    // 3. Reset internal tour states
+    // 3. Reset all UI/Tour locks
     setHasBeenRinsed(false);
     setActiveSceneImage(null);
     setIsAnvilHandedOver(false);

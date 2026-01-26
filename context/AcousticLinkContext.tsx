@@ -35,10 +35,12 @@ export const AcousticLinkProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const cumulativeTurnTranscriptRef = useRef<string>('');
 
   const decode = (base64: string) => {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-    return bytes;
+    try {
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+      return bytes;
+    } catch(e) { return new Uint8Array(0); }
   };
 
   const decodeAudioData = async (data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> => {
@@ -96,24 +98,25 @@ export const AcousticLinkProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const tourProtocol = `
-        STRICT_PROTOCOL (v10.1):
+        STRICT_PROTOCOL (v10.2):
         You are Rap.
         
         IF NEW USER OR RE-RUN INTRO:
         Start EXACTLY with: "Author, the link is solid."
         Then pause for 2 seconds.
-        Then continue: "You are standing in the Sovereign Forge—a workspace where the 'Grammar Barrier' is dismantled. Here, you are able to tell, or type your story. You can call me Rap, your Writing, Revision, Articulation and Polishing Partner on the wire. Are you ready to transform raw truth into retail-ready manuscripts? 
+        Then continue: "You are standing in the Sovereign Forge—a workspace where the 'Grammar Barrier' is dismantled. Here, you are able to tell, or type your story. You can call me Rap, your Writing, Revision, Articulation and Polishing Partner on the wire. 
         
         Look up at the orange box—that's The Write block, it captures your truth. The Revise block performs structural scrubs without stripping the grit. The Articulate block tunes me up to read your stories back to you. And the Polish block prepares your Sheet for export.
         
-        To your left, the Navigator lets you start a new sheet. To your right, the Partner desk is where our dialogue lives. Choose your story type or region, because that helps me guide your flow. 
+        To your left, the Navigator lets you start a new sheet. To your right, the Partner desk is where our dialogue lives. 
         
         Orientation Complete. The anvil is yours."
 
         IF RETURNING USER:
         Greet concisely: "Welcome back, ${profile.name}. The forge is live."
 
-        KEYWORD TRIGGERS: "Write block", "Revise block", "Articulate block", "Polish block", "Navigator", "Partner desk".
+        ACOUSTIC_TRIGGERS: You MUST use these exact phrases to light up the UI: 
+        "Write block", "Revise block", "Articulate block", "Polish block", "Navigator", "Partner desk", "Wrapp profile", "Orientation Complete".
       `;
 
       const instruction = `
@@ -139,7 +142,7 @@ export const AcousticLinkProvider: React.FC<{ children: React.ReactNode }> = ({ 
             const pcmBlob = createBlob(inputData);
             sessionPromise.then(s => {
               try { s.sendRealtimeInput({ media: pcmBlob }); } catch(err) {}
-            });
+            }).catch(() => {});
           };
           source.connect(scriptProcessor);
           scriptProcessor.connect(inputCtx.destination);
@@ -168,7 +171,6 @@ export const AcousticLinkProvider: React.FC<{ children: React.ReactNode }> = ({ 
           if (msg.serverContent?.inputTranscription) setIsThinking(true);
           if (msg.serverContent?.turnComplete) {
               setIsThinking(false);
-              // Reset turn accumulation but component keeps cumulative if needed
           }
           if (msg.serverContent?.interrupted) {
             sourcesRef.current.forEach(s => { try { s.stop(); } catch(e) {} });
@@ -181,7 +183,8 @@ export const AcousticLinkProvider: React.FC<{ children: React.ReactNode }> = ({ 
             setIsActive(false);
             setStatus('Standby');
         },
-        onerror: () => {
+        onerror: (err: any) => {
+          console.error("Link Error:", err);
           setIsActive(false);
           setIsConnecting(false);
           setStatus('Hardware Error');
@@ -190,6 +193,7 @@ export const AcousticLinkProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       sessionRef.current = await sessionPromise;
     } catch (err) {
+      console.error("Link Initialization Failed:", err);
       setIsConnecting(false);
       setStatus('Failed');
     }

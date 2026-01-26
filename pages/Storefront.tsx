@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Book } from '../types';
+import { Book, Narrative } from '../types';
+import { readArray } from '../utils/safeStorage';
 
 // --- Sovereign Vault Core V4 Access ---
 const VAULT_NAME = 'aca_sovereign_registry';
@@ -50,6 +51,7 @@ const getFromVault = async (): Promise<Book[]> => {
 const Storefront: React.FC = () => {
   const [featuredBook, setFeaturedBook] = useState<Book | null>(null);
   const [allBooks, setAllBooks] = useState<Book[]>([]);
+  const [allNarratives, setAllNarratives] = useState<Narrative[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,28 +59,26 @@ const Storefront: React.FC = () => {
   const loadRegistry = async () => {
     setLoading(true);
     const registry = await getFromVault();
-    setAllBooks(registry);
+    const substackStories = readArray<Narrative>('external_registry', []);
+    setAllNarratives(substackStories);
+    
+    // Sort combined list: Ingested stories first for "alive" feel
+    const combinedBooks = [...registry];
+    SAMPLE_BOOKS.forEach(sample => {
+      if (!combinedBooks.find(b => b.slug === sample.slug)) combinedBooks.push(sample);
+    });
+    setAllBooks(combinedBooks);
     
     // Priority: Flagship slug -> Newest Entry -> Fallback
-    let found = registry.find(b => b.slug === 'the-ivo-trap');
-    if (!found && registry.length > 0) {
-      found = registry[registry.length - 1];
+    let found = combinedBooks.find(b => b.slug === 'the-ivo-trap');
+    if (!found && combinedBooks.length > 0) {
+      found = combinedBooks[combinedBooks.length - 1];
     }
     
     if (found) {
       setFeaturedBook(found);
     } else {
-      setFeaturedBook({
-        id: 'ivo-master-1',
-        title: 'The IVO Trap',
-        subtitle: 'Intervention Orders: From the Inside Out',
-        author: 'Mark Mi Words',
-        description: "There is no way of knowing how many family violence orders are enforced across Australia. What we do know is how many have wound up in court. In 2023–24, 42% of all civil cases finalised in Australian Magistrates’ Courts involved originating applications for domestic violence orders — around 131,000 cases.",
-        coverUrl: 'https://images.unsplash.com/photo-1541829081725-6f1c93bb3c24?q=80&w=1200&auto=format&fit=crop',
-        slug: 'the-ivo-trap',
-        releaseYear: '2024',
-        buyUrl: 'https://www.ingramspark.com/'
-      });
+      setFeaturedBook(SAMPLE_BOOKS[0]);
     }
     setLoading(false);
   };
@@ -96,14 +96,7 @@ const Storefront: React.FC = () => {
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
       const updatedBook: Book = {
-        ...(featuredBook || {
-          id: 'ivo-master-1',
-          title: 'The IVO Trap',
-          author: 'Mark Mi Words',
-          description: '',
-          slug: 'the-ivo-trap',
-          releaseYear: '2024'
-        }),
+        ...(featuredBook || SAMPLE_BOOKS[0]),
         coverUrl: base64,
         slug: 'the-ivo-trap' // Force flagship slug for storefront persistence
       };
@@ -150,7 +143,7 @@ const Storefront: React.FC = () => {
               {/* Book Shadow Base */}
               <div className="absolute inset-2 bg-black blur-xl opacity-80 translate-x-8 translate-y-8"></div>
 
-              {/* The Book (The core placeholder window) */}
+              {/* The Book */}
               <div className="relative z-10 w-[320px] md:w-[420px] aspect-[16/27] bg-[#0a0a0a] border-l-[12px] border-black shadow-2xl rounded-r-sm overflow-hidden transform rotate-y-[-5deg] transition-all duration-700 group-hover:rotate-y-[0deg]">
                 {featuredBook.coverUrl ? (
                   <img 
@@ -170,7 +163,7 @@ const Storefront: React.FC = () => {
               <div className="absolute -inset-[2px] rounded-r-sm border border-white/10 z-20 pointer-events-none"></div>
             </div>
 
-            {/* Emergency Master Sync (Hidden Input) */}
+            {/* Emergency Master Sync */}
             <div className="mt-8 flex items-center gap-4">
                <button 
                  onClick={() => fileInputRef.current?.click()}
@@ -182,7 +175,7 @@ const Storefront: React.FC = () => {
             </div>
           </div>
 
-          {/* Promotional Copy (Pulling from Registry) */}
+          {/* Promotional Copy */}
           <div className="w-full lg:w-1/2 space-y-12">
             <div className="space-y-6">
               <span className="text-[var(--accent)] tracking-[0.8em] uppercase text-[11px] font-black block animate-pulse">Featured Masterpiece</span>
@@ -237,6 +230,34 @@ const Storefront: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Dynamic Substack Releases */}
+      {allNarratives.length > 0 && (
+        <div className="relative z-20 max-w-7xl mx-auto px-6 mt-48">
+           <div className="flex items-end justify-between border-b border-white/5 pb-12 mb-16">
+              <div>
+                 <span className="text-orange-500 tracking-[0.5em] uppercase text-[9px] font-black block mb-4">The Feed</span>
+                 <h2 className="text-4xl md:text-5xl font-serif italic font-black text-white">Latest <span className="text-gray-600">Substack Releases.</span></h2>
+              </div>
+              <Link to="/narratives" className="text-[9px] font-black uppercase tracking-widest text-orange-500 hover:text-white transition-colors">Open Full Archive →</Link>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+              {allNarratives.slice(0, 3).map((n) => {
+                const substackLink = n.tags?.find(t => t.startsWith('LINK:'))?.replace('LINK:', '');
+                return (
+                  <div key={n.id} className="bg-white/[0.02] border border-white/5 p-8 group hover:border-orange-500/20 transition-all rounded-sm">
+                     <span className="text-[8px] font-black uppercase tracking-widest text-orange-500 mb-4 block">New Post</span>
+                     <h3 className="text-2xl font-serif italic text-white mb-4 group-hover:text-orange-500 transition-colors">{n.title}</h3>
+                     <p className="text-sm text-gray-500 font-light italic mb-8 leading-relaxed line-clamp-3">"{n.excerpt}"</p>
+                     {substackLink && (
+                       <a href={substackLink} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-white border-b border-white/20 pb-1 hover:border-orange-500 transition-all">Read Story →</a>
+                     )}
+                  </div>
+                );
+              })}
+           </div>
+        </div>
+      )}
 
       {/* Dynamic Registry Archive Grid */}
       <div className="relative z-20 max-w-7xl mx-auto px-6 mt-48">
@@ -300,5 +321,19 @@ const Storefront: React.FC = () => {
     </div>
   );
 };
+
+const SAMPLE_BOOKS: Book[] = [
+  {
+    id: 'ivo-master-1',
+    title: 'The IVO Trap',
+    subtitle: 'Intervention Orders: From the Inside Out',
+    author: 'Mark Mi Words',
+    description: "There is no way of knowing how many family violence orders are enforced across Australia. What we do know is how many have wound up in court. In 2023–24, 42% of all civil cases finalised in Australian Magistrates’ Courts involved originating applications for domestic violence orders — around 131,000 cases.",
+    coverUrl: 'https://images.unsplash.com/photo-1541829081725-6f1c93bb3c24?q=80&w=1200&auto=format&fit=crop',
+    slug: 'the-ivo-trap',
+    releaseYear: '2024',
+    buyUrl: 'https://www.ingramspark.com/'
+  }
+];
 
 export default Storefront;

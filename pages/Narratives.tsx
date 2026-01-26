@@ -1,9 +1,9 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { queryInsight } from '../services/geminiService';
 import { Narrative, Message } from '../types';
-import { readArray, writeJson } from '../utils/safeStorage';
+import { readArray, writeJson, k } from '../utils/safeStorage';
 
 const SAMPLE_NARRATIVES: Narrative[] = [
   { id: 'sample-1', title: 'The Steel Echo', author: 'Mark M.', excerpt: 'The sound of the gate closing isn’t just metal on metal. It’s the sound of a chapter slamming shut on a life you thought was yours.', category: 'Diary', imageUrl: 'https://images.unsplash.com/photo-1541829081725-6f1c93bb3c24?q=80&w=600&auto=format&fit=crop', tags: ['Australian Justice', 'Solitude'], region: 'AU', publishDate: '2024-03-01', stats: { reads: 1200, kindredConnections: 45, reach: 0.8 } }
@@ -15,8 +15,8 @@ const Narratives: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [displayNarratives, setDisplayNarratives] = useState<Narrative[]>([]);
   const [showIngestModal, setShowIngestModal] = useState(false);
+  const [ingestSuccess, setIngestSuccess] = useState(false);
   
-  // Ingest Form State
   const [newEntry, setNewEntry] = useState({
     title: '',
     url: '',
@@ -27,35 +27,42 @@ const Narratives: React.FC = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const loadAllNarratives = () => {
-    // 1. Load system samples
-    const base = [...SAMPLE_NARRATIVES];
+  const loadAllNarratives = useCallback(() => {
+    // 1. Load "Registered" external links (Substack)
+    const registeredExternal = readArray<Narrative>('external_registry', []);
     
     // 2. Load custom "Forged" sheets from local storage
-    const savedSheets = localStorage.getItem('aca:v5:wrap_sheets_v4');
-    const customNarratives: Narrative[] = savedSheets ? JSON.parse(savedSheets).map((s: any) => ({
-      id: s.id,
-      title: s.title || "Untitled Verse",
-      author: "Architect",
-      excerpt: s.content ? s.content.substring(0, 120) + "..." : "Empty sheet awaiting truth.",
-      category: 'Systemic Memoir',
-      imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=600&auto=format&fit=crop',
-      tags: ['Forged Local', 'Draft'],
-      region: 'GLOBAL',
-      publishDate: new Date().toISOString().split('T')[0]
-    })) : [];
+    const rawSheets = localStorage.getItem(k('wrap_sheets_v4'));
+    let customNarratives: Narrative[] = [];
+    try {
+      if (rawSheets) {
+        customNarratives = JSON.parse(rawSheets).map((s: any) => ({
+          id: s.id || `sheet-${Math.random()}`,
+          title: s.title || "Untitled Verse",
+          author: "Architect",
+          excerpt: s.content ? s.content.substring(0, 120) + "..." : "Empty sheet awaiting truth.",
+          category: 'Systemic Memoir',
+          imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=600&auto=format&fit=crop',
+          tags: ['Forged Local', 'Draft'],
+          region: 'GLOBAL',
+          publishDate: new Date().toISOString().split('T')[0]
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to parse custom sheets", e);
+    }
 
-    // 3. Load "Registered" external links (Substack)
-    const registeredExternal = readArray<Narrative>('external_registry', []);
-
-    setDisplayNarratives([...registeredExternal, ...customNarratives, ...base]);
-  };
+    // 3. Combine everything
+    setDisplayNarratives([...registeredExternal, ...customNarratives, ...SAMPLE_NARRATIVES]);
+  }, []);
 
   useEffect(() => {
     loadAllNarratives();
-  }, []);
+  }, [loadAllNarratives]);
 
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages, isLoading]);
+  useEffect(() => { 
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
+  }, [messages, isLoading]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +71,14 @@ const Narratives: React.FC = () => {
     setIsLoading(true);
     setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
     setQuery('');
-    const response = await queryInsight(userQuery);
-    setMessages(prev => [...prev, response]);
-    setIsLoading(false);
+    try {
+      const response = await queryInsight(userQuery);
+      setMessages(prev => [...prev, response]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'assistant', content: "Insight link failed. System offline." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleIngest = (e: React.FormEvent) => {
@@ -84,15 +96,18 @@ const Narratives: React.FC = () => {
       stats: { reads: 0, kindredConnections: 0, reach: 1.0 }
     };
 
-    // Store the URL in tags or a custom field if we had one, for now we use tags
     if (newEntry.url) entry.tags.push(`LINK:${newEntry.url}`);
 
     const existing = readArray<Narrative>('external_registry', []);
     writeJson('external_registry', [entry, ...existing]);
     
-    loadAllNarratives();
-    setShowIngestModal(false);
-    setNewEntry({ title: '', url: '', excerpt: '', region: 'AU', category: 'Systemic Memoir' });
+    setIngestSuccess(true);
+    setTimeout(() => {
+      loadAllNarratives();
+      setIngestSuccess(false);
+      setShowIngestModal(false);
+      setNewEntry({ title: '', url: '', excerpt: '', region: 'AU', category: 'Systemic Memoir' });
+    }, 1500);
   };
 
   return (
@@ -150,18 +165,20 @@ const Narratives: React.FC = () => {
               placeholder="Search the archive context..." 
               className="flex-grow bg-black border border-white/10 px-6 py-5 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
             />
-            <button type="submit" className="bg-[var(--accent)] text-white px-10 py-5 font-black uppercase text-[10px] tracking-[0.4em] animate-living-amber-bg">Ask</button>
+            <button type="submit" disabled={isLoading} className="bg-[var(--accent)] text-white px-10 py-5 font-black uppercase text-[10px] tracking-[0.4em] animate-living-amber-bg disabled:opacity-50">
+              {isLoading ? '...' : 'Ask'}
+            </button>
           </form>
       </section>
 
       {/* NARRATIVE GRID */}
       <div className="grid md:grid-cols-3 gap-16">
-        {displayNarratives.map((n) => {
-          const substackLink = n.tags.find(t => t.startsWith('LINK:'))?.replace('LINK:', '');
-          const isSubstack = n.tags.includes('Substack Origin');
+        {displayNarratives.length > 0 ? displayNarratives.map((n) => {
+          const substackLink = n.tags?.find(t => t.startsWith('LINK:'))?.replace('LINK:', '');
+          const isSubstack = n.tags?.includes('Substack Origin');
 
           return (
-            <div key={n.id} className="group flex flex-col relative">
+            <div key={n.id} className="group flex flex-col relative animate-fade-in">
               <div className={`h-80 overflow-hidden relative border rounded-sm transition-all duration-700 ${isSubstack ? 'border-orange-500/20 shadow-[0_0_40px_rgba(230,126,34,0.1)]' : 'border-white/5'}`}>
                 <img 
                   src={n.imageUrl} 
@@ -189,81 +206,97 @@ const Narratives: React.FC = () => {
               </div>
             </div>
           );
-        })}
+        }) : (
+          <div className="col-span-full py-24 text-center border border-dashed border-white/10 opacity-30 italic font-serif">
+            The archive link is cold. Ingest a story to begin.
+          </div>
+        )}
       </div>
 
       {/* INGEST MODAL */}
       {showIngestModal && (
         <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-fade-in">
           <div className="max-w-2xl w-full bg-[#0d0d0d] border border-white/10 p-12 shadow-2xl relative rounded-sm">
-            <button onClick={() => setShowIngestModal(false)} className="absolute top-8 right-8 text-gray-700 hover:text-white text-3xl leading-none">×</button>
-            <div className="mb-10">
-              <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[10px] font-black mb-4 block">Narrative Bridge</span>
-              <h2 className="text-4xl font-serif italic text-white">Register <span className="text-[var(--accent)]">Substack.</span></h2>
-            </div>
-            
-            <form onSubmit={handleIngest} className="space-y-8 text-left">
-               <div className="space-y-2">
-                 <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Story Title</label>
-                 <input 
-                   required
-                   value={newEntry.title}
-                   onChange={e => setNewEntry({...newEntry, title: e.target.value})}
-                   className="w-full bg-black border border-white/10 p-4 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
-                   placeholder="Title of your Substack post" 
-                 />
-               </div>
-               <div className="space-y-2">
-                 <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Substack URL</label>
-                 <input 
-                   required
-                   type="url"
-                   value={newEntry.url}
-                   onChange={e => setNewEntry({...newEntry, url: e.target.value})}
-                   className="w-full bg-black border border-white/10 p-4 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
-                   placeholder="https://captiveaudience.substack.com/p/..." 
-                 />
-               </div>
-               <div className="space-y-2">
-                 <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Brief Hook / Excerpt</label>
-                 <textarea 
-                   required
-                   value={newEntry.excerpt}
-                   onChange={e => setNewEntry({...newEntry, excerpt: e.target.value})}
-                   className="w-full bg-black border border-white/10 p-4 text-sm font-serif focus:border-[var(--accent)] outline-none text-white min-h-[120px] resize-none" 
-                   placeholder="A raw excerpt to hook the reader..." 
-                 />
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Region</label>
-                    <select 
-                      value={newEntry.region}
-                      onChange={e => setNewEntry({...newEntry, region: e.target.value as any})}
-                      className="w-full bg-black border border-white/10 p-4 text-[10px] font-black uppercase text-white outline-none focus:border-[var(--accent)]"
-                    >
-                      <option value="AU">AUSTRALIA</option>
-                      <option value="US">UNITED STATES</option>
-                      <option value="UK">UNITED KINGDOM</option>
-                      <option value="GLOBAL">GLOBAL</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Category</label>
-                    <select 
-                      value={newEntry.category}
-                      onChange={e => setNewEntry({...newEntry, category: e.target.value as any})}
-                      className="w-full bg-black border border-white/10 p-4 text-[10px] font-black uppercase text-white outline-none focus:border-[var(--accent)]"
-                    >
-                      <option value="Diary">DIARY</option>
-                      <option value="Short Story">SHORT STORY</option>
-                      <option value="Essay">ESSAY</option>
-                      <option value="Systemic Memoir">SYSTEMIC MEMOIR</option>
-                    </select>
-                  </div>
-               </div>
-               <button type="submit" className="w-full bg-[var(--accent)] text-white py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:brightness-110 transition-all rounded-sm">Commit to Registry</button>
-            </form>
+            {!ingestSuccess ? (
+              <>
+                <button onClick={() => setShowIngestModal(false)} className="absolute top-8 right-8 text-gray-700 hover:text-white text-3xl leading-none">×</button>
+                <div className="mb-10">
+                  <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[10px] font-black mb-4 block">Narrative Bridge</span>
+                  <h2 className="text-4xl font-serif italic text-white">Register <span className="text-[var(--accent)]">Substack.</span></h2>
+                </div>
+                
+                <form onSubmit={handleIngest} className="space-y-8 text-left">
+                   <div className="space-y-2">
+                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Story Title</label>
+                     <input 
+                       required
+                       value={newEntry.title}
+                       onChange={e => setNewEntry({...newEntry, title: e.target.value})}
+                       className="w-full bg-black border border-white/10 p-4 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
+                       placeholder="Title of your Substack post" 
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Substack URL</label>
+                     <input 
+                       required
+                       type="url"
+                       value={newEntry.url}
+                       onChange={e => setNewEntry({...newEntry, url: e.target.value})}
+                       className="w-full bg-black border border-white/10 p-4 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
+                       placeholder="https://captiveaudience.substack.com/p/..." 
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Brief Hook / Excerpt</label>
+                     <textarea 
+                       required
+                       value={newEntry.excerpt}
+                       onChange={e => setNewEntry({...newEntry, excerpt: e.target.value})}
+                       className="w-full bg-black border border-white/10 p-4 text-sm font-serif focus:border-[var(--accent)] outline-none text-white min-h-[120px] resize-none" 
+                       placeholder="A raw excerpt to hook the reader..." 
+                     />
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Region</label>
+                        <select 
+                          value={newEntry.region}
+                          onChange={e => setNewEntry({...newEntry, region: e.target.value as any})}
+                          className="w-full bg-black border border-white/10 p-4 text-[10px] font-black uppercase text-white outline-none focus:border-[var(--accent)]"
+                        >
+                          <option value="AU">AUSTRALIA</option>
+                          <option value="US">UNITED STATES</option>
+                          <option value="UK">UNITED KINGDOM</option>
+                          <option value="GLOBAL">GLOBAL</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Category</label>
+                        <select 
+                          value={newEntry.category}
+                          onChange={e => setNewEntry({...newEntry, category: e.target.value as any})}
+                          className="w-full bg-black border border-white/10 p-4 text-[10px] font-black uppercase text-white outline-none focus:border-[var(--accent)]"
+                        >
+                          <option value="Diary">DIARY</option>
+                          <option value="Short Story">SHORT STORY</option>
+                          <option value="Essay">ESSAY</option>
+                          <option value="Systemic Memoir">SYSTEMIC MEMOIR</option>
+                        </select>
+                      </div>
+                   </div>
+                   <button type="submit" className="w-full bg-[var(--accent)] text-white py-5 text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:brightness-110 transition-all rounded-sm">Commit to Registry</button>
+                </form>
+              </>
+            ) : (
+              <div className="py-24 text-center space-y-6 animate-fade-in">
+                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(34,197,94,0.4)]">
+                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <h3 className="text-4xl font-serif italic text-white uppercase tracking-tighter">Registry Updated.</h3>
+                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.5em]">Synchronizing Archive Node...</p>
+              </div>
+            )}
           </div>
         </div>
       )}
