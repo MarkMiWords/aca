@@ -1,5 +1,5 @@
 
-import { performOcr } from '../services/geminiService';
+// import { performOcr } from '../services/geminiService';
 
 // API endpoint for performing Optical Character Recognition (OCR) on images.
 // This is crucial for digitizing text from scanned or photographed carceral documents.
@@ -8,6 +8,10 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed.' });
   }
 
+  // NOTE: This feature is currently disabled as the underlying service function (performOcr) is not implemented.
+  return res.status(503).json({ error: 'This feature is temporarily unavailable.' });
+
+  /*
   try {
     const { imageBase64 } = req.body;
 
@@ -28,4 +32,5 @@ export default async function handler(req: any, res: any) {
     // Return a structured error to the frontend.
     res.status(500).json({ error: `An error occurred during OCR processing. ${error.message}` });
   }
+  */
 }
