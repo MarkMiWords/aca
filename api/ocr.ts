@@ -1,33 +1,31 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { performOcr } from '../services/geminiService';
 
+// API endpoint for performing Optical Character Recognition (OCR) on images.
+// This is crucial for digitizing text from scanned or photographed carceral documents.
 export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { imageBase64 } = req.body;
-  if (!imageBase64) {
-    return res.status(400).json({ error: "Image data required" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed.' });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{
-        role: "user",
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }, 
-          { text: "Perform high-precision OCR on this carceral document. Transcribe exactly." }
-        ] 
-      }],
-      config: { systemInstruction: "Institutional OCR Mode. Absolute fidelity to source." }
-    });
+    const { imageBase64 } = req.body;
 
-    return res.status(200).json({ text: response.text || "" });
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'Request is missing required field: imageBase64.' });
+    }
+
+    // Defer to the centralized service to handle the OCR task.
+    const extractedText = await performOcr(imageBase64);
+
+    // The service returns the extracted text as a string.
+    res.status(200).json({ text: extractedText });
+
   } catch (error: any) {
-    console.error("API_OCR_ERROR:", error);
-    return res.status(500).json({ error: "OCR processing failed" });
+    // Log the detailed error for debugging.
+    console.error(`[Sovereign Forge API Error] in /api/ocr: ${error.message}`, error);
+
+    // Return a structured error to the frontend.
+    res.status(500).json({ error: `An error occurred during OCR processing. ${error.message}` });
   }
 }

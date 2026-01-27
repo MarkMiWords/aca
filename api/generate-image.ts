@@ -1,48 +1,32 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { generateImage } from '../services/geminiService';
 
+// API endpoint for generating images, such as book covers or cinematic scenes.
+// This route uses the centralized `generateImage` service to create visuals based on user prompts.
 export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { prompt } = req.body;
-  if (!prompt) {
-    return res.status(400).json({ error: "Prompt is required" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed.' });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const industrialPrompt = `A high-quality, cinematic book cover for a prison narrative. Style: Minimalist, dramatic lighting, gritty texture, industrial aesthetic. Themes: ${prompt}. Aspect Ratio 16:9. Colors: Black, white, and high-contrast orange.`;
+    // The primary prompt for the image generation.
+    const { prompt, isScene } = req.body;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: industrialPrompt }],
-      },
-      config: {
-        imageConfig: {
-          aspectRatio: "16:9"
-        }
-      }
-    });
-
-    let base64Image = "";
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        base64Image = part.inlineData.data;
-        break;
-      }
+    if (!prompt) {
+      return res.status(400).json({ error: 'Request is missing required field: prompt.' });
     }
 
-    if (!base64Image) {
-      return res.status(500).json({ error: "No image data returned from model." });
-    }
+    // Defer to the centralized service for the core AI logic.
+    const result = await generateImage(prompt, isScene || false);
 
-    return res.status(200).json({ imageUrl: `data:image/png;base64,${base64Image}` });
+    // Return the successful result from the service.
+    res.status(200).json(result);
+
   } catch (error: any) {
-    console.error("API_IMAGE_GEN_ERROR:", error?.message || error);
-    return res.status(500).json({ error: "Image generation failed." });
+    // Log the detailed error for debugging.
+    console.error(`[Sovereign Forge API Error] in /api/generate-image: ${error.message}`, error);
+
+    // Return a structured error to the frontend.
+    res.status(500).json({ error: `An error occurred during image generation. ${error.message}` });
   }
 }
