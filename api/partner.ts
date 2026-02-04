@@ -1,42 +1,50 @@
 
-import { queryPartner } from '../services/geminiService';
-import { Message } from '../types';
+import { GoogleGenAI } from "@google/genai";
 
-// This function acts as the API endpoint for the WRAPPER partner.
-// It receives requests from the frontend, validates them, and then
-// calls the centralized `queryPartner` function in `geminiService.ts`.
+const WRAPPER_MISSION = `
+  MISSION: Sovereignty of the carceral voice.
+  ROLE: WRAPPER (Writers Reliable Assistant for Polishing Passages and Editing Rough-drafts).
+  PROTOCOL: Preserving regional dialect and authentic emotional truth.
+`;
+
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed.' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { message, style, region, history, activeSheetContent } = req.body;
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "API Key Missing" });
+
   try {
-    // Destructure all necessary fields from the request body.
-    const { message, style, region, history, activeSheetContent, personality } = req.body;
+    const ai = new GoogleGenAI({ apiKey });
+    const contents = (history || [])
+      .map((h: any) => ({ 
+        role: h.role === 'user' ? 'user' : 'model', 
+        parts: [{ text: String(h.content || "") }] 
+      }));
 
-    // Basic validation to ensure the core pieces of information are present.
-    if (!message || !style || !region) {
-      return res.status(400).json({ error: 'Request is missing required fields: message, style, or region.' });
-    }
+    contents.push({ 
+      role: 'user', 
+      parts: [{ text: `[DRAFT]\n${activeSheetContent}\n\nQUERY: ${message}` }] 
+    });
 
-    // Defer to the centralized service to handle the complex logic of interacting with the Gemini API.
-    const responseMessage: Message = await queryPartner(
-      message,
-      style,
-      region,
-      history,
-      activeSheetContent,
-      personality
-    );
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: contents as any,
+      config: { 
+        systemInstruction: `${WRAPPER_MISSION}\nContext: ${style} in ${region}. Use Search for factual grounding.`, 
+        tools: [{ googleSearch: {} }] 
+      },
+    });
 
-    // Send the successful response back to the frontend.
-    res.status(200).json(responseMessage);
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources = groundingChunks.map((chunk: any) => ({
+      web: { uri: chunk.web?.uri || "", title: chunk.web?.title || "" }
+    })).filter((s: any) => s.web.uri);
 
+    return res.status(200).json({ role: 'assistant', content: response.text, sources });
   } catch (error: any) {
-    // Log the full error to the server console for debugging.
-    console.error(`[Sovereign Forge API Error] in /api/partner: ${error.message}`, error);
-
-    // Return a generic but helpful error message to the frontend.
-    res.status(500).json({ error: `An error occurred while communicating with the AI partner. ${error.message}` });
+    return res.status(500).json({ error: error.message });
   }
 }

@@ -20,22 +20,22 @@ const Blueprints: React.FC = () => {
 
   const sections = [
     {
-      id: "sovereign-spine",
-      title: "The Sovereign Spine (v8.0)",
+      id: "wrap-hub-mechanics",
+      title: "The WRAP Hub Mechanics (Functional Core)",
       items: [
-        { name: "Acoustic Ink", desc: "During orientation, transcription flows directly into the digital sheet, splitting greetings into headings and descriptions into body text. Typing speed is throttled to 45ms to mirror natural speech rhythm." },
-        { name: "Grit Sovereignty", desc: "Dialect and slang are treated as high-value assets, not errors. The engine is hard-coded to ignore standard grammar conventions that threaten the author's authentic regional yard-voice." },
-        { name: "Operational Security Layer", desc: "Automated redaction of PII (Personally Identifiable Information). Real names of COs, staff, facilities, or victims are flagged and substituted with realistic fictional pseudonyms." }
+        { name: "WRITE BLOCK", desc: "Logic: Multi-modal ingestion. Supports manual text input, industrial OCR for handwritten carceral notes, and Vocal Ingestion via the Acoustic Link." },
+        { name: "REVISE BLOCK", desc: "Logic: Sovereign scrubbing. Three levels of intensity (Rinse, Wash, Scrub) designed to tighten prose while hard-coding the preservation of regional dialect/grit." },
+        { name: "ARTICULATE BLOCK", desc: "Logic: The Vocalizer. Refines written rhythm into oral performance cadence and synthesizes speech using the ACA voice profiles." },
+        { name: "POLISH BLOCK", desc: "Logic: Terminal Audit. Performs PII redaction (staff/victim names) and formats the Sheet for Substack or IngramSpark distribution." }
       ]
     },
     {
-      id: "hierarchy-of-control",
-      title: "Mastering Suite: Levels of Control",
+      id: "sovereign-spine",
+      title: "The Sovereign Spine (v8.0)",
       items: [
-        { name: "L1: RINSE", desc: "Surface-level punctuation and typo fixes. Zero voice impact." },
-        { name: "L2: WASH", desc: "Transition smoothing. Maintains 100% regional dialect." },
-        { name: "L3: SCRUB", desc: "Structural forging. Narratives are weighted for maximum impact." },
-        { name: "L4: POLISH", desc: "Literary mastering. High-intensity vocabulary injection." }
+        { name: "Acoustic Ink", desc: "Transcription flows directly into the digital sheet. Typing speed throttled to 40ms to mirror natural human reading and speech rhythm." },
+        { name: "Grit Sovereignty", desc: "Standard AI 'corrections' are bypassed. The engine treats carceral slang and regional 'yard-voice' as intellectual property assets." },
+        { name: "Operational Security", desc: "Secure Pilot Injection for API keys. Studio-aware auth ensures high-bandwidth audio processing remains stable." }
       ]
     }
   ];
@@ -48,11 +48,10 @@ const Blueprints: React.FC = () => {
            <span className="text-cyan-500 tracking-[0.8em] uppercase text-[10px] font-black block">Clearance Level: ARCHITECT</span>
         </div>
         <h1 className="text-6xl md:text-9xl font-serif font-black italic text-white tracking-tighter leading-none mb-6 uppercase">SOVEREIGN <br/><span className="text-cyan-500">BLUEPRINTS.</span></h1>
-        <p className="text-xl text-gray-500 font-light italic leading-relaxed max-w-2xl">"The master record of process, description, and industrial intent. Reference v8.0."</p>
+        <p className="text-xl text-gray-500 font-light italic leading-relaxed max-w-2xl">"The master record of process, description, and industrial intent. Reference v8.5 functional reset."</p>
       </section>
 
       <div className="max-w-7xl mx-auto px-6 py-20 space-y-32">
-        {/* Scripts Archive Section */}
         <section className="space-y-12">
            <div className="flex items-center gap-4">
               <div className="h-px flex-grow bg-white/10"></div>
@@ -87,8 +86,8 @@ const Blueprints: React.FC = () => {
         </div>
 
         <div className="mt-20 p-12 bg-white/5 border border-white/10 rounded-sm text-center">
-           <h3 className="text-xl font-serif italic text-white mb-4">Continuous Evolution Protocol</h3>
-           <p className="text-gray-500 text-sm font-light max-w-2xl mx-auto">This page is the immutable context for the platform's development. Every major shift in the Sovereign Forge logic must be documented here to maintain architectural integrity.</p>
+           <h3 className="text-xl font-serif italic text-white mb-4">Functional Restoration Protocol</h3>
+           <p className="text-gray-500 text-sm font-light max-w-2xl mx-auto">This documentation provides the recovery pathway if the WRAP Hub blocks become disconnected. The Architect's vision for 'talking to the Sheet' is primary.</p>
            <div className="mt-10">
               <Link to="/author-builder" className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.4em] hover:text-white transition-all underline underline-offset-8">Return to Active Forging</Link>
            </div>

@@ -1,34 +1,50 @@
+import { GoogleGenAI } from "@google/genai";
 
-import { articulateText } from '../services/geminiService';
-
-// API endpoint for the Articulate (Oral Storytelling Optimization) feature.
-// This route takes text and a set of acoustic profile settings, then uses the
-// centralized `articulateText` service to refine the text for performance.
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed.' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { text, settings, style, region } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: "Text is required" });
+  }
+
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "Sovereign Link Cold: API Key Missing" });
+  }
+
+  const { gender, tone, accent, speed } = settings;
+
   try {
-    // Destructure all the necessary parameters from the request body.
-    const { text, settings, style, region, personality } = req.body;
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const instruction = `
+      You are the ARTICULATE agent of the Sovereign Forge. 
+      MISSION: Transform the provided narrative to match a specific vocal and acoustic profile for oral storytelling.
+      
+      ACOUSTIC MATRIX:
+      - GENDER PROFILE: ${gender} (Adjust vocabulary and cadence to suit this identity)
+      - CALIBRATION TONE: ${tone} (Modify intensity and resonance)
+      - REGIONAL ACCENT: ${accent} (Integrate subtle dialect markers and regional idioms from ${region})
+      - TEMPORAL SPEED: ${speed} (Adjust sentence length and rhythm for this pacing)
+      - NARRATIVE STYLE: ${style}
 
-    // Validate that the essential parameters are present.
-    if (!text || !settings || !style || !region) {
-      return res.status(400).json({ error: 'Request is missing required fields: text, settings, style, or region.' });
-    }
+      CORE RULE: Do not sanitize the grit. Maintain the authentic carceral voice while optimizing for the selected acoustic profile.
+    `;
 
-    // Defer to the centralized service to handle the complex AI logic.
-    const result = await articulateText(text, settings, style, region, personality);
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ role: 'user', parts: [{ text }] }],
+      config: {
+        systemInstruction: instruction,
+      }
+    });
 
-    // Return the successful result from the service.
-    res.status(200).json(result);
-
+    return res.status(200).json({ text: response.text || "" });
   } catch (error: any) {
-    // Log the detailed error for server-side debugging.
-    console.error(`[Sovereign Forge API Error] in /api/articulate: ${error.message}`, error);
-
-    // Return a structured and informative error message to the frontend.
-    res.status(500).json({ error: `An error occurred during the acoustic transformation. ${error.message}` });
+    console.error("API_ARTICULATE_FAILURE:", error);
+    return res.status(500).json({ error: "Acoustic Transformation Interrupted: " + (error?.message || "Unknown Failure") });
   }
 }
