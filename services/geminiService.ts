@@ -3,15 +3,15 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Message, ManuscriptReport, MasteringGoal } from "../types";
 
 /**
- * SOVEREIGN FORGE - GEMINI INTEGRATED SERVICE
- * This service handles real AI interactions using the Google GenAI SDK.
+ * SOVEREIGN FORGE - GEMINI REAL-TIME ENGINE
+ * Optimized for Vercel Deployment.
  */
 
-// Fix: Initializing GoogleGenAI with the required named parameter and environment variable.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize the AI client using the mandatory environment variable
+const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const articulateText = async (text: string) => {
-  // Fix: Directly calling generateContent on the model property of the ai client.
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: text,
@@ -20,15 +20,15 @@ export const articulateText = async (text: string) => {
 };
 
 export const smartSoap = async (text: string, level: string, style?: string, region?: string) => {
+  const ai = getAI();
   const systemInstruction = `
-    MISSION: Sovereignty of the carceral and impacted voice.
-    ROLE: You are the Sovereign Forge Engine.
-    RULE: Preserve dialect and grit. DO NOT sanitize emotional truth.
+    MISSION: Sovereignty of the carceral voice.
+    ROLE: Sovereign Forge Engine.
     MODE: ${level.toUpperCase()}.
     CONTEXT: Style: ${style || 'General'}, Region: ${region || 'Global'}.
+    RULE: Preserve dialect and grit. DO NOT sanitize emotional truth.
   `;
 
-  // Fix: Direct generateContent call with system instruction.
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: text,
@@ -38,8 +38,8 @@ export const smartSoap = async (text: string, level: string, style?: string, reg
 };
 
 /**
- * Fix: Updated queryPartner signature to accept 6 arguments to resolve "Expected 1 arguments, but got 6" 
- * errors in ShyEditor.tsx, WrapItUp.tsx, and SovereignSlate.tsx.
+ * WRAP HUB PARTNER (RAP)
+ * Uses Google Search grounding to provide systemic context.
  */
 export const queryPartner = async (
   message: string,
@@ -49,12 +49,13 @@ export const queryPartner = async (
   activeSheetContent: string = '',
   personality: string = 'Natural'
 ): Promise<Message> => {
+  const ai = getAI();
   const systemInstruction = `
     MISSION: Sovereignty of the carceral voice.
     ROLE: WRAPPER (Writers Reliable Assistant for Polishing Passages and Editing Rough-drafts).
     PROTOCOL: Preserving regional dialect and authentic emotional truth.
     CONTEXT: Style: ${style}, Region: ${region}, Personality: ${personality}.
-    Use Google Search for factual grounding.
+    Use Google Search for factual grounding on legal and systemic queries.
   `;
 
   const contents = history.map(h => ({
@@ -67,7 +68,6 @@ export const queryPartner = async (
     parts: [{ text: `[DRAFT CONTEXT]\n${activeSheetContent}\n\nUSER MESSAGE: ${message}` }]
   });
 
-  // Fix: Using googleSearch tool for factual grounding as per the mission.
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: contents as any,
@@ -84,18 +84,18 @@ export const queryPartner = async (
 
   return { 
     role: 'assistant', 
-    content: response.text || "I am currently processing your request.", 
+    content: response.text || "Connection timing out. Please check the Forge Link.", 
     sources 
   };
 };
 
 export const queryInsight = async (message: string): Promise<Message> => {
-  // Fix: Implementing search-grounded insights.
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: message,
     config: {
-      systemInstruction: "Archive Indexing Specialist. Use Google Search for systemic context.",
+      systemInstruction: "Archive Indexing Specialist. Use Google Search for systemic context regarding carceral narratives.",
       tools: [{ googleSearch: {} }]
     }
   });
@@ -109,7 +109,7 @@ export const queryInsight = async (message: string): Promise<Message> => {
 };
 
 export const interactWithAurora = async (message: string): Promise<string> => {
-  // Fix: Empathetic AI partner using flash-preview.
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: message,
@@ -120,16 +120,18 @@ export const interactWithAurora = async (message: string): Promise<string> => {
   return response.text || "I am listening.";
 };
 
-export const checkSystemHeartbeat = async () => ({ status: 'online' as const, message: "Sovereign Link Active." });
+export const checkSystemHeartbeat = async () => ({ status: 'online' as const, message: "Sovereign Link Real-Time Active." });
 
 export const generateSpeech = async (text: string) => ""; 
 
 export const generateImage = async (prompt: string) => {
-  // Fix: generateContent for image generation with gemini-2.5-flash-image.
+  const ai = getAI();
+  const industrialPrompt = `A cinematic book cover for a prison narrative. Style: Minimalist, dramatic lighting, gritty texture. Themes: ${prompt}. Colors: Black, white, and high-contrast orange.`;
+  
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
-      parts: [{ text: prompt }],
+      parts: [{ text: industrialPrompt }],
     },
     config: {
       imageConfig: { aspectRatio: "1:1" }
@@ -137,7 +139,6 @@ export const generateImage = async (prompt: string) => {
   });
 
   let base64Image = "";
-  // Find the image part.
   for (const part of response.candidates[0].content.parts) {
     if (part.inlineData) {
       base64Image = part.inlineData.data;
@@ -148,12 +149,12 @@ export const generateImage = async (prompt: string) => {
 };
 
 export const analyzeFullManuscript = async (content: string, goal: MasteringGoal): Promise<ManuscriptReport> => {
-  // Fix: Use Pro model for complex reasoning and responseSchema for structured JSON.
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-pro-preview",
     contents: [{ parts: [{ text: content.substring(0, 30000) }] }],
     config: {
-      systemInstruction: `Analyze manuscript for ${goal.toUpperCase()} distribution. Return JSON analysis.`,
+      systemInstruction: `Perform a structural audit for ${goal.toUpperCase()} distribution. Return detailed JSON report.`,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -175,7 +176,7 @@ export const analyzeFullManuscript = async (content: string, goal: MasteringGoal
 };
 
 export const connectLive = (callbacks: any, instruction: string) => {
-  // Fix: Live API initialization following session setup guidelines.
+  const ai = getAI();
   return ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-preview-12-2025',
     callbacks,
