@@ -25,11 +25,11 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
 
   return (
     <nav className="fixed w-full z-[100] border-b border-white/[0.03]" style={{ overflow: 'visible' }}>
-      {/* Navbar background - separate div so it doesn't clip the logo */}
-      <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-2xl -z-10"></div>
+      {/* Backdrop on its own layer so it doesn't clip the overhanging logo */}
+      <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-2xl -z-10" style={{ overflow: 'hidden' }}></div>
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)]/30 to-transparent"></div>
       
-      <div className="w-full h-16 md:h-24 flex items-center justify-between overflow-visible">
+      <div className="w-full h-16 md:h-24 flex items-center justify-between">
         <div className="flex items-center h-full">
           {/* Mobile: compact logo with overhang */}
           <div className="md:hidden w-24 flex justify-center items-center h-full pt-10 overflow-visible pointer-events-none">
