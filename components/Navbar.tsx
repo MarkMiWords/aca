@@ -24,10 +24,10 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
   );
 
   return (
-    <nav className="fixed w-full z-[100] bg-[#050505]/80 backdrop-blur-2xl border-b border-white/[0.03]">
+    <nav className="fixed w-full z-[100] bg-[#050505]/80 backdrop-blur-2xl border-b border-white/[0.03] overflow-visible">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)]/30 to-transparent"></div>
       
-      <div className="w-full h-16 md:h-24 flex items-center justify-between">
+      <div className="w-full h-16 md:h-24 flex items-center justify-between overflow-visible">
         <div className="flex items-center h-full">
           {/* Mobile: compact logo with overhang */}
           <div className="md:hidden w-24 flex justify-center items-center h-full pt-10 overflow-visible pointer-events-none">

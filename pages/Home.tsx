@@ -26,7 +26,7 @@ const Home: React.FC = () => {
           <div className="absolute inset-0 z-0">
             <img
               src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2500&auto=format&fit=crop"
-              className="w-full h-full object-cover grayscale brightness-[0.3] md:brightness-[0.2] md:group-hover:brightness-[0.45] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
+              className="w-full h-full object-cover grayscale brightness-[0.4] md:brightness-[0.3] md:group-hover:brightness-[0.5] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Blacksmith Hammering Anvil"
             />
             {/* Smooth gradient overlays — no hard edges */}
@@ -76,7 +76,7 @@ const Home: React.FC = () => {
           <div className="absolute inset-0 z-0">
             <img
               src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2500&auto=format&fit=crop"
-              className="w-full h-full object-cover grayscale brightness-[0.3] md:brightness-[0.2] md:group-hover:brightness-[0.45] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
+              className="w-full h-full object-cover grayscale brightness-[0.4] md:brightness-[0.3] md:group-hover:brightness-[0.5] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Global Archive"
             />
             {/* Smooth gradient overlays */}
