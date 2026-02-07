@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface LogoProps {
   variant?: 'light' | 'dark';
@@ -14,6 +14,18 @@ interface LogoProps {
 const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
   const primaryColor = variant === 'light' ? '#ffffff' : '#000000';
   const contrastColor = variant === 'light' ? '#050505' : '#ffffff';
+
+  // Read CSS custom properties at runtime for reliable SVG gradient fill
+  const [accentColor, setAccentColor] = useState('#e67e22');
+  const [accentDark, setAccentDark] = useState('#d35400');
+
+  useEffect(() => {
+    const styles = getComputedStyle(document.documentElement);
+    const accent = styles.getPropertyValue('--accent').trim() || '#e67e22';
+    const dark = styles.getPropertyValue('--accent-dark').trim() || '#d35400';
+    setAccentColor(accent);
+    setAccentDark(dark);
+  }, []);
 
   return (
     <div className={`flex flex-col items-center justify-center text-center ${className}`}>
@@ -30,8 +42,8 @@ const Logo: React.FC<LogoProps> = ({ variant = 'light', className = '' }) => {
           </clipPath>
           
           <linearGradient id="living-amber-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#e67e22" />
-            <stop offset="100%" stopColor="#d35400" />
+            <stop offset="0%" stopColor={accentColor} />
+            <stop offset="100%" stopColor={accentDark} />
           </linearGradient>
 
           {/* Reduced deviation to 1 for extreme edge sharpness */}
