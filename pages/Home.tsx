@@ -21,7 +21,7 @@ const Home: React.FC = () => {
         {/* THE FORGE: FORGE A STORY */}
         <Link
           to="/forge"
-          className="relative flex-1 flex flex-col items-center justify-center group overflow-hidden border-b md:border-b-0 md:border-r border-white/5 transition-all duration-700 ease-in-out md:hover:flex-[1.5]"
+          className="relative flex-1 flex flex-col items-center justify-center group overflow-hidden transition-all duration-700 ease-in-out md:hover:flex-[1.5]"
         >
           <div className="absolute inset-0 z-0">
             <img
@@ -29,8 +29,9 @@ const Home: React.FC = () => {
               className="w-full h-full object-cover grayscale brightness-[0.4] md:brightness-[0.35] md:group-hover:brightness-[0.55] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Blacksmith Hammering Anvil"
             />
-            {/* Soft vignette — no hard edges */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
+            {/* Smooth gradient overlays — no hard edges */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/70 via-orange-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Ember glow */}
@@ -78,8 +79,9 @@ const Home: React.FC = () => {
               className="w-full h-full object-cover grayscale brightness-[0.4] md:brightness-[0.35] md:group-hover:brightness-[0.55] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Global Archive"
             />
-            {/* Soft vignette */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
+            {/* Smooth gradient overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-l from-black/20 via-transparent to-black/20 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tl from-cyan-950/70 via-cyan-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Cool glow */}
