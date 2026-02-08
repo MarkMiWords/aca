@@ -37,7 +37,7 @@ const Forge: React.FC = () => {
       <section className="py-16 md:py-28 px-4 sm:px-8 lg:px-16">
         <div className="max-w-4xl mx-auto">
           <p className="text-base sm:text-lg md:text-xl text-gray-400 font-light italic leading-relaxed border-l-2 pl-6 sm:pl-10 py-4" style={{ borderLeftColor: 'var(--accent-glow)' }}>
-            The Word Forge is a sovereign digital workspace built for incarcerated and formerly incarcerated authors. Step inside and create your own digital Wrap Sheets — designed to feature your work across multiple formats, from print to digital distribution. Stuck for ideas? Open a Live Link session with Rap, your AI co-pilot, designed to help you push past creative blocks and produce print-worthy content, straight out of the box.
+            Our Author First, custom built Word Forge is a sovereign digital workspace built for incarcerated and formerly incarcerated authors. Using the latest technology, we have created a unique platform that anyone is more than welcome to use. Step inside and create your own digital Wrap Sheets — designed to feature your work across multiple formats, from print to digital distribution. Stuck for ideas? Open a Live Link session with Rap, your AI co-pilot, designed to help you push past creative blocks and produce print-worthy content, straight out of the box. This tool is currently in beta, and we invite you to be part of shaping its future. If you're interested in joining us, email Mark@acaptiveaudience.net.
           </p>
         </div>
       </section>
