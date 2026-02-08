@@ -12,7 +12,7 @@ const SAMPLE_NARRATIVES: Narrative[] = [
     author: 'Mark Mi Words',
     excerpt: 'For a long time I have said there are two types of people in this world; those who create content, and those that consume content. The only ones that leave a mark in this world are the creators, but without the consumers all their work just falls on deaf ears.',
     category: 'Essay',
-    imageUrl: '/covers/living-in-limbo.jpg',
+    imageUrl: '/covers/Luke S (Bindal people) Seasons 2025 acrylic on canvas.jpg',
     tags: ['Substack Origin', 'Verified', 'LINK:https://markmiwords.substack.com/p/living-in-limbo'],
     region: 'AU',
     publishDate: '2025-01-15',
@@ -139,8 +139,8 @@ const Narratives: React.FC = () => {
         <div>
           <span className="animate-living-accent tracking-[0.5em] uppercase text-[10px] font-black mb-4 block">Archive Directory</span>
           <h1 className="text-6xl md:text-9xl font-serif font-black italic text-white tracking-tighter leading-none">
-            Impacted <br/>
-            <span className="animate-living-accent">Truth.</span>
+            Your Story <br/>
+            <span className="animate-living-accent">Matters.</span>
           </h1>
         </div>
         <button 
