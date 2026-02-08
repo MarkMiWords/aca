@@ -21,21 +21,21 @@ const Home: React.FC = () => {
         {/* THE FORGE: FORGE A STORY */}
         <Link
           to="/forge"
-          className="relative flex-1 flex flex-col items-center justify-center group overflow-hidden border-b md:border-b-0 md:border-r border-white/5 transition-all duration-700 ease-in-out md:hover:flex-[1.5]"
+          className="relative flex-1 flex flex-col items-center justify-center group overflow-hidden transition-all duration-700 ease-in-out md:hover:flex-[1.5]"
         >
           <div className="absolute inset-0 z-0">
             <img
               src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2500&auto=format&fit=crop"
-              className="w-full h-full object-cover grayscale brightness-[0.3] md:brightness-[0.2] md:group-hover:brightness-[0.45] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
+              className="w-full h-full object-cover grayscale brightness-[0.5] md:brightness-[0.45] md:group-hover:brightness-[0.65] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Blacksmith Hammering Anvil"
             />
-            {/* Smooth gradient overlays — no hard edges */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40 z-[1]"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30 z-[1]"></div>
+            {/* Smooth gradient overlays — matched to archive */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-l from-black/15 via-transparent to-black/15 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/70 via-orange-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Ember glow */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[150px] opacity-0 md:group-hover:opacity-40 transition-opacity duration-1000 bg-orange-500 z-[2]"></div>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[150px] opacity-0 md:group-hover:opacity-30 transition-opacity duration-1000 bg-orange-500 z-[2]"></div>
           </div>
 
           {/* Animated sparks / particles */}
@@ -76,12 +76,12 @@ const Home: React.FC = () => {
           <div className="absolute inset-0 z-0">
             <img
               src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2500&auto=format&fit=crop"
-              className="w-full h-full object-cover grayscale brightness-[0.3] md:brightness-[0.2] md:group-hover:brightness-[0.45] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
+              className="w-full h-full object-cover grayscale brightness-[0.5] md:brightness-[0.45] md:group-hover:brightness-[0.65] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Global Archive"
             />
             {/* Smooth gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40 z-[1]"></div>
-            <div className="absolute inset-0 bg-gradient-to-l from-black/30 via-transparent to-black/30 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-l from-black/15 via-transparent to-black/15 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tl from-cyan-950/70 via-cyan-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Cool glow */}

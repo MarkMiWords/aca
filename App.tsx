@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Storefront from './pages/Storefront';
 import BookDetails from './pages/BookDetails';
@@ -28,17 +28,12 @@ import Footer from './components/Footer';
 import BugReportModal from './components/BugReportModal';
 import MicHandshake from './components/MicHandshake';
 import { readJson } from './utils/safeStorage';
-import { AcousticLinkProvider } from './context/AcousticLinkContext';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-    if (pathname === '/') {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
+    document.body.style.overflow = "auto";
   }, [pathname]);
   return null;
 };
@@ -46,60 +41,52 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
 
+  // Global Theme Initialization
   useEffect(() => {
-    try {
-      const profile = readJson<any>('aca_author_profile', { theme: 'amber' });
-      if (profile && profile.theme && profile.theme !== 'amber') {
-        document.body.className = `theme-${profile.theme}`;
-        document.documentElement.className = `theme-${profile.theme}`;
-      } else {
-        document.body.className = '';
-        document.documentElement.className = '';
-      }
-    } catch (e) {
-      console.warn("Theme initialization failed", e);
+    const profile = readJson<any>('aca_author_profile', { theme: 'amber' });
+    if (profile.theme && profile.theme !== 'amber') {
+      document.body.className = `theme-${profile.theme}`;
+    } else {
+      document.body.className = '';
     }
   }, []);
 
   return (
-    <AcousticLinkProvider>
-      <Router>
-        <div className="flex flex-col min-h-screen bg-[#050505]">
-          <ScrollToTop />
-          <MicHandshake />
-          <Navbar onReportBug={() => setIsBugModalOpen(true)} />
-          <main className="flex-grow pt-0 md:pt-24 relative">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/storefront" element={<Storefront />} />
-              <Route path="/published-books" element={<PublishedBooks />} />
-              <Route path="/book/:slug" element={<BookDetails />} />
-              <Route path="/narratives" element={<Narratives />} />
-              <Route path="/art-gallery" element={<ArtGallery />} />
-              <Route path="/mission" element={<Mission />} />
-              <Route path="/why-publish" element={<WhyPublish />} />
-              <Route path="/substack-bridge" element={<SubstackBridge />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/security" element={<Security />} />
-              <Route path="/virty-dating" element={<Kindred />} />
-              <Route path="/wrapper-info" element={<WrapperInfo />} />
-              <Route path="/origin-story" element={<Origin />} />
-              <Route path="/author-builder" element={<AuthorBuilder />} />
-              <Route path="/sovereign-slate" element={<SovereignSlate />} />
-              <Route path="/sovereign-vault" element={<SovereignVault />} />
-              <Route path="/wrap-it-up" element={<WrapItUp />} />
-              <Route path="/live-protocol" element={<LiveRules />} />
-              <Route path="/live-link" element={<LiveSession />} />
-              <Route path="/blueprints" element={<Blueprints />} />
-              <Route path="/forge" element={<Forge />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-          <BugReportModal isOpen={isBugModalOpen} onClose={() => setIsBugModalOpen(false)} />
-        </div>
-      </Router>
-    </AcousticLinkProvider>
+    <Router>
+      <div className="flex flex-col min-h-screen bg-[#050505]">
+        <ScrollToTop />
+        <MicHandshake />
+        <Navbar onReportBug={() => setIsBugModalOpen(true)} />
+        <main className="flex-grow pt-24 relative">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/storefront" element={<Storefront />} />
+            <Route path="/published-books" element={<PublishedBooks />} />
+            <Route path="/book/:slug" element={<BookDetails />} />
+            <Route path="/narratives" element={<Narratives />} />
+            <Route path="/art-gallery" element={<ArtGallery />} />
+            <Route path="/mission" element={<Mission />} />
+            <Route path="/why-publish" element={<WhyPublish />} />
+            <Route path="/substack-bridge" element={<SubstackBridge />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/security" element={<Security />} />
+            <Route path="/virty-dating" element={<Kindred />} />
+            <Route path="/wrapper-info" element={<WrapperInfo />} />
+            <Route path="/origin-story" element={<Origin />} />
+            <Route path="/author-builder" element={<AuthorBuilder />} />
+            <Route path="/sovereign-slate" element={<SovereignSlate />} />
+            <Route path="/sovereign-vault" element={<SovereignVault />} />
+            <Route path="/wrap-it-up" element={<WrapItUp />} />
+            <Route path="/live-protocol" element={<LiveRules />} />
+            <Route path="/live-link" element={<LiveSession />} />
+            <Route path="/blueprints" element={<Blueprints />} />
+            <Route path="/forge" element={<Forge />} />
+          </Routes>
+        </main>
+        <Footer />
+        <BugReportModal isOpen={isBugModalOpen} onClose={() => setIsBugModalOpen(false)} />
+      </div>
+    </Router>
   );
 };
 

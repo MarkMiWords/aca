@@ -24,7 +24,9 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
   );
 
   return (
-    <nav className="fixed w-full z-[100] bg-[#050505]/80 backdrop-blur-2xl border-b border-white/[0.03]">
+    <nav className="fixed w-full z-[100] border-b border-white/[0.03]" style={{ overflow: 'visible' }}>
+      {/* Backdrop on its own layer so it doesn't clip the overhanging logo */}
+      <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-2xl -z-10" style={{ overflow: 'hidden' }}></div>
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)]/30 to-transparent"></div>
       
       <div className="w-full h-16 md:h-24 flex items-center justify-between">
@@ -34,7 +36,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
             <Link to="/" className="block overflow-visible pointer-events-auto">
               <Logo
                 variant="light"
-                className="h-28 w-28"
+                className="h-20 w-20"
               />
             </Link>
           </div>
@@ -43,7 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
             <Link to="/" className="group block overflow-visible pointer-events-auto">
               <Logo
                 variant="light"
-                className="h-48 w-auto transition-all duration-500 group-hover:scale-105"
+                className="h-36 w-auto transition-all duration-500 group-hover:scale-105"
               />
             </Link>
           </div>
