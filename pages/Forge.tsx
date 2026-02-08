@@ -11,7 +11,7 @@ const Forge: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2500&auto=format&fit=crop"
-            className="w-full h-full object-cover grayscale brightness-[0.25] scale-105"
+            className="w-full h-full object-cover grayscale brightness-[0.45] scale-105"
             alt="The Anvil"
           />
           <div className="absolute inset-0 bg-black/40 z-[1]"></div>

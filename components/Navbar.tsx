@@ -36,7 +36,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
             <Link to="/" className="block overflow-visible pointer-events-auto">
               <Logo
                 variant="light"
-                className="h-28 w-28"
+                className="h-20 w-20"
               />
             </Link>
           </div>
@@ -45,7 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
             <Link to="/" className="group block overflow-visible pointer-events-auto">
               <Logo
                 variant="light"
-                className="h-48 w-auto transition-all duration-500 group-hover:scale-105"
+                className="h-36 w-auto transition-all duration-500 group-hover:scale-105"
               />
             </Link>
           </div>
