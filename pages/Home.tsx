@@ -70,7 +70,7 @@ const Home: React.FC = () => {
 
         {/* THE ARCHIVE: READ A STORY */}
         <Link
-          to="/published-books"
+          to="/storefront"
           className="relative flex-1 flex flex-col items-center justify-center group overflow-hidden transition-all duration-700 ease-in-out md:hover:flex-[1.5]"
         >
           <div className="absolute inset-0 z-0">
