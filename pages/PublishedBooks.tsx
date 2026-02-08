@@ -7,12 +7,12 @@ const PublishedBooks: React.FC = () => {
   return (
     <div className="bg-[#050505] min-h-screen text-white pb-32">
       {/* Header */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 border-b border-white/5">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 animate-fade-in">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12 border-b border-white/5">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-fade-in">
           <div>
-            <span className="text-[var(--accent)] tracking-[0.6em] uppercase text-[10px] font-bold mb-6 block">The Collection</span>
-            <h1 className="text-6xl md:text-9xl font-serif font-black mb-12 italic leading-none tracking-tighter uppercase text-white">Books.</h1>
-            <p className="text-xl md:text-2xl text-gray-400 font-light max-w-3xl leading-relaxed italic opacity-80">"Stories forged in the fires of lived experience."</p>
+            <span className="text-[var(--accent)] tracking-[0.6em] uppercase text-[9px] font-bold mb-3 block">The Collection</span>
+            <h1 className="text-2xl md:text-4xl font-serif font-black italic leading-none tracking-tight text-white">Books.</h1>
+            <p className="text-sm md:text-base text-gray-400 font-light max-w-xl leading-relaxed italic mt-3">"Stories forged in the fires of lived experience."</p>
           </div>
         </div>
       </section>
