@@ -11,7 +11,7 @@ const Forge: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2500&auto=format&fit=crop"
-            className="w-full h-full object-cover grayscale brightness-[0.45] scale-105"
+            className="w-full h-full object-cover grayscale brightness-[0.55] scale-105"
             alt="The Anvil"
           />
           <div className="absolute inset-0 bg-black/40 z-[1]"></div>
@@ -37,8 +37,16 @@ const Forge: React.FC = () => {
       <section className="py-16 md:py-28 px-4 sm:px-8 lg:px-16">
         <div className="max-w-4xl mx-auto">
           <p className="text-base sm:text-lg md:text-xl text-gray-400 font-light italic leading-relaxed border-l-2 pl-6 sm:pl-10 py-4" style={{ borderLeftColor: 'var(--accent-glow)' }}>
-            Our Author First, custom built Word Forge is a sovereign digital workspace built for incarcerated and formerly incarcerated authors. Using the latest technology, we have created a unique platform that anyone is more than welcome to use. Step inside and create your own digital Wrap Sheets — designed to feature your work across multiple formats, from print to digital distribution. Stuck for ideas? Open a Live Link session with Rap, your AI co-pilot, designed to help you push past creative blocks and produce print-worthy content, straight out of the box. This tool is currently in beta, and we invite you to be part of shaping its future. If you're interested in joining us, email Mark@acaptiveaudience.net.
+            Our Author First, custom built Word Forge is a sovereign digital workspace built for incarcerated and formerly incarcerated authors. Using the latest technology, we have created a unique platform that anyone is more than welcome to use. Step inside and create your own digital Wrap Sheets — designed to feature your work across multiple formats, from print to digital distribution. Stuck for ideas? Open a Live Link session with Rap, your AI co-pilot, designed to help you push past creative blocks and produce print-worthy content, straight out of the box. This tool is currently in beta, and we invite you to be part of shaping its future.
           </p>
+          <div className="mt-8 sm:mt-10 pl-6 sm:pl-10">
+            <a
+              href="mailto:Mark@acaptiveaudience.net?subject=Word%20Forge%20Beta%20Access"
+              className="inline-block animate-living-amber-bg text-white px-8 sm:px-12 py-4 sm:py-5 font-black tracking-[0.4em] sm:tracking-[0.5em] uppercase text-[10px] sm:text-[11px] transition-all shadow-2xl rounded-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-orange-500/20"
+            >
+              Get Beta Access
+            </a>
+          </div>
         </div>
       </section>
 
@@ -123,7 +131,7 @@ const Forge: React.FC = () => {
             href="mailto:Mark@acaptiveaudience.net?subject=Word%20Forge%20Beta%20Access"
             className="inline-block animate-living-amber-bg text-white px-10 sm:px-16 py-5 sm:py-6 font-black tracking-[0.4em] sm:tracking-[0.6em] uppercase text-[10px] sm:text-[11px] transition-all shadow-2xl rounded-sm hover:scale-[1.02] active:scale-[0.98]"
           >
-            Mark@acaptiveaudience.net
+            Join the Beta
           </a>
         </div>
       </section>
