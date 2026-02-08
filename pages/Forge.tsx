@@ -140,7 +140,7 @@ const Forge: React.FC = () => {
       <section className="py-16 md:py-24 px-4 sm:px-8 border-t border-white/[0.05]">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-lg sm:text-xl md:text-2xl text-gray-600 font-serif italic leading-relaxed">
-            "This is the tool I wish I had on the inside. Now, it's yours."
+            "The only thing you can truly own is the one thing that can't be taken from you. Your Story."
           </p>
         </div>
       </section>
