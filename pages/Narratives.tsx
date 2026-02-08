@@ -1,7 +1,6 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { queryInsight } from '../services/geminiService';
 import { Narrative, Message } from '../types';
 import { readArray, writeJson, k } from '../utils/safeStorage';
 
@@ -33,13 +32,10 @@ const SAMPLE_NARRATIVES: Narrative[] = [
 ];
 
 const Narratives: React.FC = () => {
-  const [query, setQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [displayNarratives, setDisplayNarratives] = useState<Narrative[]>([]);
   const [showIngestModal, setShowIngestModal] = useState(false);
   const [ingestSuccess, setIngestSuccess] = useState(false);
-  
+
   const [newEntry, setNewEntry] = useState({
     title: '',
     url: '',
@@ -47,8 +43,6 @@ const Narratives: React.FC = () => {
     region: 'AU' as any,
     category: 'Systemic Memoir' as any
   });
-
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadAllNarratives = useCallback(() => {
     // 1. Load "Registered" external links (Substack)
@@ -82,27 +76,6 @@ const Narratives: React.FC = () => {
   useEffect(() => {
     loadAllNarratives();
   }, [loadAllNarratives]);
-
-  useEffect(() => { 
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
-  }, [messages, isLoading]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    const userQuery = query;
-    setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
-    setQuery('');
-    try {
-      const response = await queryInsight(userQuery);
-      setMessages(prev => [...prev, response]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Insight link failed. System offline." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleIngest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,49 +123,6 @@ const Narratives: React.FC = () => {
           + Ingest Substack Story
         </button>
       </div>
-
-      {/* AI INSIGHT SEARCH */}
-      <section className="mb-32 bg-[#0d0d0d] border border-white/5 p-1 relative overflow-hidden shadow-2xl">
-          <div ref={scrollRef} className="h-96 overflow-y-auto p-10 space-y-10 bg-black/40 custom-scrollbar">
-            {messages.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
-                <p className="text-lg italic font-serif text-gray-400 max-w-md">Query the multi-continental impact registry for themes of systemic adversity.</p>
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start animate-fade-in'}`}>
-                <div className={`max-w-[80%] p-8 rounded-sm ${msg.role === 'user' ? 'bg-white/5 border border-white/10 italic text-gray-500' : 'bg-[var(--accent)]/5 border border-[var(--accent)]/20 text-gray-200'}`}>
-                   <p className="text-base leading-[1.8] font-serif tracking-wide">{msg.content}</p>
-                   {msg.sources && msg.sources.length > 0 && (
-                     <div className="mt-6 pt-6 border-t border-white/5">
-                       <p className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-widest mb-3">Sources:</p>
-                       <ul className="space-y-2">
-                         {msg.sources.map((s, idx) => (
-                           <li key={idx}>
-                             <a href={s.web?.uri} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-white transition-colors underline decoration-white/10 underline-offset-4 break-all">
-                               {s.web?.title || s.web?.uri}
-                             </a>
-                           </li>
-                         ))}
-                       </ul>
-                     </div>
-                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={handleSearch} className="p-4 bg-[#111] border-t border-white/5 flex gap-4">
-            <input 
-              value={query} 
-              onChange={(e) => setQuery(e.target.value)} 
-              placeholder="Search the archive context..." 
-              className="flex-grow bg-black border border-white/10 px-6 py-5 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
-            />
-            <button type="submit" disabled={isLoading} className="bg-[var(--accent)] text-white px-10 py-5 font-black uppercase text-[10px] tracking-[0.4em] animate-living-amber-bg disabled:opacity-50">
-              {isLoading ? '...' : 'Ask'}
-            </button>
-          </form>
-      </section>
 
       {/* FEATURED: Letter from Hakea */}
       <section className="mb-32 relative overflow-hidden border border-white/5 rounded-sm bg-[#0a0a0a]">
