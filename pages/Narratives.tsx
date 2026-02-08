@@ -8,6 +8,18 @@ import { readArray, writeJson, k } from '../utils/safeStorage';
 const SAMPLE_NARRATIVES: Narrative[] = [
   {
     id: 'sample-1',
+    title: 'Living in Limbo',
+    author: 'Mark Mi Words',
+    excerpt: 'For a long time I have said there are two types of people in this world; those who create content, and those that consume content. The only ones that leave a mark in this world are the creators, but without the consumers all their work just falls on deaf ears.',
+    category: 'Essay',
+    imageUrl: '/covers/living-in-limbo.jpg',
+    tags: ['Substack Origin', 'Verified', 'LINK:https://markmiwords.substack.com/p/living-in-limbo'],
+    region: 'AU',
+    publishDate: '2025-01-15',
+    stats: { reads: 0, kindredConnections: 0, reach: 1.0 }
+  },
+  {
+    id: 'sample-2',
     title: 'Crowing On About Life',
     author: 'Mark Mi Words',
     excerpt: 'I call it Port Phillip Paradiso, but this ain\'t no disco. It ain\'t no country club either. This is hell, hey.',
