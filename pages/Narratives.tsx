@@ -18,18 +18,6 @@ const SAMPLE_NARRATIVES: Narrative[] = [
     publishDate: '2025-01-15',
     stats: { reads: 840, kindredConnections: 32, reach: 0.9 }
   },
-  {
-    id: 'sample-2',
-    title: 'Letter from Hakea',
-    author: 'David Orne',
-    excerpt: 'We are in 20 hr lockdown everyday. Sometimes 22 hrs. 3 to a cell. If I couldn\'t do my art I would of done something crazy or gone crazy its starting to take its toll on me. Something needs to change.',
-    category: 'Diary',
-    imageUrl: '/covers/david-orne-painting.jpg',
-    tags: ['About Time', 'Western Australia', 'Art'],
-    region: 'AU',
-    publishDate: '2025-11-16',
-    stats: { reads: 0, kindredConnections: 0, reach: 1.0 }
-  }
 ];
 
 const Narratives: React.FC = () => {
@@ -192,6 +180,52 @@ const Narratives: React.FC = () => {
               {isLoading ? '...' : 'Ask'}
             </button>
           </form>
+      </section>
+
+      {/* FEATURED: Letter from Hakea */}
+      <section className="mb-32 relative overflow-hidden border border-white/5 rounded-sm bg-[#0a0a0a]">
+        <div className="flex flex-col lg:flex-row">
+          {/* Painting */}
+          <div className="lg:w-1/2 relative overflow-hidden">
+            <img
+              src="/covers/Davids compressed painting.jpg"
+              alt="Painting by David Orne — Hakea Prison, 2025"
+              className="w-full h-full object-cover min-h-[400px]"
+            />
+            <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-sm">
+              <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Artwork by David Orne • Hakea Prison • 2025</span>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center space-y-8">
+            <div>
+              <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[9px] font-black block mb-4">Featured Story</span>
+              <h2 className="text-4xl sm:text-5xl font-serif font-black italic text-white tracking-tighter leading-none mb-2">Letter from <span style={{ color: 'var(--accent)' }}>Hakea.</span></h2>
+              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-3">By David Orne • Hakea Prison, Western Australia • 16/11/2025</p>
+            </div>
+
+            <p className="text-gray-300 text-base sm:text-lg font-light italic leading-relaxed border-l-2 pl-6" style={{ borderLeftColor: 'var(--accent-glow)' }}>
+              "We are in 20 hr lockdown everyday. Sometimes 22 hrs. 3 to a cell. If I couldnt do my art I would of done something crazy or gone crazy its starting to take its toll on me. Something needs to change."
+            </p>
+
+            {/* The handwritten letter */}
+            <div className="relative">
+              <img
+                src="/covers/Davids compressed letter.jpg"
+                alt="Handwritten letter from David Orne"
+                className="w-full rounded-sm border border-white/10 shadow-xl"
+              />
+              <div className="absolute -bottom-3 -right-3 bg-[var(--accent)] px-4 py-2 rounded-sm shadow-lg">
+                <span className="text-[8px] font-black uppercase tracking-widest text-white">Original Letter</span>
+              </div>
+            </div>
+
+            <p className="text-gray-500 text-xs font-light italic leading-relaxed">
+              David's handwritten letter arrived with his painting — a raw, unfiltered voice from inside Hakea Prison. This is exactly what the Forge's OCR tools are built for: turning handwritten truth into digital permanence.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* NARRATIVE GRID */}
