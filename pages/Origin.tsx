@@ -87,9 +87,9 @@ const Origin: React.FC = () => {
             "I've included all the tools I wish I had when I first started writing. I hope you connect with your words and this technology to produce results that change lives—just like these stories changed mine."
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-8">
-            <Link to="/author-builder" className="bg-orange-500 hover:bg-orange-600 text-white px-16 py-6 font-black tracking-[0.5em] uppercase text-[10px] transition-all animate-pulse-orange shadow-2xl rounded-sm">
-              Start Your Sheet
-            </Link>
+            <a href="mailto:Mark@acaptiveaudience.net?subject=Word%20Forge%20Beta%20Access" className="bg-orange-500 hover:bg-orange-600 text-white px-16 py-6 font-black tracking-[0.5em] uppercase text-[10px] transition-all animate-pulse-orange shadow-2xl rounded-sm">
+              Join the Beta
+            </a>
           </div>
         </div>
       </div>

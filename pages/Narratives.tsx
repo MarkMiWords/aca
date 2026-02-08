@@ -1,13 +1,24 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { queryInsight } from '../services/geminiService';
 import { Narrative, Message } from '../types';
 import { readArray, writeJson, k } from '../utils/safeStorage';
 
 const SAMPLE_NARRATIVES: Narrative[] = [
   {
     id: 'sample-1',
+    title: 'Living in Limbo',
+    author: 'Mark Mi Words',
+    excerpt: 'For a long time I have said there are two types of people in this world; those who create content, and those that consume content. The only ones that leave a mark in this world are the creators, but without the consumers all their work just falls on deaf ears.',
+    category: 'Essay',
+    imageUrl: '/covers/Luke S (Bindal people) Seasons 2025 acrylic on canvas.jpg',
+    tags: ['Substack Origin', 'Verified', 'LINK:https://markmiwords.substack.com/p/living-in-limbo'],
+    region: 'AU',
+    publishDate: '2025-01-15',
+    stats: { reads: 0, kindredConnections: 0, reach: 1.0 }
+  },
+  {
+    id: 'sample-2',
     title: 'Crowing On About Life',
     author: 'Mark Mi Words',
     excerpt: 'I call it Port Phillip Paradiso, but this ain\'t no disco. It ain\'t no country club either. This is hell, hey.',
@@ -18,28 +29,13 @@ const SAMPLE_NARRATIVES: Narrative[] = [
     publishDate: '2025-01-15',
     stats: { reads: 840, kindredConnections: 32, reach: 0.9 }
   },
-  {
-    id: 'sample-2',
-    title: 'Letter from Hakea',
-    author: 'David Orne',
-    excerpt: 'We are in 20 hr lockdown everyday. Sometimes 22 hrs. 3 to a cell. If I couldn\'t do my art I would of done something crazy or gone crazy its starting to take its toll on me. Something needs to change.',
-    category: 'Diary',
-    imageUrl: '/covers/david-orne-painting.jpg',
-    tags: ['About Time', 'Western Australia', 'Art'],
-    region: 'AU',
-    publishDate: '2025-11-16',
-    stats: { reads: 0, kindredConnections: 0, reach: 1.0 }
-  }
 ];
 
 const Narratives: React.FC = () => {
-  const [query, setQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [displayNarratives, setDisplayNarratives] = useState<Narrative[]>([]);
   const [showIngestModal, setShowIngestModal] = useState(false);
   const [ingestSuccess, setIngestSuccess] = useState(false);
-  
+
   const [newEntry, setNewEntry] = useState({
     title: '',
     url: '',
@@ -47,8 +43,6 @@ const Narratives: React.FC = () => {
     region: 'AU' as any,
     category: 'Systemic Memoir' as any
   });
-
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadAllNarratives = useCallback(() => {
     // 1. Load "Registered" external links (Substack)
@@ -82,27 +76,6 @@ const Narratives: React.FC = () => {
   useEffect(() => {
     loadAllNarratives();
   }, [loadAllNarratives]);
-
-  useEffect(() => { 
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; 
-  }, [messages, isLoading]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    const userQuery = query;
-    setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
-    setQuery('');
-    try {
-      const response = await queryInsight(userQuery);
-      setMessages(prev => [...prev, response]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Insight link failed. System offline." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleIngest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,8 +112,8 @@ const Narratives: React.FC = () => {
         <div>
           <span className="animate-living-accent tracking-[0.5em] uppercase text-[10px] font-black mb-4 block">Archive Directory</span>
           <h1 className="text-6xl md:text-9xl font-serif font-black italic text-white tracking-tighter leading-none">
-            Impacted <br/>
-            <span className="animate-living-accent">Truth.</span>
+            Your Story <br/>
+            <span className="animate-living-accent">Matters.</span>
           </h1>
         </div>
         <button 
@@ -151,47 +124,50 @@ const Narratives: React.FC = () => {
         </button>
       </div>
 
-      {/* AI INSIGHT SEARCH */}
-      <section className="mb-32 bg-[#0d0d0d] border border-white/5 p-1 relative overflow-hidden shadow-2xl">
-          <div ref={scrollRef} className="h-96 overflow-y-auto p-10 space-y-10 bg-black/40 custom-scrollbar">
-            {messages.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
-                <p className="text-lg italic font-serif text-gray-400 max-w-md">Query the multi-continental impact registry for themes of systemic adversity.</p>
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start animate-fade-in'}`}>
-                <div className={`max-w-[80%] p-8 rounded-sm ${msg.role === 'user' ? 'bg-white/5 border border-white/10 italic text-gray-500' : 'bg-[var(--accent)]/5 border border-[var(--accent)]/20 text-gray-200'}`}>
-                   <p className="text-base leading-[1.8] font-serif tracking-wide">{msg.content}</p>
-                   {msg.sources && msg.sources.length > 0 && (
-                     <div className="mt-6 pt-6 border-t border-white/5">
-                       <p className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-widest mb-3">Sources:</p>
-                       <ul className="space-y-2">
-                         {msg.sources.map((s, idx) => (
-                           <li key={idx}>
-                             <a href={s.web?.uri} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-white transition-colors underline decoration-white/10 underline-offset-4 break-all">
-                               {s.web?.title || s.web?.uri}
-                             </a>
-                           </li>
-                         ))}
-                       </ul>
-                     </div>
-                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={handleSearch} className="p-4 bg-[#111] border-t border-white/5 flex gap-4">
-            <input 
-              value={query} 
-              onChange={(e) => setQuery(e.target.value)} 
-              placeholder="Search the archive context..." 
-              className="flex-grow bg-black border border-white/10 px-6 py-5 text-sm font-serif focus:border-[var(--accent)] outline-none text-white transition-all" 
+      {/* FEATURED: Letter from Hakea */}
+      <section className="mb-32 relative overflow-hidden border border-white/5 rounded-sm bg-[#0a0a0a]">
+        <div className="flex flex-col lg:flex-row">
+          {/* Painting */}
+          <div className="lg:w-1/2 relative overflow-hidden">
+            <img
+              src="/covers/Davids compressed painting.jpg"
+              alt="Painting by David Orne — Hakea Prison, 2025"
+              className="w-full h-full object-cover min-h-[400px]"
             />
-            <button type="submit" disabled={isLoading} className="bg-[var(--accent)] text-white px-10 py-5 font-black uppercase text-[10px] tracking-[0.4em] animate-living-amber-bg disabled:opacity-50">
-              {isLoading ? '...' : 'Ask'}
-            </button>
-          </form>
+            <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-sm">
+              <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Artwork by David Orne • Hakea Prison • 2025</span>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center space-y-8">
+            <div>
+              <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[9px] font-black block mb-4">Featured Story</span>
+              <h2 className="text-4xl sm:text-5xl font-serif font-black italic text-white tracking-tighter leading-none mb-2">Letter from <span style={{ color: 'var(--accent)' }}>Hakea.</span></h2>
+              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-3">By David Orne • Hakea Prison, Western Australia • 16/11/2025</p>
+            </div>
+
+            <p className="text-gray-300 text-base sm:text-lg font-light italic leading-relaxed border-l-2 pl-6" style={{ borderLeftColor: 'var(--accent-glow)' }}>
+              "We are in 20 hr lockdown everyday. Sometimes 22 hrs. 3 to a cell. If I couldnt do my art I would of done something crazy or gone crazy its starting to take its toll on me. Something needs to change."
+            </p>
+
+            {/* The handwritten letter */}
+            <div className="relative">
+              <img
+                src="/covers/Davids compressed letter.jpg"
+                alt="Handwritten letter from David Orne"
+                className="w-full rounded-sm border border-white/10 shadow-xl"
+              />
+              <div className="absolute -bottom-3 -right-3 bg-[var(--accent)] px-4 py-2 rounded-sm shadow-lg">
+                <span className="text-[8px] font-black uppercase tracking-widest text-white">Original Letter</span>
+              </div>
+            </div>
+
+            <p className="text-gray-500 text-xs font-light italic leading-relaxed">
+              David's handwritten letter arrived with his painting — a raw, unfiltered voice from inside Hakea Prison. This is exactly what the Forge's OCR tools are built for: turning handwritten truth into digital permanence.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* NARRATIVE GRID */}

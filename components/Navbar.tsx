@@ -68,6 +68,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           <NavItem to="/narratives" label="Archive" />
           <NavItem to="/forge" label="Forge" variant="orange" />
           <NavItem to="/sovereign-vault" label="The Vault" />
+          <NavItem to="/origin-story" label="Origins" />
 
           <Link to="/wrap-it-up" className="animate-living-amber-bg text-white px-5 py-2 text-[9px] font-black tracking-[0.3em] uppercase transition-all hover:brightness-110 rounded-sm">Mastering</Link>
 
@@ -101,6 +102,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
           <Link to="/narratives" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Archive</Link>
           <Link to="/forge" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-accent">Forge</Link>
           <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2">Vault</Link>
+          <Link to="/origin-story" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Origins</Link>
         </div>
       </div>
     </nav>
