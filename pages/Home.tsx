@@ -29,13 +29,13 @@ const Home: React.FC = () => {
               className="w-full h-full object-cover grayscale brightness-[0.5] md:brightness-[0.45] md:group-hover:brightness-[0.65] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Blacksmith Hammering Anvil"
             />
-            {/* Smooth gradient overlays — no hard edges */}
+            {/* Smooth gradient overlays — matched to archive */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/15 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-l from-black/15 via-transparent to-black/15 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/70 via-orange-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Ember glow */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[150px] opacity-0 md:group-hover:opacity-40 transition-opacity duration-1000 bg-orange-500 z-[2]"></div>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[150px] opacity-0 md:group-hover:opacity-30 transition-opacity duration-1000 bg-orange-500 z-[2]"></div>
           </div>
 
           {/* Animated sparks / particles */}
