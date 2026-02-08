@@ -106,6 +106,7 @@ const SovereignVault: React.FC = () => {
              <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[10px] font-black">Secure Archive</span>
           </div>
           <h1 className="text-7xl font-serif font-black italic text-white tracking-tighter uppercase">THE <span className="text-[var(--accent)]">VAULT.</span></h1>
+          <p className="text-sm md:text-base text-gray-400 font-light italic mt-4 max-w-lg leading-relaxed">Your sovereign archive. Every Wrap Sheet, published work and system diagnostic — stored, versioned and ready to restore.</p>
         </div>
         <div className="pb-4 flex items-center gap-4">
            <div className={`w-3 h-3 rounded-full ${heartbeat.status === 'online' ? 'bg-green-500 shadow-[0_0_15px_#22c55e]' : heartbeat.status === 'loading' ? 'bg-amber-500' : 'bg-red-500'} animate-pulse`}></div>
