@@ -26,12 +26,12 @@ const Home: React.FC = () => {
           <div className="absolute inset-0 z-0">
             <img
               src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2500&auto=format&fit=crop"
-              className="w-full h-full object-cover grayscale brightness-[0.4] md:brightness-[0.35] md:group-hover:brightness-[0.55] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
+              className="w-full h-full object-cover grayscale brightness-[0.5] md:brightness-[0.45] md:group-hover:brightness-[0.65] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Blacksmith Hammering Anvil"
             />
             {/* Smooth gradient overlays — no hard edges */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-[1]"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/15 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/70 via-orange-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Ember glow */}
@@ -76,12 +76,12 @@ const Home: React.FC = () => {
           <div className="absolute inset-0 z-0">
             <img
               src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2500&auto=format&fit=crop"
-              className="w-full h-full object-cover grayscale brightness-[0.4] md:brightness-[0.35] md:group-hover:brightness-[0.55] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
+              className="w-full h-full object-cover grayscale brightness-[0.5] md:brightness-[0.45] md:group-hover:brightness-[0.65] md:group-hover:grayscale-0 md:group-hover:scale-110 transition-all duration-[4000ms]"
               alt="The Global Archive"
             />
             {/* Smooth gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-[1]"></div>
-            <div className="absolute inset-0 bg-gradient-to-l from-black/20 via-transparent to-black/20 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-[1]"></div>
+            <div className="absolute inset-0 bg-gradient-to-l from-black/15 via-transparent to-black/15 z-[1]"></div>
             {/* Colour wash on hover */}
             <div className="absolute inset-0 bg-gradient-to-tl from-cyan-950/70 via-cyan-900/20 to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-1000 z-[2]"></div>
             {/* Cool glow */}
