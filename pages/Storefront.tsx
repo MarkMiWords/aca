@@ -13,7 +13,7 @@ const Storefront: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#020202] z-10"></div>
         <img
           src={featuredBook.coverUrl}
-          className="w-full h-full object-cover opacity-20 grayscale scale-110 animate-subtle-drift blur-md"
+          className="w-full h-full object-cover opacity-25 grayscale scale-110 animate-subtle-drift blur-md"
           alt="Atmospheric Background"
         />
       </div>
@@ -35,10 +35,10 @@ const Storefront: React.FC = () => {
               <div className="relative z-10 w-[320px] md:w-[420px] aspect-[16/27] bg-[#0a0a0a] border-l-[12px] border-black shadow-2xl rounded-r-sm overflow-hidden transform transition-all duration-700 group-hover:scale-[1.02]">
                 <img
                   src={featuredBook.coverUrl}
-                  className="w-full h-full object-contain block"
+                  className="w-full h-full object-contain block brightness-110"
                   alt={`${featuredBook.title} Cover`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent"></div>
               </div>
 
               <div className="absolute -inset-[2px] rounded-r-sm border border-white/10 z-20 pointer-events-none"></div>
@@ -48,17 +48,17 @@ const Storefront: React.FC = () => {
           {/* Promotional Copy */}
           <div className="w-full lg:w-1/2 space-y-12">
             <div className="space-y-6">
-              <span className="text-[var(--accent)] tracking-[0.8em] uppercase text-[11px] font-black block animate-pulse">Now Available</span>
+              <span className="text-[var(--accent)] tracking-[0.8em] uppercase text-[11px] font-black block animate-pulse">Available Soon</span>
               <h1 className="text-6xl md:text-8xl font-serif font-black italic tracking-tighter leading-none text-white">
                 The IVO <br/>
                 <span className="text-[var(--accent)] animate-living-accent">Trap.</span>
               </h1>
-              <p className="text-2xl md:text-3xl text-gray-400 font-light italic leading-relaxed border-l-2 pl-8 border-[var(--accent)]/30">
+              <p className="text-2xl md:text-3xl text-gray-300 font-light italic leading-relaxed border-l-2 pl-8 border-[var(--accent)]/30">
                 {featuredBook.subtitle}
               </p>
             </div>
 
-            <div className="space-y-8 text-gray-500 font-light italic leading-loose text-lg max-h-[300px] overflow-y-auto no-scrollbar">
+            <div className="space-y-8 text-gray-400 font-light italic leading-loose text-lg max-h-[300px] overflow-y-auto no-scrollbar">
               <p className="whitespace-pre-wrap">{featuredBook.description.split('\n\n').slice(0, 3).join('\n\n')}</p>
             </div>
 
@@ -82,12 +82,12 @@ const Storefront: React.FC = () => {
             <div className="pt-12 border-t border-white/5 flex items-center gap-8">
               <div className="text-center">
                 <p className="text-white text-xl font-serif italic">{featuredBook.releaseYear}</p>
-                <p className="text-[8px] text-gray-700 font-black uppercase tracking-widest">Release Year</p>
+                <p className="text-[8px] text-gray-500 font-black uppercase tracking-widest">Release Year</p>
               </div>
               <div className="h-8 w-[1px] bg-white/5"></div>
               <div className="text-center">
                 <p className="text-[var(--accent)] text-xl font-serif italic">{featuredBook.author.toUpperCase()}</p>
-                <p className="text-[8px] text-gray-700 font-black uppercase tracking-widest">The Author</p>
+                <p className="text-[8px] text-gray-500 font-black uppercase tracking-widest">The Author</p>
               </div>
             </div>
           </div>
@@ -100,7 +100,7 @@ const Storefront: React.FC = () => {
           <div className="flex items-end justify-between border-b border-white/5 pb-12 mb-16">
             <div>
               <span className="text-[var(--accent)] tracking-[0.5em] uppercase text-[9px] font-black block mb-4">The Collection</span>
-              <h2 className="text-4xl md:text-5xl font-serif italic font-black text-white">More <span className="text-gray-600">Books.</span></h2>
+              <h2 className="text-4xl md:text-5xl font-serif italic font-black text-white">More <span className="text-gray-500">Books.</span></h2>
             </div>
           </div>
 
@@ -112,7 +112,7 @@ const Storefront: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white truncate">{book.title}</h3>
-                  <p className="text-[8px] text-gray-600 uppercase font-black">{book.author}</p>
+                  <p className="text-[8px] text-gray-500 uppercase font-black">{book.author}</p>
                 </div>
               </Link>
             ))}
