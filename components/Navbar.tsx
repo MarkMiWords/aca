@@ -64,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
         </div>
         
         <div className="hidden md:flex items-center space-x-6 pr-12 lg:pr-20">
-          <NavItem to="/published-books" label="Books" />
+          <NavItem to="/storefront" label="Books" />
           <NavItem to="/narratives" label="Archive" />
           <NavItem to="/forge" label="Forge" variant="orange" />
           <NavItem to="/sovereign-vault" label="The Vault" />
@@ -97,7 +97,7 @@ const Navbar: React.FC<NavbarProps> = ({ onReportBug }) => {
       <div className={`${isOpen ? 'block' : 'hidden'} md:hidden bg-[#050505] h-screen border-t border-white/5`}>
         <div className="px-12 pt-12 pb-3 space-y-8 flex flex-col items-center">
           <Link to="/" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Home</Link>
-          <Link to="/published-books" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
+          <Link to="/storefront" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Books</Link>
           <Link to="/narratives" onClick={() => setIsOpen(false)} className="text-gray-300 text-3xl font-serif italic py-2">Archive</Link>
           <Link to="/forge" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2 animate-living-accent">Forge</Link>
           <Link to="/sovereign-vault" onClick={() => setIsOpen(false)} className="text-[var(--accent)] text-3xl font-serif italic py-2">Vault</Link>

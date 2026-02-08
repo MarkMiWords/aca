@@ -13,7 +13,7 @@ const Storefront: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#020202] z-10"></div>
         <img
           src={featuredBook.coverUrl}
-          className="w-full h-full object-cover opacity-20 grayscale scale-110 animate-subtle-drift blur-md"
+          className="w-full h-full object-cover opacity-25 grayscale scale-110 animate-subtle-drift blur-md"
           alt="Atmospheric Background"
         />
       </div>
@@ -35,10 +35,10 @@ const Storefront: React.FC = () => {
               <div className="relative z-10 w-[320px] md:w-[420px] aspect-[16/27] bg-[#0a0a0a] border-l-[12px] border-black shadow-2xl rounded-r-sm overflow-hidden transform transition-all duration-700 group-hover:scale-[1.02]">
                 <img
                   src={featuredBook.coverUrl}
-                  className="w-full h-full object-contain block"
+                  className="w-full h-full object-contain block brightness-110"
                   alt={`${featuredBook.title} Cover`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent"></div>
               </div>
 
               <div className="absolute -inset-[2px] rounded-r-sm border border-white/10 z-20 pointer-events-none"></div>
