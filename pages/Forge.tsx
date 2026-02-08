@@ -27,7 +27,7 @@ const Forge: React.FC = () => {
           <h1 className="text-5xl sm:text-7xl md:text-9xl font-serif font-black italic text-white tracking-tighter leading-[0.85] mb-6 md:mb-8 animate-slide-up">
             The <span className="animate-living-accent" style={{ color: 'var(--accent)' }}>Forge.</span>
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-400 font-light italic max-w-2xl mx-auto leading-relaxed animate-fade-in">
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-light italic max-w-2xl mx-auto leading-relaxed animate-fade-in">
             Where raw truth becomes print-ready.
           </p>
         </div>
@@ -36,7 +36,7 @@ const Forge: React.FC = () => {
       {/* Introduction */}
       <section className="py-16 md:py-28 px-4 sm:px-8 lg:px-16">
         <div className="max-w-4xl mx-auto">
-          <p className="text-base sm:text-lg md:text-xl text-gray-400 font-light italic leading-relaxed border-l-2 pl-6 sm:pl-10 py-4" style={{ borderLeftColor: 'var(--accent-glow)' }}>
+          <p className="text-base sm:text-lg md:text-xl text-gray-300 font-light italic leading-relaxed border-l-2 pl-6 sm:pl-10 py-4" style={{ borderLeftColor: 'var(--accent-glow)' }}>
             Our Author First, custom built Word Forge is a sovereign digital workspace built for incarcerated and formerly incarcerated authors. Using the latest technology, we have created a unique platform that anyone is more than welcome to use. Step inside and create your own digital Wrap Sheets — designed to feature your work across multiple formats, from print to digital distribution. Stuck for ideas? Open a Live Link session with Rap, your AI co-pilot, designed to help you push past creative blocks and produce print-worthy content, straight out of the box. This tool is currently in beta, and we invite you to be part of shaping its future.
           </p>
           <div className="mt-8 sm:mt-10 pl-6 sm:pl-10">
@@ -69,7 +69,7 @@ const Forge: React.FC = () => {
                 </div>
                 <h3 className="text-lg sm:text-xl font-serif italic text-white">Writing</h3>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-light italic">
+              <p className="text-xs sm:text-sm text-gray-400 leading-relaxed font-light italic">
                 Your story starts here. Lay down your truth, your way. Use dictation and see your words appear on the sheet. Or type it out and turn prose into poetry.
               </p>
             </div>
@@ -82,7 +82,7 @@ const Forge: React.FC = () => {
                 </div>
                 <h3 className="text-lg sm:text-xl font-serif italic text-white">Revising</h3>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-light italic">
+              <p className="text-xs sm:text-sm text-gray-400 leading-relaxed font-light italic">
                 Shape and tighten your work with tools like Scrub, Rinse and Wash that drop the soap and tighten prose while keeping dialogue intact.
               </p>
             </div>
@@ -95,7 +95,7 @@ const Forge: React.FC = () => {
                 </div>
                 <h3 className="text-lg sm:text-xl font-serif italic text-white">Articulation</h3>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-light italic">
+              <p className="text-xs sm:text-sm text-gray-400 leading-relaxed font-light italic">
                 Hear your story read back to you in any voice, accent or language you like. Can't decide? Clone your own voice then!
               </p>
             </div>
@@ -108,7 +108,7 @@ const Forge: React.FC = () => {
                 </div>
                 <h3 className="text-lg sm:text-xl font-serif italic text-white">Polish</h3>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-light italic">
+              <p className="text-xs sm:text-sm text-gray-400 leading-relaxed font-light italic">
                 Take your sheet from raw draft to print-worthy content, straight out of the box. Format for Substack, print, or the global archive.
               </p>
             </div>
@@ -124,7 +124,7 @@ const Forge: React.FC = () => {
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-serif font-black italic text-white tracking-tighter mb-6 md:mb-8">
             Join the <span style={{ color: 'var(--accent)' }}>Beta.</span>
           </h2>
-          <p className="text-base sm:text-lg text-gray-400 font-light italic leading-relaxed max-w-xl mx-auto mb-10 md:mb-14">
+          <p className="text-base sm:text-lg text-gray-300 font-light italic leading-relaxed max-w-xl mx-auto mb-10 md:mb-14">
             We're opening the Word Forge to a small group of testers. If you want free access to shape the future of sovereign authorship, get in touch.
           </p>
           <a
@@ -137,10 +137,12 @@ const Forge: React.FC = () => {
       </section>
 
       {/* Bottom Quote */}
-      <section className="py-16 md:py-24 px-4 sm:px-8 border-t border-white/[0.05]">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 font-serif italic leading-relaxed">
-            "The only thing you can truly own is the one thing that can't be taken from you. Your Story."
+      <section className="py-20 md:py-32 px-4 sm:px-8 border-t border-white/[0.05] relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full blur-[180px] opacity-15" style={{ backgroundColor: 'var(--accent)' }}></div>
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <p className="text-xl sm:text-2xl md:text-4xl text-gray-300 font-serif italic leading-relaxed animate-fade-in">
+            "The only thing you can truly own is the one thing that can't be taken from you.{' '}
+            <span className="animate-living-accent font-black" style={{ color: 'var(--accent)' }}>Your Story.</span>"
           </p>
         </div>
       </section>
